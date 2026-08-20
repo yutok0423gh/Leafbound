@@ -1,0 +1,12 @@
+{
+  "name": "Leafbound · 拾頁",
+  "short_name": "Leafbound",
+  "lang": "zh-Hant",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#edf2f0",
+  "theme_color": "#edf2f0",
+  "icons": []
+}

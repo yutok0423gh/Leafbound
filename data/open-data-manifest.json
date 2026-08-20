@@ -1,0 +1,41 @@
+{
+  "generatedAt": "2026-08-20T04:49:23.229Z",
+  "cantonese": {
+    "source": "粵典 words.hk word list",
+    "sourceUrl": "https://words.hk/faiman/analysis/wordslist.json",
+    "license": "Public domain",
+    "licenseUrl": "https://words.hk/faiman/analysis/",
+    "importedAt": "2026-08-20T04:49:23.229Z",
+    "entries": 62274,
+    "sourceSha256": "7703caef2f40c324eaf27f423bd35ac6403fcdc1eac5804d07212ef45d98a50d"
+  },
+  "poetry": {
+    "source": "chinese-poetry / 古典文庫",
+    "sourceUrl": "https://github.com/chinese-poetry/chinese-poetry",
+    "license": "MIT",
+    "licenseUrl": "https://github.com/chinese-poetry/chinese-poetry/blob/master/LICENSE",
+    "revision": "b8594f81a89752241442f2ce267d6f66f96704ee",
+    "imported": 863,
+    "collections": {
+      "tangPoetry": {
+        "title": "唐詩三百首",
+        "imported": 362,
+        "sourceUrl": "https://raw.githubusercontent.com/chinese-poetry/chinese-poetry/b8594f81a89752241442f2ce267d6f66f96704ee/%E5%85%A8%E5%94%90%E8%AF%97/%E5%94%90%E8%AF%97%E4%B8%89%E7%99%BE%E9%A6%96.json",
+        "sourceSha256": "d77a145f7470da2ed2f79515944563c062ffc43fceda07f195a36ead66b7e5c7"
+      },
+      "songCi": {
+        "title": "宋詞三百首",
+        "imported": 279,
+        "sourceUrl": "https://raw.githubusercontent.com/chinese-poetry/chinese-poetry/b8594f81a89752241442f2ce267d6f66f96704ee/%E5%AE%8B%E8%AF%8D/%E5%AE%8B%E8%AF%8D%E4%B8%89%E7%99%BE%E9%A6%96.json",
+        "sourceSha256": "ca5d74f7fdb9d5a6acc22a7c8b4395228cad4bb8be53df44c19ba83ab6983b20",
+        "conversion": "OpenCC cn → hk"
+      },
+      "guwen": {
+        "title": "古文觀止",
+        "imported": 222,
+        "sourceUrl": "https://raw.githubusercontent.com/chinese-poetry/chinese-poetry/b8594f81a89752241442f2ce267d6f66f96704ee/%E8%92%99%E5%AD%A6/guwenguanzhi.json",
+        "sourceSha256": "ba10ec02849d58bebcc8da575dda3da07a1123e2a31dab3f734acd95d48c5cac"
+      }
+    }
+  }
+}

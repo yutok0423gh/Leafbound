@@ -1,0 +1,19 @@
+{
+  "name": "leafbound",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node scripts/server.mjs",
+    "test": "node --test --test-isolation=none tests/*.test.mjs",
+    "import:data": "node scripts/import-open-data.mjs",
+    "import:cantonese": "node scripts/import-cantonese-pronunciation.mjs",
+    "import:cantonese-content": "node scripts/import-cantonese-sources.mjs",
+    "import:english": "node scripts/import-english-sources.mjs"
+  },
+  "devDependencies": {
+    "cheerio": "^1.1.2",
+    "iconv-lite": "^0.6.3",
+    "opencc-js": "^1.4.1"
+  }
+}
