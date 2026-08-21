@@ -9,7 +9,8 @@
     "import:data": "node scripts/import-open-data.mjs",
     "import:cantonese": "node scripts/import-cantonese-pronunciation.mjs",
     "import:cantonese-content": "node scripts/import-cantonese-sources.mjs",
-    "import:english": "node scripts/import-english-sources.mjs"
+    "import:english": "node scripts/import-english-sources.mjs",
+    "import:english-dictionary": "node scripts/import-english-dictionary.mjs"
   },
   "devDependencies": {
     "cheerio": "^1.1.2",

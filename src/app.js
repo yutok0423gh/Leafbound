@@ -12,9 +12,17 @@ import {
   poetryKinds
 } from "./data.js";
 import { icon } from "./icons.js";
-import { englishItemId, getEnglishContext, lookupEnglishWord } from "./english.js";
+import {
+  englishDictionarySnapshot,
+  englishDictionaryState,
+  englishItemId,
+  getEnglishContext,
+  loadEnglishDictionary,
+  lookupEnglishWord
+} from "./english.js";
 import { cantoneseSourceCatalog, cantoneseSourceSnapshot } from "./open-cantonese.js";
 import { englishDiscoveries, englishSourceCatalog, englishSourceSnapshot } from "./open-english.js";
+import { englishNewsDesks } from "./english-news-sources.js";
 import {
   buildCantonesePronunciationLine,
   cantoneseLexiconState,
@@ -25,10 +33,19 @@ import {
 } from "./cantonese-lexicon.js";
 import { findCantoneseVoice } from "./voice.js";
 import {
+  COMPLETE_PROGRESS_THRESHOLD,
+  PREFERENCES_COOKIE_KEY,
+  SEEN_PROGRESS_THRESHOLD,
   appStore,
+  contentActivityKey,
+  contentProgressStatus,
+  createDefaultPreferences,
   formatTime,
+  getContentProgress,
   progressPercent,
   removeSavedItemInState,
+  setContentProgressInState,
+  setContentSeenInState,
   setProgressInState,
   toggleFavoriteInState,
   touchHistoryInState,
@@ -39,6 +56,7 @@ const app = document.querySelector("#app");
 const liveRegion = document.querySelector("#live-region");
 const dailyEnglishArticles = [...articles, ...englishDiscoveries]
   .filter((article) => Array.isArray(article.paragraphs) && article.paragraphs.length);
+const dailyPoems = poems.filter((poem) => !poem.isOpenCorpus);
 
 function findEnglishArticle(id, fallback = true) {
   const match = articles.find((article) => article.id === id)
@@ -58,6 +76,7 @@ const ui = {
   poetryQuery: "",
   poetryLimit: 24,
   libraryFilter: "all",
+  libraryPanel: null,
   sourceFilter: "全部",
   cantoneseLevel: "全部",
   englishSourceFilter: "全部",
@@ -102,6 +121,14 @@ const classicalLeadingOptions = [
   { value: 1.16, label: "寬鬆" }
 ];
 
+const englishLeadingOptions = [
+  { value: 1.58, label: "緊湊" },
+  { value: 1.78, label: "適中" },
+  { value: 2, label: "寬鬆" }
+];
+
+const playbackSpeedOptions = [0.75, 0.8, 1, 1.2, 1.5];
+
 function getClassicalTypography(preferences = {}) {
   const requestedFont = String(preferences.classicalFont || "");
   const font = classicalFontOptions.some((option) => option.id === requestedFont) ? requestedFont : "song";
@@ -140,6 +167,61 @@ function escapeHtml(value = "") {
     .replaceAll("'", "&#039;");
 }
 
+function itemProgress(state, kind, item) {
+  let fallback = 0;
+  if (kind === "article") fallback = state.readingProgress[item.id] || 0;
+  if (kind === "episode") fallback = progressPercent(state.playbackProgress[item.id] || 0, item.duration);
+  return getContentProgress(state, kind, item.id, fallback);
+}
+
+function contentStatusMeta(progress) {
+  const value = Math.round(Math.max(0, Math.min(100, Number(progress) || 0)));
+  const status = contentProgressStatus(value);
+  if (status === "completed") return { status, label: "已完成", detail: `已完成 ${value}%`, seen: true };
+  if (status === "seen") return { status, label: "已閱", detail: `已閱 ${value}%`, seen: true };
+  if (status === "in-progress") return { status, label: "進行中", detail: `進行中 ${value}%`, seen: false };
+  return { status, label: "未讀", detail: "未讀", seen: false };
+}
+
+function renderReadingStateButton(kind, id, progress, title) {
+  const meta = contentStatusMeta(progress);
+  const key = contentActivityKey(kind, id);
+  const action = meta.seen ? "標為未讀" : "標為已閱";
+  return `
+    <button class="reading-state-toggle is-${meta.status}" type="button" data-toggle-content-seen="${escapeHtml(key)}"
+      data-content-status-key="${escapeHtml(key)}" data-content-title="${escapeHtml(title)}" aria-pressed="${meta.seen}"
+      aria-label="${action}：${escapeHtml(title)}" title="${action}">
+      <span class="reading-state-seal" aria-hidden="true">閱</span>
+      <small data-content-status-copy>${meta.label}</small>
+    </button>`;
+}
+
+function renderListReadingMark(progress) {
+  const meta = contentStatusMeta(progress);
+  if (!meta.seen) return "";
+  return `<span class="content-read-mark is-${meta.status}" title="${meta.detail}"><i aria-hidden="true">閱</i><span>${meta.detail}</span></span>`;
+}
+
+function selectDailyItem(items, kind, state, now, offset, preferred = null) {
+  const unread = items.filter((item) => itemProgress(state, kind, item) < SEEN_PROGRESS_THRESHOLD);
+  if (unread.length) {
+    const preferredUnread = preferred && unread.find((item) => item.id === preferred.id);
+    return {
+      item: preferredUnread || unread[getDailyIndex(unread.length, now, offset)] || unread[0],
+      reread: false
+    };
+  }
+
+  const dated = items
+    .map((item) => ({ item, seenAt: Date.parse(state.contentActivity?.[contentActivityKey(kind, item.id)]?.seenAt || "") }))
+    .filter((entry) => Number.isFinite(entry.seenAt))
+    .sort((a, b) => a.seenAt - b.seenAt);
+  return {
+    item: dated[0]?.item || items[getDailyIndex(items.length, now, offset)] || items[0],
+    reread: true
+  };
+}
+
 function safeExternalHref(value = "") {
   const href = String(value);
   return /^https:\/\/[^\s]+$/i.test(href) ? escapeHtml(href) : "#";
@@ -173,6 +255,53 @@ function recordRouteVisit(route) {
 
 let activeDailyKey = getLocalDayKey();
 let dailyRefreshTimer = null;
+let poetryProgressCleanup = null;
+
+function syncContentStatusDom(kind, id, progress) {
+  const key = contentActivityKey(kind, id);
+  const meta = contentStatusMeta(progress);
+  document.querySelectorAll(`[data-content-status-key="${CSS.escape(key)}"]`).forEach((button) => {
+    button.classList.remove("is-unread", "is-in-progress", "is-seen", "is-completed");
+    button.classList.add(`is-${meta.status}`);
+    button.setAttribute("aria-pressed", String(meta.seen));
+    const title = button.dataset.contentTitle || "這項內容";
+    const action = meta.seen ? "標為未讀" : "標為已閱";
+    button.setAttribute("aria-label", `${action}：${title}`);
+    button.title = action;
+    const copy = button.querySelector("[data-content-status-copy]");
+    if (copy) copy.textContent = meta.label;
+  });
+}
+
+function setupPoetryProgressTracking() {
+  poetryProgressCleanup?.();
+  poetryProgressCleanup = null;
+  const reader = document.querySelector("[data-poetry-progress]");
+  if (!reader) return;
+  const poemId = reader.dataset.poetryProgress;
+  let frame = null;
+  const update = () => {
+    frame = null;
+    const absoluteTop = window.scrollY + reader.getBoundingClientRect().top;
+    const travel = reader.offsetHeight - window.innerHeight;
+    const progress = travel <= 0
+      ? 100
+      : Math.max(0, Math.min(100, ((window.scrollY - absoluteTop) / travel) * 100));
+    const nextState = appStore.update((state) => setContentProgressInState(state, "poem", poemId, progress), false);
+    syncContentStatusDom("poem", poemId, getContentProgress(nextState, "poem", poemId));
+  };
+  const queueUpdate = () => {
+    if (frame != null) return;
+    frame = window.requestAnimationFrame(update);
+  };
+  window.addEventListener("scroll", queueUpdate, { passive: true });
+  window.addEventListener("resize", queueUpdate);
+  poetryProgressCleanup = () => {
+    window.removeEventListener("scroll", queueUpdate);
+    window.removeEventListener("resize", queueUpdate);
+    if (frame != null) window.cancelAnimationFrame(frame);
+  };
+}
 
 function refreshDailyContentIfNeeded(now = new Date()) {
   const nextKey = getLocalDayKey(now);
@@ -370,24 +499,33 @@ function renderToday() {
   const state = appStore.getState();
   const now = new Date();
   const dailyKey = getLocalDayKey(now);
-  const poem = getTodayPoem(now);
-  const article = dailyEnglishArticles[getDailyIndex(dailyEnglishArticles.length, now, 11)] || articles[0];
-  const episode = episodes[getDailyIndex(episodes.length, now, 2)] || episodes[0];
-  const articleProgress = state.readingProgress[article.id] || 0;
+  const preferredPoem = getTodayPoem(now);
+  const preferredArticle = dailyEnglishArticles[getDailyIndex(dailyEnglishArticles.length, now, 11)] || articles[0];
+  const preferredEpisode = episodes[getDailyIndex(episodes.length, now, 2)] || episodes[0];
+  const poemSelection = selectDailyItem(dailyPoems, "poem", state, now, 0, preferredPoem);
+  const articleSelection = selectDailyItem(dailyEnglishArticles, "article", state, now, 11, preferredArticle);
+  const episodeSelection = selectDailyItem(episodes, "episode", state, now, 2, preferredEpisode);
+  const poem = poemSelection.item;
+  const article = articleSelection.item;
+  const episode = episodeSelection.item;
+  const articleProgress = itemProgress(state, "article", article);
   const episodeTime = Math.min(episode.duration, state.playbackProgress[episode.id] || 0);
+  const episodeProgress = itemProgress(state, "episode", episode);
   const remaining = Math.max(1, Math.ceil(article.minutes * (1 - articleProgress / 100)));
-  const articleStarted = articleProgress > 0 && articleProgress < 100;
-  const articleCompleted = articleProgress >= 100;
-  const articleKicker = articleStarted
+  const articleStarted = articleProgress > 0 && articleProgress < COMPLETE_PROGRESS_THRESHOLD;
+  const articleCompleted = articleProgress >= COMPLETE_PROGRESS_THRESHOLD;
+  const articleKicker = articleSelection.reread
+    ? `Today's reread · ${article.minutes} MIN`
+    : articleStarted
     ? `Continue reading · 還有 ${remaining} 分鐘`
     : articleCompleted
       ? `Today's reread · ${article.minutes} MIN`
       : `Today's reading · ${article.minutes} MIN`;
-  const articleAction = articleStarted ? "繼續閱讀" : articleCompleted ? "重新閱讀" : "開始閱讀";
+  const articleAction = articleSelection.reread ? "重新閱讀" : articleStarted ? "繼續閱讀" : articleCompleted ? "重新閱讀" : "開始閱讀";
   const episodeStarted = episodeTime > 0 && episodeTime < episode.duration;
-  const episodeCompleted = episodeTime >= episode.duration;
-  const episodeKicker = `${episodeStarted ? "今日續聽" : episodeCompleted ? "今日重聽" : "今日選聽"} · ${episode.source}`;
-  const episodeAction = episodeStarted ? "繼續收聽" : episodeCompleted ? "重新收聽" : "開始收聽";
+  const episodeCompleted = episodeProgress >= COMPLETE_PROGRESS_THRESHOLD;
+  const episodeKicker = `${episodeSelection.reread ? "今日重聽" : episodeStarted ? "今日續聽" : episodeCompleted ? "今日重聽" : "今日選聽"} · ${episode.source}`;
+  const episodeAction = episodeSelection.reread ? "重新收聽" : episodeStarted ? "繼續收聽" : episodeCompleted ? "重新收聽" : "開始收聽";
   const date = new Intl.DateTimeFormat("zh-Hant", {
     month: "long",
     day: "numeric",
@@ -406,7 +544,7 @@ function renderToday() {
         <article class="daily-poem reading-sheet" data-daily-poem="${escapeHtml(poem.id)}">
           <div class="reading-thread" aria-hidden="true"><span></span></div>
           <div class="sheet-meta">
-            <span>今日一詩</span>
+            <span>${poemSelection.reread ? "今日重讀" : "今日一詩"}</span>
             <span>${escapeHtml(poem.dynasty)} · ${escapeHtml(poem.form)}</span>
           </div>
           <div class="poem-preview">
@@ -453,7 +591,7 @@ function renderToday() {
               <p class="item-kicker">${escapeHtml(episodeKicker)}</p>
               <h3>${escapeHtml(episode.title)}</h3>
               <p>${formatTime(episodeTime)} / ${formatTime(episode.duration)}</p>
-              ${progressLine(progressPercent(episodeTime, episode.duration), `${episode.title} 播放進度`)}
+              ${progressLine(episodeProgress, `${episode.title} 播放進度`)}
               <button class="text-link" type="button" data-route="cantonese" data-route-id="${episode.id}">
                 ${episodeAction} ${icon("arrow")}
               </button>
@@ -534,6 +672,7 @@ function renderActivePoetryFilters() {
 }
 
 function renderPoetryIndex() {
+  const state = appStore.getState();
   const results = filteredPoems();
   const visibleResults = results.slice(0, ui.poetryLimit);
   const active = activePoetryFilters();
@@ -546,7 +685,6 @@ function renderPoetryIndex() {
           <p class="eyebrow">古典文庫</p>
           <h1>詩、詞與古文，<br>在同一座書房。</h1>
         </div>
-        <p>先選文類，再沿朝代、作者、體裁或主題進入。原文與來源一同保存，讀音查詢保留人工校正的空間。</p>
       </header>
 
       <nav class="literature-kinds" aria-label="古典文庫分類">
@@ -588,19 +726,23 @@ function renderPoetryIndex() {
       </div>
 
       <div class="poem-list">
-        ${results.length ? visibleResults.map((poem, index) => `
-          <article class="poem-row">
+        ${results.length ? visibleResults.map((poem, index) => {
+          const progress = itemProgress(state, "poem", poem);
+          const status = contentStatusMeta(progress);
+          return `
+          <article class="poem-row is-${status.status}">
             <button class="poem-row-main" type="button" data-route="poetry" data-route-id="${poem.id}">
               <span class="poem-number">${String(index + 1).padStart(2, "0")}</span>
               <span class="poem-row-title">
                 <strong class="poem-row-quote">${escapeHtml(poem.featuredQuote)}</strong>
                 <small class="poem-row-work-title">《${escapeHtml(poem.title)}》</small>
-                <em class="poem-row-meta">${escapeHtml(poem.poet)} · ${escapeHtml(poem.dynasty)} · ${escapeHtml(poem.form)}</em>
+                <span class="poem-row-foot"><em class="poem-row-meta">${escapeHtml(poem.poet)} · ${escapeHtml(poem.dynasty)} · ${escapeHtml(poem.form)}</em>${renderListReadingMark(progress)}</span>
               </span>
               <span class="row-arrow">${icon("arrow")}</span>
             </button>
             ${favoriteButton(`poem:${poem.id}`, poem.title)}
-          </article>`).join("") : `
+          </article>`;
+        }).join("") : `
           <div class="empty-state">
             <span class="empty-glyph">未</span>
             <h2>沒有找到相符的內容</h2>
@@ -842,10 +984,11 @@ function renderPoemReader(id) {
   const jyutpingVisible = showJyutping && (hasJyutping || proseJyutpingReady);
   const typography = getClassicalTypography(state.preferences);
   const thread = poemThreadCopy(poem);
+  const progress = itemProgress(state, "poem", poem);
 
   return `
     <article class="poem-reader page-enter ${isProse ? "is-prose" : ""} classical-font-${typography.font}"
-      style="--classical-scale:${typography.scale}; --classical-leading:${typography.leading}">
+      style="--classical-scale:${typography.scale}; --classical-leading:${typography.leading}" data-poetry-progress="${escapeHtml(poem.id)}">
       <header class="reader-toolbar">
         <button class="back-button" type="button" data-route="poetry">${icon("back")} 詩詞</button>
         <div class="reader-actions">
@@ -858,6 +1001,7 @@ function renderPoemReader(id) {
             ? `<button class="quiet-button ${jyutpingVisible ? "is-active" : ""}" type="button" data-toggle-jyutping aria-pressed="${jyutpingVisible}"
                 aria-label="${jyutpingVisible ? "隱藏粵拼" : "顯示粵拼"}" ${isProse && !proseJyutpingReady ? "disabled" : ""}>粵拼</button>`
             : `<span class="reader-source-badge">點詞查音</span>`}
+          ${renderReadingStateButton("poem", poem.id, progress, poem.title)}
           <button class="icon-button" type="button" data-toggle-note="${noteKey}" aria-label="${noteOpen ? "關閉筆記" : "打開筆記"}">${icon("note")}</button>
           ${favoriteButton(`poem:${poem.id}`, poem.title)}
           <button class="icon-button" type="button" data-immersive="${poem.id}" aria-label="進入沉浸閱讀">${icon("expand")}</button>
@@ -913,14 +1057,21 @@ function renderPoemReader(id) {
 
 function renderCantoneseFeed() {
   const state = appStore.getState();
+  const levelCounts = cantoneseSourceSnapshot.levelCounts || {};
+  const levelGroups = [
+    { id: "全部", label: "全部", range: "L1–7", levels: null },
+    { id: "entry", label: "入門", range: "L1–2", levels: [1, 2] },
+    { id: "story", label: "進階", range: "L3–5", levels: [3, 4, 5] },
+    { id: "long", label: "長篇", range: "L6–7", levels: [6, 7] }
+  ];
+  const selectedLevelGroup = levelGroups.find((group) => group.id === ui.cantoneseLevel) || levelGroups[0];
   const visible = episodes.filter((episode) => {
     const sourceMatches = ui.sourceFilter === "全部" || episode.sourceId === ui.sourceFilter;
-    const levelMatches = ui.cantoneseLevel === "全部" || episode.level === Number(ui.cantoneseLevel);
+    const levelMatches = !selectedLevelGroup.levels || selectedLevelGroup.levels.includes(episode.level);
     return sourceMatches && levelMatches;
   });
   const activeSource = cantoneseSourceCatalog.find((source) => source.id === ui.sourceFilter);
   const sourceLabel = activeSource?.shortName || "全部內容";
-  const levelCounts = cantoneseSourceSnapshot.levelCounts || {};
 
   return `
     <section class="collection-view page-enter cantonese-view">
@@ -956,14 +1107,18 @@ function renderCantoneseFeed() {
       </section>
 
       ${["全部", "hbl"].includes(ui.sourceFilter) ? `
-        <div class="cantonese-level-ladder" aria-label="粵文故事等級">
-          <button type="button" class="${ui.cantoneseLevel === "全部" ? "is-active" : ""}" data-cantonese-level="全部" aria-pressed="${ui.cantoneseLevel === "全部"}">
-            <span>ALL</span><strong>全部等級</strong><small>${cantoneseSourceSnapshot.importedStoryCount} 篇</small>
-          </button>
-          ${Array.from({ length: 7 }, (_, index) => index + 1).map((level) => `
-            <button type="button" class="${ui.cantoneseLevel === String(level) ? "is-active" : ""}" data-cantonese-level="${level}" aria-pressed="${ui.cantoneseLevel === String(level)}">
-              <span>L${level}</span><strong>${level <= 2 ? "短句起步" : level <= 5 ? "故事進階" : "長篇閱讀"}</strong><small>${levelCounts[level] || 0} 篇</small>
-            </button>`).join("")}
+        <div class="cantonese-level-ladder" aria-label="粵文故事分類">
+          ${levelGroups.map((group) => {
+            const count = group.levels
+              ? group.levels.reduce((total, level) => total + (levelCounts[level] || 0), 0)
+              : cantoneseSourceSnapshot.importedStoryCount;
+            const isActive = selectedLevelGroup.id === group.id;
+            return `
+              <button type="button" class="${isActive ? "is-active" : ""}" data-cantonese-level="${group.id}" aria-pressed="${isActive}"
+                aria-label="${group.label}，${group.range}，${count} 篇">
+                <span>${group.range}</span><strong>${group.label}</strong><small>${count} 篇</small>
+              </button>`;
+          }).join("")}
         </div>` : ""}
 
       ${ui.sourceFilter === "local" ? renderCantoneseVoiceNotice() : ""}
@@ -976,6 +1131,8 @@ function renderCantoneseFeed() {
       <div class="episode-list">
         ${visible.map((episode) => {
           const current = state.playbackProgress[episode.id] || 0;
+          const progress = itemProgress(state, "episode", episode);
+          const readingStatus = contentStatusMeta(progress);
           const date = episode.publishedAt
             ? new Intl.DateTimeFormat("zh-Hant", { year: "numeric", month: "short", day: "numeric" }).format(new Date(episode.publishedAt))
             : episode.recordedPeriod || "";
@@ -984,12 +1141,14 @@ function renderCantoneseFeed() {
             : episode.audioKind === "soundcloud"
               ? `真人原聲 · ${episode.transcript.length} 段完整粵文`
               : `本機粵語朗讀 · ${formatTime(episode.duration)}`;
-          const progressCopy = episode.audioKind === "soundcloud"
-            ? "站內全文"
-            : current ? `${progressPercent(current, episode.duration)}%` : "未開始";
+          const progressCopy = readingStatus.seen
+            ? readingStatus.detail
+            : episode.audioKind === "soundcloud"
+              ? "站內全文"
+              : current ? `${progressPercent(current, episode.duration)}%` : "未開始";
           const artMark = episode.sourceId === "hbl" ? `L${episode.level}` : episode.sourceId === "hkcancor" ? "港" : "";
           return `
-            <article class="episode-row is-${escapeHtml(episode.sourceId)}">
+            <article class="episode-row is-${escapeHtml(episode.sourceId)} is-${readingStatus.status}">
               <button class="episode-main" type="button" data-route="cantonese" data-route-id="${episode.id}">
                 <span class="episode-art is-${escapeHtml(episode.sourceId)}" aria-hidden="true">
                   ${artMark ? `<b>${escapeHtml(artMark)}</b>` : ""}<i></i><i></i><i></i><i></i><i></i>
@@ -997,6 +1156,7 @@ function renderCantoneseFeed() {
                 <span class="episode-copy">
                   <small>${escapeHtml(episode.source)} · ${escapeHtml(episode.episode)}</small>
                   <strong>${escapeHtml(episode.title)}</strong>
+                  ${renderListReadingMark(progress)}
                   <span>${escapeHtml(episode.description)}</span>
                   <span class="episode-meta">${[date, availability].filter(Boolean).map(escapeHtml).join(" · ")}</span>
                 </span>
@@ -1006,7 +1166,7 @@ function renderCantoneseFeed() {
                 ${favoriteButton(`episode:${episode.id}`, episode.title)}
                 <button class="round-play" type="button" data-route="cantonese" data-route-id="${episode.id}" aria-label="開啟${escapeHtml(episode.title)}逐字稿">${icon("arrow")}</button>
               </div>
-              ${episode.audioKind === "soundcloud" ? "" : `<div class="episode-progress-track"><span style="width:${progressPercent(current, episode.duration)}%"></span></div>`}
+              ${episode.audioKind === "soundcloud" && !readingStatus.seen ? "" : `<div class="episode-progress-track"><span style="width:${progress}%"></span></div>`}
             </article>`;
         }).join("") || `
           <div class="empty-state cantonese-empty">
@@ -1072,6 +1232,7 @@ function renderEpisodePlayer(id) {
 
   const duration = effectiveEpisodeDuration(episode);
   const current = Math.min(player.currentTime, duration);
+  const progress = getContentProgress(state, "episode", episode.id, progressPercent(current, duration));
   const abLabel = player.abStart == null ? "AB" : player.abEnd == null ? `A · ${formatTime(player.abStart)}` : `AB · ${formatTime(player.abStart)}–${formatTime(player.abEnd)}`;
   const speechReady = cantoneseSpeech.status === "available";
   const hasLocalRecording = episode.audioKind === "local" && Boolean(episode.audioFile);
@@ -1090,6 +1251,7 @@ function renderEpisodePlayer(id) {
         <button class="back-button" type="button" data-route="cantonese">${icon("back")} 粵語</button>
         <div class="reader-actions">
           <span class="demo-badge is-${playbackStatus}" data-cantonese-voice-status="${cantoneseSpeech.status}" data-cantonese-audio-kind="${escapeHtml(episode.audioKind || "speech")}">${playbackLabel}</span>
+          ${renderReadingStateButton("episode", episode.id, progress, episode.title)}
           ${favoriteButton(`episode:${episode.id}`, episode.title)}
         </div>
       </header>
@@ -1196,28 +1358,32 @@ function renderEnglishIndex() {
 
   const renderIndexRow = (article, index) => {
     const isExternal = article.access === "external" || !Array.isArray(article.paragraphs);
-    const progress = isExternal ? 0 : state.readingProgress[article.id] || 0;
+    const progress = isExternal ? 0 : itemProgress(state, "article", article);
+    const readingStatus = contentStatusMeta(progress);
     const date = article.publishedAt
       ? new Intl.DateTimeFormat("zh-Hant", { year: "numeric", month: "short", day: "numeric" }).format(new Date(article.publishedAt))
       : "";
     const meta = [article.source, article.topic, date].filter(Boolean).map(escapeHtml).join(" · ");
-    const readerStatus = article.sourceId === "local"
-      ? progress ? `${Math.round(progress)}% read` : "站內精讀"
-      : article.contentScope === "chapter"
-        ? progress ? `${Math.round(progress)}% read` : "首章站內讀"
-        : progress ? `${Math.round(progress)}% read` : "站內全文";
+    const readerStatus = readingStatus.seen
+      ? readingStatus.detail
+      : article.sourceId === "local"
+        ? progress ? `${Math.round(progress)}% read` : "站內精讀"
+        : article.contentScope === "chapter"
+          ? progress ? `${Math.round(progress)}% read` : "首章站內讀"
+          : progress ? `${Math.round(progress)}% read` : "站內全文";
     const main = `
       <span class="article-ordinal">${String(index + 1).padStart(2, "0")}</span>
       <span class="article-heading">
         <small>${meta}</small>
         <strong>${escapeHtml(article.title)}</strong>
         <span>${escapeHtml(article.deck)}</span>
+        ${isExternal ? "" : renderListReadingMark(progress)}
       </span>
-      <span class="article-status ${isExternal ? "is-external" : ""}">${isExternal ? "原站閱讀" : readerStatus}</span>
+      <span class="article-status ${isExternal ? "is-external" : `is-${readingStatus.status}`}">${isExternal ? "原站閱讀" : readerStatus}</span>
       <span class="row-arrow">${icon(isExternal ? "external" : "arrow")}</span>`;
 
     return `
-      <article class="article-row ${isExternal ? "is-external" : "is-internal"}" data-english-source-row="${escapeHtml(article.sourceId)}" data-english-category-row="${escapeHtml(article.category)}">
+      <article class="article-row ${isExternal ? "is-external" : `is-internal is-${readingStatus.status}`}" data-english-source-row="${escapeHtml(article.sourceId)}" data-english-category-row="${escapeHtml(article.category)}">
         ${isExternal
           ? `<a class="article-main" href="${escapeHtml(article.sourceUrl)}" target="_blank" rel="noreferrer" aria-label="在 ${escapeHtml(article.source)} 閱讀 ${escapeHtml(article.title)}">${main}</a>`
           : `<button class="article-main" type="button" data-route="english" data-route-id="${article.id}">${main}</button>`}
@@ -1232,12 +1398,12 @@ function renderEnglishIndex() {
           <p class="eyebrow">English Input</p>
           <h1>Read for thought.<br><em>Keep the language.</em></h1>
         </div>
-        <p>閱讀不是單字採集。保存讓你停下來的 phrase、collocation 和完整語境。</p>
+        <p>保存讓你停下來的 phrase、collocation 和完整語境。</p>
       </header>
 
       <section class="english-source-ledger" aria-labelledby="english-source-title">
         <header>
-          <div><p class="eyebrow">Source shelf</p><h2 id="english-source-title">四座書架，同一個閱讀入口。</h2></div>
+          <div><p class="eyebrow">Source shelf</p><h2 id="english-source-title">${englishSourceCatalog.length} 座館藏書架，${englishNewsDesks.length} 個新聞入口。</h2></div>
           <div class="english-sync-state"><span>${englishSourceSnapshot.itemCount} 篇站內正文</span><small>${escapeHtml(syncedAt)} 同步</small></div>
         </header>
         <div class="english-source-cards">
@@ -1252,6 +1418,28 @@ function renderEnglishIndex() {
           }).join("")}
         </div>
         <button class="english-source-reset ${ui.englishSourceFilter === "全部" ? "is-active" : ""}" type="button" data-english-source="全部">${ui.englishSourceFilter === "全部" ? "正在顯示全部來源" : "返回全部來源"} · ${indexItems.length}</button>
+
+        <section class="english-news-directory" aria-labelledby="english-news-directory-title">
+          <header>
+            <div>
+              <p class="eyebrow">News desks</p>
+              <h3 id="english-news-directory-title">公開文章，按來源進入。</h3>
+            </div>
+            <p class="english-news-disclaimer">商業媒體只列原站入口；沒有授權的全文不會複製進 Leafbound。</p>
+          </header>
+          <div class="english-news-desks">
+            ${englishNewsDesks.map((source) => `
+              <a class="english-news-desk is-${escapeHtml(source.access)}" href="${safeExternalHref(source.homepage)}" target="_blank" rel="noreferrer" aria-label="前往 ${escapeHtml(source.name)} 閱讀公開文章">
+                <span class="english-news-mark" aria-hidden="true">${escapeHtml(source.mark)}</span>
+                <span class="english-news-copy">
+                  <small>${escapeHtml(source.mode)}</small>
+                  <strong>${escapeHtml(source.shortName)}</strong>
+                  <em>${escapeHtml(source.description)}</em>
+                </span>
+                <span class="english-news-arrow" aria-hidden="true">${icon("external")}</span>
+              </a>`).join("")}
+          </div>
+        </section>
       </section>
 
       <div class="english-index-tools">
@@ -1345,9 +1533,16 @@ function renderEnglishLookupPanel(article) {
   const typeLabel = type.replaceAll("-", " ").toUpperCase();
   const meta = [item.partOfSpeech, item.lemma && item.lemma.toLowerCase() !== text.toLowerCase() ? `原形 ${item.lemma}` : ""].filter(Boolean).join(" · ");
   const commonUses = Array.isArray(item.commonUses) ? item.commonUses.slice(0, 3) : [];
+  const dictionaryExamples = Array.isArray(item.dictionaryExamples) ? item.dictionaryExamples.slice(0, 2) : [];
+  const dictionarySenses = Array.isArray(item.dictionarySenses) ? item.dictionarySenses.slice(0, 3) : [];
   const commonUseEmpty = type === "word"
     ? "這個詞的常見搭配尚未收錄。"
     : "這個條目本身是固定搭配，建議整組記憶。";
+  const meaningFallback = item.dictionaryStatus === "loading"
+    ? "正在打開本地詞典……"
+    : item.dictionaryStatus === "error"
+      ? "本地詞典暫時未能載入；你仍可稍後重試或先保存到詞庫。"
+      : "這個詞尚未收錄本地中文釋義；仍可保存到詞庫。";
 
   return `
     <section class="english-lookup-card" data-english-lookup-card tabindex="-1" aria-live="polite" aria-label="${escapeHtml(text)} 詞義">
@@ -1365,16 +1560,31 @@ function renderEnglishLookupPanel(article) {
       </div>
       <div class="lookup-meaning">
         <small>中文</small>
-        <p>${escapeHtml(item.meaning || "這個詞尚未收錄本地中文釋義；仍可保存到詞庫。")}</p>
+        <p>${escapeHtml(item.meaning || meaningFallback)}</p>
       </div>
-      <section class="lookup-common-uses" aria-label="常見用法">
-        <small>常見用法</small>
+      <section class="lookup-common-uses ${!commonUses.length && dictionaryExamples.length ? "is-dictionary-examples" : ""}" aria-label="${commonUses.length ? "常見用法" : dictionaryExamples.length ? "詞典例句" : "常見用法"}">
+        <small>${commonUses.length ? "常見用法" : dictionaryExamples.length ? "詞典例句" : "常見用法"}</small>
         ${commonUses.length ? `
           <ul>
             ${commonUses.map((use) => `<li><span lang="en">${escapeHtml(use.pattern)}</span><em lang="zh-Hant">${escapeHtml(use.meaning)}</em></li>`).join("")}
+          </ul>` : dictionaryExamples.length ? `
+          <ul>
+            ${dictionaryExamples.map((example) => `<li><span lang="en">${escapeHtml(example)}</span><em>詞典例句</em></li>`).join("")}
           </ul>` : `<p>${escapeHtml(commonUseEmpty)}</p>`}
       </section>
       ${item.definition ? `<div class="lookup-definition"><small>IN ENGLISH</small><p>${escapeHtml(item.definition)}</p></div>` : ""}
+      ${dictionarySenses.length ? `
+        <details class="lookup-dictionary-senses" data-dictionary-senses>
+          <summary><span>更多詞義</span><b>${dictionarySenses.length} senses</b></summary>
+          <ol>
+            ${dictionarySenses.map((sense) => `
+              <li>
+                <div><small>${escapeHtml(sense.partOfSpeech || "sense")}</small>${sense.meaning ? `<strong>${escapeHtml(sense.meaning)}</strong>` : ""}</div>
+                ${sense.definition ? `<p lang="en">${escapeHtml(sense.definition)}</p>` : ""}
+                ${sense.example ? `<blockquote lang="en">${escapeHtml(sense.example)}</blockquote>` : ""}
+              </li>`).join("")}
+          </ol>
+        </details>` : ""}
       <button class="primary-button lookup-save" type="button" data-save-english ${saved ? "disabled" : ""}>${saved ? `${icon("check")} 已加入我的詞庫` : "加入我的詞庫"}</button>
     </section>`;
 }
@@ -1383,6 +1593,7 @@ function renderArticleReader(id) {
   const article = findEnglishArticle(id);
   const state = appStore.getState();
   const progress = state.readingProgress[article.id] || 0;
+  const activityProgress = itemProgress(state, "article", article);
   const preferences = state.preferences;
   const noteKey = `article:${article.id}`;
   const note = state.notes[noteKey]?.content || "";
@@ -1397,6 +1608,7 @@ function renderArticleReader(id) {
           <button class="text-control" type="button" data-reader-font="0.08" aria-label="放大字體">A+</button>
           <button class="text-control leading-control" type="button" data-reader-leading aria-label="調整行距">行距</button>
           <button class="quiet-button ${preferences.englishDark ? "is-active" : ""}" type="button" data-reader-dark aria-pressed="${preferences.englishDark}">夜讀</button>
+          ${renderReadingStateButton("article", article.id, activityProgress, article.title)}
           <button class="icon-button" type="button" data-toggle-note="${noteKey}" aria-label="${noteOpen ? "關閉筆記" : "打開筆記"}">${icon("note")}</button>
           ${favoriteButton(`article:${article.id}`, article.title)}
         </div>
@@ -1505,7 +1717,7 @@ function renderAboutPanel() {
   const localCantoneseCount = episodes.filter((episode) => episode.sourceId === "local").length;
 
   return `
-    <section class="about-panel" aria-labelledby="about-title">
+    <section class="about-panel" id="library-about-panel" tabindex="-1" aria-labelledby="about-title">
       <header class="about-heading">
         <div><p class="eyebrow">About Leafbound</p><h2 id="about-title">關於 Leafbound</h2></div>
         <p>Leafbound（拾頁）是一座 local-first 個人語言書房。內容來源、授權與資料邊界集中記錄在這裡，閱讀頁保持安靜。</p>
@@ -1579,19 +1791,23 @@ function renderAboutPanel() {
         <article class="about-source-card is-english">
           <span class="about-source-mark" aria-hidden="true">EN</span>
           <div class="about-source-copy">
-            <p class="eyebrow">English source shelf</p>
-            <h3>英文來源與分類</h3>
-            <p>${importedEnglishCount} 篇可站內閱讀的正文來自 6 個官方訂閱源，涵蓋語言、文化、科學與文學；另有 ${articles.length} 篇 Leafbound 精讀稿。</p>
+            <p class="eyebrow">English shelf & dictionary</p>
+            <h3>英文來源與本地詞典</h3>
+            <p>${importedEnglishCount} 篇來自 6 個官方訂閱源的正文與 ${articles.length} 篇 Leafbound 精讀稿均支援點詞；本地詞庫為現有文章準備了 ${englishDictionarySnapshot.matchedWordCount.toLocaleString("en-US")} 個詞形，其中 ${englishDictionarySnapshot.bilingualWordCount.toLocaleString("en-US")} 個有中英對齊詞義。</p>
             <dl>
               <div><dt>VOA</dt><dd>Learning English · 自製文章全文；通訊社材料排除</dd></div>
               <div><dt>NASA</dt><dd>Technology · 官方正文純文字</dd></div>
               <div><dt>Standard</dt><dd>New Releases · 公共領域作品首章</dd></div>
-              <div><dt>邊界</dt><dd>不複製圖片、標誌、廣告、腳本或標示的第三方材料</dd></div>
+              <div><dt>新聞台</dt><dd>AP、Reuters、Guardian、CNN、RFI、Economist 只列公開閱讀入口；Global Voices 與 Open Newswire 用來尋找授權清楚的下一批全文</dd></div>
+              <div><dt>詞典</dt><dd>Princeton WordNet 3.0 英文釋義與例句 · Chinese Open Wordnet 2.0 中文對齊 · FreeDict 為 ${englishDictionarySnapshot.freedictFallbackWordCount.toLocaleString("en-US")} 個缺口補義（CC BY-SA 3.0）</dd></div>
+              <div><dt>邊界</dt><dd>不下載、抓取或轉載牛津、劍橋等商業詞典內容；未將任何私有 API 金鑰放進網頁</dd></div>
             </dl>
             <div class="about-source-links">
               <a href="https://learningenglish.voanews.com/rssfeeds" target="_blank" rel="noreferrer">VOA RSS</a>
               <a href="https://www.nasa.gov/rss-feeds/" target="_blank" rel="noreferrer">NASA RSS</a>
               <a href="https://standardebooks.org/feeds" target="_blank" rel="noreferrer">Standard Ebooks feeds</a>
+              <a href="https://github.com/omwn/omw-data/releases/tag/v2.0" target="_blank" rel="noreferrer">Open Multilingual Wordnet</a>
+              <a href="https://freedict.org/zh_cn/downloads/" target="_blank" rel="noreferrer">FreeDict</a>
               <a href="./THIRD_PARTY_NOTICES.md" target="_blank" rel="noreferrer">查看授權邊界</a>
             </div>
           </div>
@@ -1613,7 +1829,7 @@ function renderAboutPanel() {
 
       <section class="about-data-note">
         <span aria-hidden="true">本</span>
-        <div><h3>資料保存在目前瀏覽器</h3><p>收藏、筆記、閱讀與播放進度不需要帳戶，也不會自動傳送到外部服務。清除瀏覽器資料前，建議先使用上方的「匯出備份」。</p></div>
+        <div><h3>內容與設定分開保存</h3><p>收藏、筆記、閱讀與播放進度保存在本機儲存空間；只有非敏感閱讀偏好寫入本站 Cookie。清除瀏覽器資料前，建議先使用上方的「匯出備份」。</p></div>
       </section>
 
       <footer class="about-footer">
@@ -1623,10 +1839,161 @@ function renderAboutPanel() {
     </section>`;
 }
 
+function renderSettingsSwitch(key, title, description, checked) {
+  return `
+    <button class="settings-switch" type="button" data-setting-toggle="${key}" role="switch" aria-checked="${checked}">
+      <span class="settings-switch-copy"><strong>${title}</strong><small>${description}</small></span>
+      <span class="settings-switch-state" aria-hidden="true">
+        <span class="settings-switch-track"><i></i></span>
+        <b>${checked ? "開" : "關"}</b>
+      </span>
+    </button>`;
+}
+
+function renderLanguageSettingsGroup() {
+  return `
+    <section class="settings-group settings-language-group" aria-labelledby="settings-language-title">
+      <header>
+        <span aria-hidden="true">語</span>
+        <div><p class="eyebrow">Language library</p><h3 id="settings-language-title">目前語言</h3></div>
+      </header>
+      <div class="language-list settings-language-list">
+        <span>粵語 <small>Jyutping · Hong Kong</small></span>
+        <span>English <small>Latin · Global</small></span>
+        <button type="button" disabled title="第二階段開放">＋ 新增語言 <small>P1</small></button>
+      </div>
+    </section>`;
+}
+
+function renderSettingsPanel() {
+  const preferences = appStore.getState().preferences;
+  const typography = getClassicalTypography(preferences);
+  const cookieRemembered = document.cookie
+    .split(";")
+    .some((entry) => entry.trim().startsWith(`${PREFERENCES_COOKIE_KEY}=`));
+
+  return `
+    <section class="settings-panel" id="library-settings-panel" tabindex="-1" aria-labelledby="settings-title">
+      <header class="settings-heading">
+        <div>
+          <p class="eyebrow">Reading preferences</p>
+          <h2 id="settings-title">把書房調成你的節奏。</h2>
+        </div>
+        <p>改動會立即套用到每一篇正文。這裡只記錄閱讀方式，不記錄你讀過甚麼。</p>
+      </header>
+
+      <div class="settings-cookie-note ${cookieRemembered ? "is-remembered" : "is-local-only"}" data-cookie-status="${cookieRemembered ? "remembered" : "blocked"}">
+        <span class="settings-cookie-mark" aria-hidden="true">記</span>
+        <div>
+          <strong>${cookieRemembered ? "這部瀏覽器會記得你的設定" : "Cookie 未能寫入，設定仍保存在本機"}</strong>
+          <p>非敏感閱讀偏好會寫入本站專用 Cookie，最長保留一年；收藏、筆記、進度與正文不會寫入 Cookie。</p>
+        </div>
+        <small>${cookieRemembered ? "COOKIE · ON" : "LOCAL · ONLY"}</small>
+      </div>
+
+      <div class="settings-ledger">
+        <section class="settings-group" aria-labelledby="settings-classical-title">
+          <header><span aria-hidden="true">文</span><div><p class="eyebrow">Classical</p><h3 id="settings-classical-title">古典閱讀</h3></div></header>
+          <div class="settings-control-row">
+            <div><strong>正文字體</strong><small>詩、詞與古文共用</small></div>
+            <div class="settings-segmented" role="group" aria-label="古典正文字體">
+              ${classicalFontOptions.map((option) => `
+                <button class="${typography.font === option.id ? "is-active" : ""}" type="button" data-classical-font="${option.id}" aria-pressed="${typography.font === option.id}">${option.label}</button>`).join("")}
+            </div>
+          </div>
+          <div class="settings-control-row">
+            <div><strong>字號</strong><small>目前 ${Math.round(typography.scale * 100)}%</small></div>
+            <div class="settings-stepper" role="group" aria-label="古典正文字號">
+              <button type="button" data-classical-size="-0.08" aria-label="縮小古典正文字號">A−</button>
+              <button class="settings-readout" type="button" data-classical-size-reset aria-label="古典字號還原為 100%">${Math.round(typography.scale * 100)}%</button>
+              <button type="button" data-classical-size="0.08" aria-label="放大古典正文字號">A+</button>
+            </div>
+          </div>
+          <div class="settings-control-row">
+            <div><strong>行距</strong><small>控制原文留白</small></div>
+            <div class="settings-segmented" role="group" aria-label="古典正文行距">
+              ${classicalLeadingOptions.map((option) => `
+                <button class="${typography.leading === option.value ? "is-active" : ""}" type="button" data-classical-leading="${option.value}" aria-pressed="${typography.leading === option.value}">${option.label}</button>`).join("")}
+            </div>
+          </div>
+          ${renderSettingsSwitch("showJyutping", "顯示古典粵拼", "詩、詞與古文預設顯示首個候選讀音", preferences.showJyutping !== false)}
+        </section>
+
+        <section class="settings-group" aria-labelledby="settings-cantonese-title">
+          <header><span aria-hidden="true">粵</span><div><p class="eyebrow">Cantonese</p><h3 id="settings-cantonese-title">粵語逐字稿</h3></div></header>
+          ${renderSettingsSwitch("showTranscriptJyutping", "顯示逐字稿粵拼", "有語料原注時優先使用，其他內容顯示自動候選", preferences.showTranscriptJyutping !== false)}
+          <div class="settings-control-row is-stacked">
+            <div><strong>打開故事時</strong><small>選擇逐字稿的預設閱讀方式</small></div>
+            <div class="settings-segmented transcript-settings" role="group" aria-label="逐字稿預設模式">
+              ${[["full", "全文"], ["reveal", "按需"], ["listen", "純聽"]].map(([value, label]) => `
+                <button class="${preferences.transcriptMode === value ? "is-active" : ""}" type="button" data-transcript-mode="${value}" aria-pressed="${preferences.transcriptMode === value}">${label}</button>`).join("")}
+            </div>
+          </div>
+        </section>
+
+        <section class="settings-group" aria-labelledby="settings-english-title">
+          <header><span class="settings-english-mark" aria-hidden="true">Aa</span><div><p class="eyebrow">English</p><h3 id="settings-english-title">English 閱讀</h3></div></header>
+          <div class="settings-control-row">
+            <div><strong>字號</strong><small>目前 ${Math.round(preferences.englishFontScale * 100)}%</small></div>
+            <div class="settings-stepper" role="group" aria-label="English 正文字號">
+              <button type="button" data-reader-font="-0.08" aria-label="縮小 English 正文字號">A−</button>
+              <output class="settings-readout">${Math.round(preferences.englishFontScale * 100)}%</output>
+              <button type="button" data-reader-font="0.08" aria-label="放大 English 正文字號">A+</button>
+            </div>
+          </div>
+          <div class="settings-control-row">
+            <div><strong>行距</strong><small>目前 ${preferences.englishLineHeight.toFixed(2)}</small></div>
+            <div class="settings-segmented" role="group" aria-label="English 正文行距">
+              ${englishLeadingOptions.map((option) => `
+                <button class="${preferences.englishLineHeight === option.value ? "is-active" : ""}" type="button" data-english-leading="${option.value}" aria-pressed="${preferences.englishLineHeight === option.value}">${option.label}</button>`).join("")}
+            </div>
+          </div>
+          ${renderSettingsSwitch("englishDark", "夜讀模式", "只改變 English 文章的閱讀紙色", preferences.englishDark === true)}
+        </section>
+
+        <section class="settings-group" aria-labelledby="settings-audio-title">
+          <header><span aria-hidden="true">聲</span><div><p class="eyebrow">Listening</p><h3 id="settings-audio-title">收聽速度</h3></div></header>
+          <div class="settings-control-row is-stacked">
+            <div><strong>預設播放速度</strong><small>真人原聲與本機粵語朗讀共用</small></div>
+            <div class="settings-segmented speed-settings" role="group" aria-label="預設播放速度">
+              ${playbackSpeedOptions.map((value) => `
+                <button class="${preferences.playbackSpeed === value ? "is-active" : ""}" type="button" data-speed="${value}" aria-pressed="${preferences.playbackSpeed === value}">${value}×</button>`).join("")}
+            </div>
+          </div>
+        </section>
+
+        ${renderLanguageSettingsGroup()}
+      </div>
+
+      <footer class="settings-footer">
+        <div><strong>想重新開始？</strong><span>只重設閱讀偏好，不會刪除收藏、筆記或進度。</span></div>
+        <button class="secondary-button" type="button" data-reset-settings>還原全部設定</button>
+      </footer>
+    </section>`;
+}
+
+function renderLibraryUtilityMenu(activePanel) {
+  const entries = [
+    { id: "settings", mark: "調", eyebrow: "Reading preferences", title: "設定", detail: "字體、間距、粵拼、夜讀與播放速度" },
+    { id: "about", mark: "關", eyebrow: "Sources & privacy", title: "關於 Leafbound", detail: "內容來源、授權、資料保存與第三方邊界" }
+  ];
+
+  return `
+    <nav class="library-utility-menu" aria-label="書房選項">
+      ${entries.map((entry) => `
+        <button class="library-utility-row ${activePanel === entry.id ? "is-active" : ""}" type="button" data-library-panel="${entry.id}"
+          aria-expanded="${activePanel === entry.id}" aria-controls="library-${entry.id}-panel">
+          <span class="library-utility-mark" aria-hidden="true">${entry.mark}</span>
+          <span class="library-utility-copy"><small>${entry.eyebrow}</small><strong>${entry.title}</strong><em>${entry.detail}</em></span>
+          <span class="library-utility-arrow" aria-hidden="true">${activePanel === entry.id ? "×" : "→"}</span>
+        </button>`).join("")}
+    </nav>`;
+}
+
 function renderLibrary() {
   const state = appStore.getState();
   const allItems = buildLibraryItems();
-  const viewingAbout = ui.libraryFilter === "about";
+  const activePanel = ["settings", "about"].includes(ui.libraryPanel) ? ui.libraryPanel : null;
   const visible = ui.libraryFilter === "all"
     ? allItems
     : ui.libraryFilter === "notes"
@@ -1637,8 +2004,7 @@ function renderLibrary() {
     ["poetry", "詩詞"],
     ["cantonese", "粵語"],
     ["english", "English"],
-    ["notes", "筆記"],
-    ["about", "關於"]
+    ["notes", "筆記"]
   ];
 
   return `
@@ -1657,17 +2023,23 @@ function renderLibrary() {
 
       <div class="privacy-note">
         <span>${icon("bookmark")}</span>
-        <p><strong>只屬於這部裝置。</strong> 所有收藏、筆記和進度目前只保存在瀏覽器，不會傳送到外部服務。</p>
+        <p><strong>內容只屬於這部裝置。</strong> 收藏、筆記和進度保存在瀏覽器本地；只有非敏感閱讀偏好會寫入本站 Cookie。</p>
         <button class="quiet-button" type="button" data-export-data>匯出備份</button>
       </div>
 
-      <div class="library-tabs" role="tablist" aria-label="Library 分類">
-        ${filters.map(([id, label]) => `
-          <button type="button" role="tab" class="${ui.libraryFilter === id ? "is-active" : ""}" data-library-filter="${id}" aria-selected="${ui.libraryFilter === id}">${label}</button>`).join("")}
-      </div>
+      ${renderLibraryUtilityMenu(activePanel)}
 
-      <div class="${viewingAbout ? "about-library-content" : "library-list"}">
-        ${viewingAbout ? renderAboutPanel() : visible.length ? visible.map((item) => `
+      ${activePanel ? `
+        <div class="library-panel-content page-enter">
+          ${activePanel === "settings" ? renderSettingsPanel() : renderAboutPanel()}
+        </div>` : `
+        <div class="library-tabs" role="tablist" aria-label="收藏分類">
+          ${filters.map(([id, label]) => `
+            <button type="button" role="tab" class="${ui.libraryFilter === id ? "is-active" : ""}" data-library-filter="${id}" aria-selected="${ui.libraryFilter === id}">${label}</button>`).join("")}
+        </div>
+
+        <div class="library-list">
+          ${visible.length ? visible.map((item) => `
           <article class="library-item">
             <div class="library-module module-${item.module}" aria-hidden="true">${item.module === "poetry" ? "詩" : item.module === "cantonese" ? "粵" : "EN"}</div>
             <button class="library-main" type="button" ${item.route ? `data-route="${item.route[0]}" data-route-id="${item.route[1]}"` : "disabled"}>
@@ -1685,12 +2057,7 @@ function renderLibrary() {
             <p>${allItems.length ? "到其他分類看看，或在閱讀時保存新的內容。" : "收藏一首詩、一個粵語詞，或在 English 文章中選取一段 phrase。"}</p>
             <button class="secondary-button" type="button" data-route="today">回到今日</button>
           </div>`}
-      </div>
-
-      ${viewingAbout ? "" : `<section class="language-shelf">
-        <div><span class="eyebrow">語言庫</span><h2>目前語言</h2></div>
-        <div class="language-list"><span>粵語 <small>Jyutping · Hong Kong</small></span><span>English <small>Latin · Global</small></span><button type="button" disabled title="第二階段開放">＋ 新增語言 <small>P1</small></button></div>
-      </section>`}
+        </div>`}
     </section>`;
 }
 
@@ -1805,6 +2172,8 @@ function renderOverlays() {
 }
 
 function render() {
+  poetryProgressCleanup?.();
+  poetryProgressCleanup = null;
   const route = parseRoute();
   recordRouteVisit(route);
   app.innerHTML = renderShell(route);
@@ -1856,7 +2225,11 @@ function afterRender(route) {
       progressTimer = window.setTimeout(() => {
         const max = Math.max(1, scroll.scrollHeight - scroll.clientHeight);
         const progress = Math.max(0, Math.min(100, (scroll.scrollTop / max) * 100));
-        appStore.update((state) => setProgressInState(state, "reading", articleId, progress), false);
+        const nextState = appStore.update((state) => {
+          const positioned = setProgressInState(state, "reading", articleId, progress);
+          return setContentProgressInState(positioned, "article", articleId, progress);
+        }, false);
+        syncContentStatusDom("article", articleId, getContentProgress(nextState, "article", articleId, progress));
         document.querySelector("[data-reader-progress-copy]")?.replaceChildren(document.createTextNode(`${Math.round(progress)}%`));
         const bar = document.querySelector("[data-reader-progress-bar]");
         if (bar) bar.style.width = `${progress}%`;
@@ -1864,11 +2237,18 @@ function afterRender(route) {
     });
   }
 
+  if (route.page === "poetry" && route.id) setupPoetryProgressTracking();
+
   if (route.page === "cantonese" && route.id) syncPlayerDom();
 
   const needsCantoneseLexicon = route.page === "cantonese" || (route.page === "poetry" && Boolean(route.id));
   if (needsCantoneseLexicon && cantoneseLexiconState.status === "idle") {
     loadCantoneseLexicon().then(() => render()).catch(() => render());
+  }
+
+  const needsEnglishDictionary = route.page === "english" && Boolean(route.id);
+  if (needsEnglishDictionary && englishDictionaryState.status === "idle") {
+    loadEnglishDictionary().then(() => render()).catch(() => render());
   }
 }
 
@@ -1876,6 +2256,29 @@ function toggleFavorite(key) {
   const wasFavorite = appStore.getState().favorites.includes(key);
   appStore.replace(toggleFavoriteInState(appStore.getState(), key));
   announce(wasFavorite ? "已取消收藏" : "已加入收藏");
+}
+
+function toggleContentSeen(key) {
+  const separator = key.indexOf(":");
+  if (separator < 1) return;
+  const kind = key.slice(0, separator);
+  const id = key.slice(separator + 1);
+  if (!id || !["poem", "article", "episode"].includes(kind)) return;
+  const state = appStore.getState();
+  let fallback = 0;
+  if (kind === "article") fallback = state.readingProgress[id] || 0;
+  if (kind === "episode") {
+    const episode = episodes.find((candidate) => candidate.id === id);
+    fallback = episode ? progressPercent(state.playbackProgress[id] || 0, episode.duration) : 0;
+  }
+  const wasSeen = getContentProgress(state, kind, id, fallback) >= SEEN_PROGRESS_THRESHOLD;
+  if (wasSeen && kind === "poem") window.scrollTo({ top: 0, behavior: "instant" });
+  if (wasSeen && kind === "episode" && player.episodeId === id) {
+    player.currentTime = 0;
+    if (player.audio) player.audio.currentTime = 0;
+  }
+  appStore.replace(setContentSeenInState(state, kind, id, !wasSeen));
+  announce(wasSeen ? "已標為未讀，之後可再次推薦" : "已標為已閱，之後會跳過推薦");
 }
 
 function saveNote(key) {
@@ -1892,6 +2295,22 @@ function saveNote(key) {
     return state;
   });
   announce(content ? "筆記已保存" : "空白筆記已移除");
+}
+
+function selectEnglishWord(args) {
+  const selected = lookupEnglishWord(args);
+  ui.selectedEnglishItem = selected;
+  const expectedLookupKey = selected.lookupKey;
+  if (englishDictionaryState.status !== "ready") {
+    loadEnglishDictionary().then(() => {
+      if (ui.selectedEnglishItem?.lookupKey !== expectedLookupKey) return;
+      ui.selectedEnglishItem = lookupEnglishWord(args);
+      render();
+    }).catch(() => {
+      if (ui.selectedEnglishItem?.lookupKey === expectedLookupKey) render();
+    });
+  }
+  return selected;
 }
 
 function togglePoetryLine(reference) {
@@ -1963,7 +2382,11 @@ function persistCurrentReaderProgress() {
   const articleId = scroll.dataset.readerScroll;
   const max = Math.max(1, scroll.scrollHeight - scroll.clientHeight);
   const progress = Math.max(0, Math.min(100, (scroll.scrollTop / max) * 100));
-  appStore.update((state) => setProgressInState(state, "reading", articleId, progress), false);
+  const nextState = appStore.update((state) => {
+    const positioned = setProgressInState(state, "reading", articleId, progress);
+    return setContentProgressInState(positioned, "article", articleId, progress);
+  }, false);
+  syncContentStatusDom("article", articleId, getContentProgress(nextState, "article", articleId, progress));
 }
 
 function speakEnglishLookup() {
@@ -2116,7 +2539,13 @@ function speakCurrentSegment(force = false) {
 
 function persistPlayerProgress() {
   if (!player.episodeId) return;
-  appStore.update((state) => setProgressInState(state, "playback", player.episodeId, player.currentTime), false);
+  const episode = findEpisode(player.episodeId);
+  const progress = progressPercent(player.currentTime, effectiveEpisodeDuration(episode));
+  const nextState = appStore.update((state) => {
+    const positioned = setProgressInState(state, "playback", player.episodeId, player.currentTime);
+    return setContentProgressInState(positioned, "episode", player.episodeId, progress);
+  }, false);
+  syncContentStatusDom("episode", player.episodeId, getContentProgress(nextState, "episode", player.episodeId, progress));
 }
 
 function syncPlayerDom() {
@@ -2243,12 +2672,16 @@ app.addEventListener("click", (event) => {
     ui.selectedEnglishItem = null;
     ui.selectedText = null;
     ui.classicalTypographyOpen = false;
+    if (routeButton.dataset.route !== "library" || parseRoute().page === "library") ui.libraryPanel = null;
     routeTo(routeButton.dataset.route, routeButton.dataset.routeId || null);
     return;
   }
 
   const favorite = event.target.closest("[data-toggle-favorite]");
   if (favorite) return toggleFavorite(favorite.dataset.toggleFavorite);
+
+  const contentSeen = event.target.closest("[data-toggle-content-seen]");
+  if (contentSeen) return toggleContentSeen(contentSeen.dataset.toggleContentSeen);
 
   if (event.target.closest("[data-open-search]")) {
     ui.searchOpen = true;
@@ -2323,6 +2756,29 @@ app.addEventListener("click", (event) => {
   if (event.target.closest("[data-load-more-poetry]")) {
     ui.poetryLimit += 24;
     render();
+    return;
+  }
+
+  const settingToggle = event.target.closest("[data-setting-toggle]");
+  if (settingToggle) {
+    const key = settingToggle.dataset.settingToggle;
+    if (!["showJyutping", "showTranscriptJyutping", "englishDark"].includes(key)) return;
+    ui.focusTarget = `[data-setting-toggle="${key}"]`;
+    appStore.update((state) => {
+      state.preferences[key] = !state.preferences[key];
+      return state;
+    });
+    announce(`${settingToggle.querySelector("strong")?.textContent || "設定"}已${appStore.getState().preferences[key] ? "開啟" : "關閉"}`);
+    return;
+  }
+  if (event.target.closest("[data-reset-settings]")) {
+    ui.focusTarget = "[data-reset-settings]";
+    appStore.update((state) => {
+      state.preferences = createDefaultPreferences();
+      return state;
+    });
+    if (player.audio) player.audio.playbackRate = 1;
+    announce("已還原全部閱讀設定");
     return;
   }
 
@@ -2441,7 +2897,7 @@ app.addEventListener("click", (event) => {
   const cantoneseLevel = event.target.closest("[data-cantonese-level]");
   if (cantoneseLevel) {
     ui.cantoneseLevel = cantoneseLevel.dataset.cantoneseLevel;
-    if (ui.sourceFilter !== "全部" && ui.sourceFilter !== "hbl") ui.sourceFilter = "hbl";
+    if (ui.cantoneseLevel !== "全部") ui.sourceFilter = "hbl";
     render();
     return;
   }
@@ -2499,6 +2955,8 @@ app.addEventListener("click", (event) => {
   const speedButton = event.target.closest("[data-speed]");
   if (speedButton) {
     const nextSpeed = Number(speedButton.dataset.speed);
+    if (!playbackSpeedOptions.includes(nextSpeed)) return;
+    ui.focusTarget = `[data-speed="${speedButton.dataset.speed}"]`;
     appStore.update((state) => {
       state.preferences.playbackSpeed = nextSpeed;
       return state;
@@ -2554,7 +3012,7 @@ app.addEventListener("click", (event) => {
     const offset = Number(wordButton.dataset.wordOffset);
     persistCurrentReaderProgress();
     ui.notePanel = null;
-    ui.selectedEnglishItem = lookupEnglishWord({
+    selectEnglishWord({
       word: wordButton.dataset.englishWord,
       articleId,
       paragraph: article.paragraphs[paragraphIndex],
@@ -2599,8 +3057,20 @@ app.addEventListener("click", (event) => {
 
   const fontButton = event.target.closest("[data-reader-font]");
   if (fontButton) {
+    ui.focusTarget = `[data-reader-font="${fontButton.dataset.readerFont}"]`;
     appStore.update((state) => {
       state.preferences.englishFontScale = Math.max(0.84, Math.min(1.32, state.preferences.englishFontScale + Number(fontButton.dataset.readerFont)));
+      return state;
+    });
+    return;
+  }
+  const englishLeading = event.target.closest("[data-english-leading]");
+  if (englishLeading) {
+    const nextLeading = Number(englishLeading.dataset.englishLeading);
+    if (!englishLeadingOptions.some((option) => option.value === nextLeading)) return;
+    ui.focusTarget = `[data-english-leading="${englishLeading.dataset.englishLeading}"]`;
+    appStore.update((state) => {
+      state.preferences.englishLineHeight = nextLeading;
       return state;
     });
     return;
@@ -2621,8 +3091,18 @@ app.addEventListener("click", (event) => {
     return;
   }
 
+  const libraryPanel = event.target.closest("[data-library-panel]");
+  if (libraryPanel) {
+    const nextPanel = libraryPanel.dataset.libraryPanel;
+    if (!["settings", "about"].includes(nextPanel)) return;
+    ui.libraryPanel = ui.libraryPanel === nextPanel ? null : nextPanel;
+    ui.focusTarget = ui.libraryPanel ? `#library-${nextPanel}-panel` : `[data-library-panel="${nextPanel}"]`;
+    render();
+    return;
+  }
   const libraryFilter = event.target.closest("[data-library-filter]");
   if (libraryFilter) {
+    ui.libraryPanel = null;
     ui.libraryFilter = libraryFilter.dataset.libraryFilter;
     render();
     return;
@@ -2670,7 +3150,7 @@ app.addEventListener("pointerup", (event) => {
     persistCurrentReaderProgress();
     ui.notePanel = null;
     if (/^[A-Za-z]+(?:[’'][A-Za-z]+)*(?:-[A-Za-z]+)$/.test(text)) {
-      ui.selectedEnglishItem = lookupEnglishWord({ word: text, articleId, paragraph, paragraphIndex, offset });
+      selectEnglishWord({ word: text, articleId, paragraph, paragraphIndex, offset });
       ui.selectedText = null;
     } else {
       ui.selectedText = {
@@ -2707,6 +3187,10 @@ document.addEventListener("keydown", (event) => {
     } else if (ui.classicalTypographyOpen) {
       ui.classicalTypographyOpen = false;
       ui.focusTarget = "[data-toggle-classical-typography]";
+    } else if (ui.libraryPanel && parseRoute().page === "library") {
+      const previousPanel = ui.libraryPanel;
+      ui.libraryPanel = null;
+      ui.focusTarget = `[data-library-panel="${previousPanel}"]`;
     } else return;
     render();
   }
@@ -2719,6 +3203,7 @@ window.addEventListener("hashchange", () => {
   ui.selectedText = null;
   ui.notePanel = null;
   ui.classicalTypographyOpen = false;
+  if (route.page !== "library") ui.libraryPanel = null;
   window.scrollTo({ top: 0, behavior: "instant" });
   render();
 });

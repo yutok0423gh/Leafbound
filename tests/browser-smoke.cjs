@@ -70,12 +70,17 @@ async function auditViewport(browser, spec) {
           ".english-source-reset",
           ".english-category-tabs button",
           ".library-tabs button",
+          ".library-utility-row",
+          ".settings-segmented button",
+          ".settings-stepper button",
+          ".settings-switch",
           ".mode-switch button",
           ".voice-edge-link",
           ".voice-settings-link",
           ".voice-refresh-button",
           ".reveal-line",
-          ".poem-thread-mobile"
+          ".poem-thread-mobile",
+          ".reading-state-toggle"
         ].join(",");
         const targetHeights = [...document.querySelectorAll(targetSelector)]
           .filter((element) => element.getClientRects().length && !element.disabled)
@@ -107,6 +112,106 @@ async function auditViewport(browser, spec) {
     ...primaryMetrics,
     maxOverflow: Math.max(...Object.values(overflows)),
     overflows
+  };
+}
+
+async function auditReadingStatus(browser) {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await context.newPage();
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto(`${baseUrl}/#today`, { waitUntil: "networkidle" });
+  const before = await page.locator(".today-view").evaluate((node) => ({
+    poem: node.querySelector("[data-daily-poem]")?.dataset.dailyPoem,
+    article: node.querySelector("[data-daily-article]")?.dataset.dailyArticle,
+    episode: node.querySelector("[data-daily-episode]")?.dataset.dailyEpisode
+  }));
+  await page.evaluate((selection) => {
+    const key = "leafbound.personal-library.v1";
+    const state = JSON.parse(localStorage.getItem(key));
+    state.contentActivity ||= {};
+    for (const [kind, id] of Object.entries(selection)) {
+      state.contentActivity[`${kind}:${id}`] = {
+        maxProgress: 50,
+        status: "seen",
+        seenAt: "2026-08-21T00:00:00.000Z",
+        updatedAt: "2026-08-21T00:00:00.000Z"
+      };
+    }
+    localStorage.setItem(key, JSON.stringify(state));
+  }, before);
+  await page.reload({ waitUntil: "networkidle" });
+  const after = await page.locator(".today-view").evaluate((node) => ({
+    poem: node.querySelector("[data-daily-poem]")?.dataset.dailyPoem,
+    article: node.querySelector("[data-daily-article]")?.dataset.dailyArticle,
+    episode: node.querySelector("[data-daily-episode]")?.dataset.dailyEpisode
+  }));
+
+  await page.goto(`${baseUrl}/#english/quiet-noticing`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(100);
+  await page.locator("[data-reader-scroll]").evaluate((node) => {
+    node.scrollTop = (node.scrollHeight - node.clientHeight) * 0.62;
+    node.dispatchEvent(new Event("scroll", { bubbles: true }));
+  });
+  await page.waitForTimeout(250);
+  const article = await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem("leafbound.personal-library.v1"));
+    return state.contentActivity["article:quiet-noticing"];
+  });
+  const articlePressed = await page.locator('[data-content-status-key="article:quiet-noticing"]').getAttribute("aria-pressed");
+  await page.goto(`${baseUrl}/#english`, { waitUntil: "networkidle" });
+  const articleRow = page.locator(".article-row", { has: page.locator('[data-route-id="quiet-noticing"]') });
+  const articleMarked = await articleRow.locator(".article-status").textContent();
+  await page.screenshot({ path: path.join(artifactDir, "reading-status-desktop.png"), fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: path.join(artifactDir, "reading-status-mobile.png"), fullPage: true });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`${baseUrl}/#english/quiet-noticing`, { waitUntil: "networkidle" });
+  await page.locator('[data-content-status-key="article:quiet-noticing"]').click();
+  const articleReset = await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem("leafbound.personal-library.v1"));
+    return (state.contentActivity["article:quiet-noticing"]?.maxProgress || 0) < 50 && state.readingProgress["quiet-noticing"] === 0;
+  });
+
+  const proseId = "open-guwen-f6f950bb029e161d839c";
+  await page.goto(`${baseUrl}/#poetry/${proseId}`, { waitUntil: "networkidle" });
+  await page.waitForSelector('[data-lexicon-status="ready"]');
+  await page.evaluate(() => window.scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * 0.72));
+  await page.waitForTimeout(250);
+  const poem = await page.evaluate((id) => {
+    const state = JSON.parse(localStorage.getItem("leafbound.personal-library.v1"));
+    return state.contentActivity[`poem:${id}`];
+  }, proseId);
+  const poemPressed = await page.locator(`[data-content-status-key="poem:${proseId}"]`).getAttribute("aria-pressed");
+  await page.locator(`[data-content-status-key="poem:${proseId}"]`).click();
+  const poemReset = await page.evaluate((id) => {
+    const state = JSON.parse(localStorage.getItem("leafbound.personal-library.v1"));
+    return (state.contentActivity[`poem:${id}`]?.maxProgress || 0) < 50;
+  }, proseId);
+
+  const episodeId = "hkcancor-m";
+  await page.goto(`${baseUrl}/#cantonese/${episodeId}`, { waitUntil: "networkidle" });
+  await page.locator("[data-player-seek]").evaluate((node) => {
+    node.value = String(Number(node.max) * 0.62);
+    node.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await page.waitForTimeout(100);
+  const episode = await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem("leafbound.personal-library.v1"));
+    return state.contentActivity["episode:hkcancor-m"];
+  });
+  const episodePressed = await page.locator(`[data-content-status-key="episode:${episodeId}"]`).getAttribute("aria-pressed");
+  await page.locator(`[data-content-status-key="episode:${episodeId}"]`).click();
+  const episodeReset = await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem("leafbound.personal-library.v1"));
+    return (state.contentActivity["episode:hkcancor-m"]?.maxProgress || 0) < 50 && state.playbackProgress["hkcancor-m"] === 0;
+  });
+
+  await context.close();
+  return {
+    dailySkipped: before.poem !== after.poem && before.article !== after.article && before.episode !== after.episode,
+    article: { status: article?.status, progress: article?.maxProgress, pressed: articlePressed, marked: articleMarked, reset: articleReset },
+    poem: { status: poem?.status, progress: poem?.maxProgress, pressed: poemPressed, reset: poemReset },
+    episode: { status: episode?.status, progress: episode?.maxProgress, pressed: episodePressed, reset: episodeReset }
   };
 }
 
@@ -285,8 +390,14 @@ async function auditViewport(browser, spec) {
   result.cantoneseLexiconNoticeCount = await page.locator(".cantonese-lexicon-note").count();
   result.cantoneseSources = await page.locator(".cantonese-source-card").count();
   result.cantoneseLevels = await page.locator("[data-cantonese-level]").count();
+  result.cantoneseLevelLabels = await page.locator(".cantonese-level-ladder strong").allTextContents();
   result.cantoneseShelfText = await page.locator(".cantonese-source-shelf").textContent();
   result.episodes = await page.locator(".episode-row").count();
+  await page.screenshot({ path: path.join(artifactDir, "cantonese-index-desktop.png"), fullPage: true });
+  await page.locator('[data-cantonese-level="entry"]').click();
+  result.cantoneseEntryEpisodes = await page.locator(".episode-row").count();
+  await page.locator('[data-cantonese-level="全部"]').click();
+  await page.locator('[data-source-filter="全部"]').click();
   await page.locator(".episode-main").first().click();
   await page.waitForFunction(() => document.querySelector("[data-cantonese-voice-status]")?.dataset.cantoneseVoiceStatus !== "checking", undefined, { timeout: 3500 });
   result.cantoneseVoiceStatus = await page.locator("[data-cantonese-voice-status]").first().getAttribute("data-cantonese-voice-status");
@@ -337,6 +448,10 @@ async function auditViewport(browser, spec) {
   await page.getByRole("button", { name: "English", exact: true }).click();
   result.englishMethodNoteCount = await page.locator(".english-method-note").count();
   result.englishSources = await page.locator("[data-english-source]:not(.english-source-reset)").count();
+  result.englishNewsDesks = await page.locator(".english-news-desk").count();
+  result.englishNewsDeskNames = (await page.locator(".english-news-desk strong").allTextContents()).join("|");
+  result.englishNewsDeskTargets = await page.locator('.english-news-desk[target="_blank"]').count();
+  result.englishNewsBoundary = await page.locator(".english-news-disclaimer").textContent();
   result.englishCategories = await page.locator("[data-english-category]").count();
   result.englishImportedRows = await page.locator('.article-row.is-internal:not([data-english-source-row="local"])').count();
   result.englishExternalRows = await page.locator(".article-row.is-external").count();
@@ -371,17 +486,70 @@ async function auditViewport(browser, spec) {
   await page.locator(".phrase-mark").first().click();
   await page.getByRole("button", { name: "加入我的詞庫" }).click();
 
+  await page.goto(`${baseUrl}/#english/phrases-carry`, { waitUntil: "networkidle" });
+  await page.locator('[data-english-word="encounters"]').click();
+  result.englishOpenDictionaryMeaning = await page.locator(".lookup-meaning p").textContent();
+  result.englishOpenDictionaryMeta = await page.locator(".lookup-meta").textContent();
+  result.englishOpenDictionaryUses = (await page.locator(".lookup-common-uses li").allTextContents()).join(" · ");
+  result.englishOpenDictionarySenses = await page.locator(".lookup-dictionary-senses li").count();
+  await page.locator(".lookup-dictionary-senses summary").click();
+  result.englishOpenDictionaryExpanded = await page.locator(".lookup-dictionary-senses").getAttribute("open");
+  await page.screenshot({ path: path.join(artifactDir, "english-open-dictionary-desktop.png"), fullPage: true });
+
   await page.getByRole("button", { name: "我的", exact: true }).click();
   result.libraryItems = await page.locator(".library-item").count();
+  result.libraryLanguageListCount = await page.locator(".language-list").count();
   result.savedPoetryQuotes = await page.locator(".library-item", { hasText: "空山新雨後" }).count();
+  result.libraryContentTabs = await page.locator('.library-tabs [role="tab"]').count();
+  result.libraryAboutTabCount = await page.getByRole("tab", { name: "關於" }).count();
+  result.libraryUtilityRows = await page.locator(".library-utility-row").count();
   await page.screenshot({ path: path.join(artifactDir, "library-desktop.png"), fullPage: true });
-  await page.getByRole("tab", { name: "關於" }).click();
+  await page.locator('[data-library-panel="about"]').click();
   result.aboutVisible = await page.locator(".about-panel").isVisible();
   result.aboutSourceText = await page.locator(".about-panel").textContent();
   result.aboutSourceLinks = await page.locator(".about-source-links a").count();
   await page.screenshot({ path: path.join(artifactDir, "library-about-desktop.png"), fullPage: true });
-  await page.getByRole("tab", { name: "全部" }).click();
+
+  await page.locator('[data-library-panel="about"]').click();
+  result.libraryItemsAfterAboutClose = await page.locator(".library-item").count();
+  await page.locator('[data-library-panel="settings"]').click();
+  result.settingsVisible = await page.locator(".settings-panel").isVisible();
+  result.settingsGroups = await page.locator(".settings-group").count();
+  result.settingsLanguageGroup = await page.locator(".settings-language-group").isVisible();
+  result.settingsCookieStatus = await page.locator(".settings-cookie-note").getAttribute("data-cookie-status");
+  await page.locator('[data-setting-toggle="englishDark"]').click();
+  await page.locator('[data-english-leading="2"]').click();
+  await page.locator('[data-speed="1.5"]').click();
+  result.preferenceCookie = await page.evaluate(() => document.cookie.includes("leafbound_preferences_v1="));
+  result.cookieContainsPrivateContent = await page.evaluate(() => {
+    const entry = document.cookie.split(";").map((part) => part.trim()).find((part) => part.startsWith("leafbound_preferences_v1="));
+    if (!entry) return true;
+    const value = JSON.parse(decodeURIComponent(entry.slice(entry.indexOf("=") + 1)));
+    return ["favorites", "savedItems", "notes", "readingProgress", "playbackProgress", "contentActivity", "history"].some((key) => key in value);
+  });
+  await page.screenshot({ path: path.join(artifactDir, "library-settings-desktop.png"), fullPage: true });
+  await page.evaluate(() => {
+    const key = "leafbound.personal-library.v1";
+    const state = JSON.parse(localStorage.getItem(key));
+    state.preferences.englishDark = false;
+    state.preferences.englishLineHeight = 1.58;
+    state.preferences.playbackSpeed = 1;
+    localStorage.setItem(key, JSON.stringify(state));
+  });
   await page.reload({ waitUntil: "networkidle" });
+  await page.locator('[data-library-panel="settings"]').click();
+  result.settingsPersisted = {
+    englishDark: await page.locator('[data-setting-toggle="englishDark"]').getAttribute("aria-checked"),
+    englishLeading: await page.locator('[data-english-leading="2"]').getAttribute("aria-pressed"),
+    playbackSpeed: await page.locator('[data-speed="1.5"]').getAttribute("aria-pressed")
+  };
+  await page.locator("[data-reset-settings]").click();
+  result.settingsReset = {
+    englishDark: await page.locator('[data-setting-toggle="englishDark"]').getAttribute("aria-checked"),
+    englishLeading: await page.locator('[data-english-leading="1.78"]').getAttribute("aria-pressed"),
+    playbackSpeed: await page.locator('[data-speed="1"]').getAttribute("aria-pressed")
+  };
+  await page.locator('[data-library-panel="settings"]').click();
   result.persistedLibraryItems = await page.locator(".library-item").count();
   result.persistedNote = await page.getByRole("tab", { name: "筆記" }).click().then(async () => page.locator(".library-item").count());
 
@@ -429,9 +597,15 @@ async function auditViewport(browser, spec) {
   result.mobileEnglishLookupVisible = await mobile.locator(".english-lookup-card").isVisible();
   result.mobileEnglishOverflow = await mobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   await mobile.screenshot({ path: path.join(artifactDir, "english-reader-mobile.png") });
+  await mobile.goto(`${baseUrl}/#english/phrases-carry`, { waitUntil: "networkidle" });
+  await mobile.locator('[data-english-word="encounters"]').click();
+  result.mobileOpenDictionaryMeaning = await mobile.locator(".lookup-meaning p").textContent();
+  result.mobileOpenDictionaryOverflow = await mobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  await mobile.screenshot({ path: path.join(artifactDir, "english-open-dictionary-mobile.png") });
   await mobile.goto(`${baseUrl}/#english`, { waitUntil: "networkidle" });
   result.mobileEnglishIndexOverflow = await mobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   result.mobileEnglishSources = await mobile.locator(".english-source-card").count();
+  result.mobileEnglishNewsDesks = await mobile.locator(".english-news-desk").count();
   await mobile.screenshot({ path: path.join(artifactDir, "english-index-mobile.png"), fullPage: true });
   await mobile.locator('[data-english-source="nasa"]').click();
   await mobile.locator('.article-row.is-internal .article-main').first().click();
@@ -439,9 +613,18 @@ async function auditViewport(browser, spec) {
   result.mobileImportedSourceNote = await mobile.locator(".article-source-note").isVisible();
   await mobile.screenshot({ path: path.join(artifactDir, "english-imported-reader-mobile.png") });
   await mobile.goto(`${baseUrl}/#library`, { waitUntil: "networkidle" });
-  await mobile.getByRole("tab", { name: "關於" }).click();
+  result.mobileLibraryLanguageListCount = await mobile.locator(".language-list").count();
+  await mobile.screenshot({ path: path.join(artifactDir, "library-mobile.png"), fullPage: true });
+  await mobile.locator('[data-library-panel="about"]').click();
   result.mobileAboutOverflow = await mobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   await mobile.screenshot({ path: path.join(artifactDir, "library-about-mobile.png"), fullPage: true });
+  await mobile.locator('[data-library-panel="about"]').click();
+  await mobile.locator('[data-library-panel="settings"]').click();
+  result.mobileSettingsOverflow = await mobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  result.mobileSettingsControls = await mobile.locator(".settings-group").count();
+  result.mobileSettingsLanguageGroup = await mobile.locator(".settings-language-group").isVisible();
+  await mobile.screenshot({ path: path.join(artifactDir, "library-settings-mobile.png"), fullPage: true });
+  result.readingStatus = await auditReadingStatus(browser);
   result.responsive = {};
   for (const spec of [
     { name: "phone-narrow", width: 320, height: 568, route: "#poetry", touch: true },
@@ -525,9 +708,11 @@ async function auditViewport(browser, spec) {
     || result.openPoemTermSourceLink !== 1
     || result.cantoneseLexiconNoticeCount !== 0
     || result.cantoneseSources !== 3
-    || result.cantoneseLevels !== 8
+    || result.cantoneseLevels !== 4
+    || result.cantoneseLevelLabels.join("|") !== "全部|入門|進階|長篇"
+    || result.cantoneseEntryEpisodes !== 16
     || !result.cantoneseShelfText.includes("208")
-    || result.episodes !== 36
+    || result.episodes !== 64
     || result.dynamicTranscriptTerms < 1
     || result.dynamicTermSourceLink !== 1
     || result.hblJyutpingLines < 2
@@ -546,12 +731,19 @@ async function auditViewport(browser, spec) {
     || result.mobileGuwenTypographyPanelOverflow !== 0
     || result.mobileGuwenTypographyOverflow !== 0
     || result.mobileEnglishOverflow !== 0
+    || result.mobileOpenDictionaryOverflow !== 0
+    || !/遇見|相遇|碰到|遭遇/.test(result.mobileOpenDictionaryMeaning)
     || result.mobileEnglishIndexOverflow !== 0
     || result.mobileImportedEnglishOverflow !== 0
     || result.mobileEnglishSources !== 4
+    || result.mobileEnglishNewsDesks !== 8
     || !result.mobileImportedSourceNote
     || !result.mobileEnglishLookupVisible
     || result.englishSources !== 4
+    || result.englishNewsDesks !== 8
+    || !["AP", "Reuters", "Guardian", "CNN", "RFI", "Economist", "Global Voices", "Open Newswire"].every((source) => result.englishNewsDeskNames.split("|").includes(source))
+    || result.englishNewsDeskTargets !== 8
+    || !result.englishNewsBoundary.includes("沒有授權的全文不會複製")
     || result.englishMethodNoteCount !== 0
     || result.englishCategories !== 6
     || result.englishImportedRows < 12
@@ -569,6 +761,16 @@ async function auditViewport(browser, spec) {
     || !result.englishCommonUses.includes("almost imperceptibly")
     || result.englishPronunciationControl !== 1
     || !result.savedEnglishWordMarked.includes("is-saved")
+    || !/遇見|相遇|碰到|遭遇/.test(result.englishOpenDictionaryMeaning)
+    || !result.englishOpenDictionaryMeta.includes("原形 encounter")
+    || !result.englishOpenDictionaryUses.includes("encounter difficulties")
+    || result.englishOpenDictionarySenses < 2
+    || result.englishOpenDictionaryExpanded == null
+    || result.libraryContentTabs !== 5
+    || result.libraryAboutTabCount !== 0
+    || result.libraryUtilityRows !== 2
+    || result.libraryLanguageListCount !== 0
+    || result.libraryItemsAfterAboutClose !== result.libraryItems
     || !result.aboutVisible
     || !result.aboutSourceText.includes("宋詞三百首")
     || !result.aboutSourceText.includes("古文觀止")
@@ -578,13 +780,46 @@ async function auditViewport(browser, spec) {
     || !result.aboutSourceText.includes("6 個官方訂閱源")
     || !result.aboutSourceText.includes("Standard Ebooks")
     || !result.aboutSourceText.includes("HKCanCor")
-    || !result.aboutSourceText.includes("28 篇")
+    || !result.aboutSourceText.includes("56 篇")
     || !result.aboutSourceText.includes("208 篇")
-    || result.aboutSourceLinks !== 13
+    || !result.aboutSourceText.includes("Chinese Open Wordnet")
+    || !result.aboutSourceText.includes("FreeDict")
+    || !result.aboutSourceText.includes("3,603")
+    || result.aboutSourceLinks !== 15
+    || !result.settingsVisible
+    || result.settingsGroups !== 5
+    || !result.settingsLanguageGroup
+    || result.settingsCookieStatus !== "remembered"
+    || !result.preferenceCookie
+    || result.cookieContainsPrivateContent
+    || result.settingsPersisted.englishDark !== "true"
+    || result.settingsPersisted.englishLeading !== "true"
+    || result.settingsPersisted.playbackSpeed !== "true"
+    || result.settingsReset.englishDark !== "false"
+    || result.settingsReset.englishLeading !== "true"
+    || result.settingsReset.playbackSpeed !== "true"
     || result.persistedLibraryItems < 5
     || (result.cantoneseAudioKind === "local" ? !result.playbackAdvanced : result.cantoneseVoiceStatus === "available" ? !result.playbackAdvanced : !result.fallbackBlocked)
     || result.searchResults < 1
+    || result.mobileLibraryLanguageListCount !== 0
     || result.mobileAboutOverflow !== 0
+    || result.mobileSettingsOverflow !== 0
+    || result.mobileSettingsControls !== 5
+    || !result.mobileSettingsLanguageGroup
+    || !result.readingStatus.dailySkipped
+    || result.readingStatus.article.status !== "seen"
+    || result.readingStatus.article.progress < 50
+    || result.readingStatus.article.pressed !== "true"
+    || !result.readingStatus.article.marked.includes("已閱")
+    || !result.readingStatus.article.reset
+    || result.readingStatus.poem.status !== "seen"
+    || result.readingStatus.poem.progress < 50
+    || result.readingStatus.poem.pressed !== "true"
+    || !result.readingStatus.poem.reset
+    || result.readingStatus.episode.status !== "seen"
+    || result.readingStatus.episode.progress < 50
+    || result.readingStatus.episode.pressed !== "true"
+    || !result.readingStatus.episode.reset
     || Object.values(result.responsive).some((viewport) => viewport.maxOverflow !== 0)
     || result.responsive["phone-narrow"].navOrientation !== "horizontal"
     || result.responsive["phone-narrow"].navRect.width !== 320

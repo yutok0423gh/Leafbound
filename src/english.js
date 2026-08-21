@@ -1,3 +1,38 @@
+import { englishDictionarySnapshot } from "./open-english-dictionary-meta.js";
+
+let openEnglishDictionary = Object.freeze({});
+let englishDictionaryPromise = null;
+
+export { englishDictionarySnapshot };
+
+export const englishDictionaryState = {
+  status: "idle",
+  entryCount: 0,
+  error: null
+};
+
+export function loadEnglishDictionary() {
+  if (englishDictionaryState.status === "ready") return Promise.resolve(openEnglishDictionary);
+  if (englishDictionaryPromise) return englishDictionaryPromise;
+
+  englishDictionaryState.status = "loading";
+  englishDictionaryState.error = null;
+  englishDictionaryPromise = import("./open-english-dictionary.js")
+    .then((module) => {
+      openEnglishDictionary = module.openEnglishDictionary || Object.freeze({});
+      englishDictionaryState.status = "ready";
+      englishDictionaryState.entryCount = Object.keys(openEnglishDictionary).length;
+      return openEnglishDictionary;
+    })
+    .catch((error) => {
+      englishDictionaryState.status = "error";
+      englishDictionaryState.error = error;
+      englishDictionaryPromise = null;
+      throw error;
+    });
+  return englishDictionaryPromise;
+}
+
 const QUIET_NOTICING_GLOSSES = parseGlosses(`
 a	一個；一種
 active	主動的；積極的
@@ -240,14 +275,51 @@ writer	作者
 yet	然而；仍然
 `);
 
+const GENERAL_ENGLISH_GLOSSES = parseGlosses(`
+can't	不能；無法
+cannot	不能；無法
+carefully	小心地；仔細地
+could	可以；可能；能夠（can 的過去式或較委婉說法）
+couldn't	不能；無法
+deployment	部署；調配
+didn't	沒有；並未
+died	去世；死亡
+doesn't	不；沒有
+energy-efficient	節能的；能源效率高的
+flexibility	彈性；靈活性
+fluent	流利的；流暢的
+haven't	尚未；沒有
+high-altitude	高海拔的；高空的
+i'll	我會；我將會
+i'm	我是；我正……
+i've	我已經；我曾經
+isn't	不是；並非
+life-saving	救命的；挽救生命的
+ongoing	持續進行中的
+particularly	尤其；特別
+seismic	地震的；由地震引起的
+sustained	持續的；維持的
+wasn't	不是；當時沒有
+we'll	我們會；我們將會
+we're	我們是；我們正……
+we've	我們已經；我們曾經
+weren't	不是；當時沒有
+women	女性；婦女（woman 的複數）
+won't	不會；將不會
+`);
+
 const RICH_ENTRIES = Object.freeze({
   attention: { lemma: "attention", partOfSpeech: "noun", pronunciation: "/əˈtenʃən/", definition: "the act of deliberately noticing or concentrating", usage: "這裡不是短暫看見，而是把注意力主動留在某件事上。" },
   audible: { lemma: "audible", partOfSpeech: "adjective", pronunciation: "/ˈɔːdəbəl/", definition: "clear enough to be heard" },
   blur: { lemma: "blur", partOfSpeech: "noun", pronunciation: "/blɜːr/", definition: "a state in which details lose their sharpness", usage: "文中指籠統印象令細節變得模糊。" },
   brief: { lemma: "brief", partOfSpeech: "adjective", pronunciation: "/briːf/", definition: "lasting only a short time" },
+  could: { lemma: "could", partOfSpeech: "modal verb", pronunciation: "/kʊd/", definition: "used for past ability, possibility, or a polite request", dictionarySenses: [], dictionaryExamples: [] },
   demand: { lemma: "demand", partOfSpeech: "noun", pronunciation: "/dɪˈmænd/", definition: "a forceful request or need", usage: "make no demand on us 表示不強求我們注意。" },
+  died: { lemma: "die", partOfSpeech: "verb", pronunciation: "/daɪd/", definition: "stopped living; passed away", dictionarySenses: [{ partOfSpeech: "verb", meaning: "去世；死亡", definition: "to stop living", example: "" }] },
+  encounters: { lemma: "encounter", partOfSpeech: "verb", pronunciation: "/ɪnˈkaʊntərz/", definition: "to meet or experience something, especially an unexpected or difficult situation" },
   distinguish: { lemma: "distinguish", partOfSpeech: "verb", pronunciation: "/dɪˈstɪŋɡwɪʃ/", definition: "to recognise the difference between things" },
   emphasis: { lemma: "emphasis", partOfSpeech: "noun", pronunciation: "/ˈemfəsɪs/", definition: "extra force given to a sound, word, or idea" },
+  fluent: { lemma: "fluent", partOfSpeech: "adjective", pronunciation: "/ˈfluːənt/", definition: "able to speak or write smoothly and easily" },
   hesitation: { lemma: "hesitation", partOfSpeech: "noun", pronunciation: "/ˌhezɪˈteɪʃən/", definition: "a pause caused by uncertainty" },
   headline: { lemma: "headline", partOfSpeech: "noun", pronunciation: "/ˈhedlaɪn/", definition: "the title printed above a news story" },
   imperceptibly: { lemma: "imperceptible", partOfSpeech: "adverb", pronunciation: "/ˌɪmpərˈseptəbli/", definition: "so slightly that the change is almost impossible to notice", usage: "修飾 changing，強調變化細微到幾乎察覺不到。" },
@@ -271,7 +343,8 @@ const RICH_ENTRIES = Object.freeze({
   sharpened: { lemma: "sharpen", partOfSpeech: "verb", pronunciation: "/ˈʃɑːrpənd/", definition: "became clearer, stronger, or more sensitive" },
   sustainable: { lemma: "sustainable", partOfSpeech: "adjective", pronunciation: "/səˈsteɪnəbəl/", definition: "able to continue over a long period" },
   tempting: { lemma: "tempt", partOfSpeech: "adjective", pronunciation: "/ˈtemptɪŋ/", definition: "making you want to do something" },
-  unfamiliar: { lemma: "unfamiliar", partOfSpeech: "adjective", pronunciation: "/ˌʌnfəˈmɪliər/", definition: "not known or recognised from previous experience" }
+  unfamiliar: { lemma: "unfamiliar", partOfSpeech: "adjective", pronunciation: "/ˌʌnfəˈmɪliər/", definition: "not known or recognised from previous experience" },
+  women: { lemma: "woman", partOfSpeech: "plural noun", pronunciation: "/ˈwɪmɪn/", definition: "adult female people" }
 });
 
 const COMMON_USES = parseCommonUses(`
@@ -279,9 +352,16 @@ attention	pay attention to::留意；注意…… | attract attention::引起注
 audible	barely audible::幾乎聽不見 | clearly audible::清楚可聞 | an audible sigh::聽得見的嘆息
 blur	a blur of activity::一片忙亂的景象 | blur the line between::模糊……之間的界線 | become a blur::變得模糊不清
 brief	a brief pause::短暫停頓 | in brief::簡而言之 | keep it brief::說得簡短些
+carefully	read carefully::仔細閱讀 | consider carefully::慎重考慮 | carefully designed::精心設計的
+could	could be possible::有可能 | could you…?::你可以……嗎？（禮貌請求） | could have + past participle::本來可能；本可以……
 demand	in high demand::需求很大 | meet the demand::滿足需求 | demand for something::對某物的需求
+deployment	software deployment::軟件部署 | deployment to a location::調派到某地 | rapid deployment::快速部署
+die	die of an illness::因病去世 | die from injuries::傷重不治 | die at the age of…::在……歲去世
+encounter	encounter a problem::遇到問題 | encounter difficulties::遭遇困難 | encounter resistance::遇到阻力
 distinguish	distinguish between A and B::區分 A 與 B | distinguish A from B::把 A 與 B 分辨開 | a distinguishing feature::顯著特徵
 emphasis	place emphasis on::著重於…… | with emphasis::加重語氣地 | shift the emphasis::轉移重點
+flexibility	greater flexibility::更大彈性 | flexibility to do something::做某事的靈活空間 | improve flexibility::提升靈活性
+fluent	fluent in English::英語流利 | speak fluent English::說流利英語 | a fluent speaker::說話流暢的人
 headline	headline news::頭條新聞 | make the headlines::成為新聞焦點 | grab the headlines::搶佔頭條
 hesitation	without hesitation::毫不猶豫地 | a moment's hesitation::片刻猶豫 | show hesitation::表現出遲疑
 imperceptibly	almost imperceptibly::幾乎難以察覺地 | change imperceptibly::不知不覺地改變 | move imperceptibly::極輕微地移動
@@ -293,16 +373,20 @@ material	source material::原始素材 | raw materials::原材料 | reading mate
 mistake	mistake A for B::把 A 誤認為 B | be mistaken about::對……有所誤解 | by mistake::錯誤地；無意中
 notice	notice a change::察覺變化 | take notice of::注意到；重視 | at short notice::在很短的通知時間內
 obligation	have an obligation to::有義務…… | be under an obligation::負有義務 | fulfil an obligation::履行義務
+ongoing	an ongoing project::持續進行的項目 | an ongoing discussion::仍在進行的討論 | ongoing support::持續支援
 observation	make an observation::提出觀察所得 | careful observation::仔細觀察 | under observation::在觀察中
 ordinary	ordinary life::日常生活 | out of the ordinary::不尋常 | nothing ordinary about::一點也不平凡
 overlook	easily overlooked::容易被忽略 | overlook a detail::忽略細節 | a room overlooking the sea::一間俯瞰海景的房間
 passive	a passive role::被動角色 | the passive voice::被動語態 | remain passive::保持被動
 principle	a basic principle::基本原則 | in principle::原則上 | a matter of principle::原則問題
+particularly	particularly important::尤其重要 | particularly useful::特別有用 | not particularly…::不怎麼……；不特別……
 repeatedly	repeatedly ask::反覆詢問 | repeatedly fail::屢次失敗 | happen repeatedly::反覆發生
 repetition	learn through repetition::透過重複學習 | avoid repetition::避免重複 | a repetition of::……的再次發生
 resist	resist temptation::抵抗誘惑 | resist change::抗拒改變 | hard to resist::難以抗拒
 rhythm	a sense of rhythm::節奏感 | natural rhythm::自然節奏 | the rhythm of daily life::日常生活的節奏
+seismic	seismic activity::地震活動 | seismic waves::地震波 | seismic data::地震數據
 sharpen	sharpen your skills::磨練技能 | sharpen the focus::使焦點更清晰 | sharpen a pencil::削鉛筆
+sustained	sustained effort::持續努力 | sustained growth::持續增長 | sustained attention::持續專注
 sustainable	sustainable development::可持續發展 | sustainable growth::可持續增長 | environmentally sustainable::環境上可持續的
 tempting	a tempting offer::誘人的提議 | it is tempting to::很容易令人想要…… | too tempting to resist::誘人得難以抗拒
 unfamiliar	be unfamiliar with::不熟悉…… | unfamiliar territory::陌生領域 | look unfamiliar::看起來陌生
@@ -424,9 +508,22 @@ export function getEnglishContext({ articleId, paragraph = "", paragraphIndex = 
 
 export function lookupEnglishWord({ word, articleId, paragraph, paragraphIndex, offset } = {}) {
   const normalized = normalizeEnglishWord(word);
+  const openEntry = openEnglishDictionary[normalized] || {};
   const details = RICH_ENTRIES[normalized] || {};
-  const lemma = details.lemma || LEMMA_OVERRIDES[normalized] || normalized;
-  const meaning = QUIET_NOTICING_GLOSSES[normalized] || QUIET_NOTICING_GLOSSES[lemma] || "";
+  const lemma = details.lemma || openEntry.lemma || LEMMA_OVERRIDES[normalized] || normalized;
+  const lemmaEntry = openEnglishDictionary[lemma] || openEntry;
+  const meaning = QUIET_NOTICING_GLOSSES[normalized]
+    || QUIET_NOTICING_GLOSSES[lemma]
+    || GENERAL_ENGLISH_GLOSSES[normalized]
+    || GENERAL_ENGLISH_GLOSSES[lemma]
+    || lemmaEntry.meaning
+    || "";
+  const dictionarySenses = Array.isArray(details.dictionarySenses)
+    ? details.dictionarySenses
+    : Array.isArray(lemmaEntry.senses) ? lemmaEntry.senses : [];
+  const dictionaryExamples = Array.isArray(details.dictionaryExamples)
+    ? details.dictionaryExamples
+    : Array.isArray(lemmaEntry.examples) ? lemmaEntry.examples : [];
   const context = getEnglishContext({ articleId, paragraph, paragraphIndex, offset });
   return {
     text: String(word || "").trim(),
@@ -434,16 +531,31 @@ export function lookupEnglishWord({ word, articleId, paragraph, paragraphIndex, 
     lemma,
     type: "word",
     meaning,
-    pronunciation: details.pronunciation || "",
-    partOfSpeech: details.partOfSpeech || "",
-    definition: details.definition || "",
+    pronunciation: details.pronunciation || lemmaEntry.pronunciation || "",
+    partOfSpeech: details.partOfSpeech || lemmaEntry.partOfSpeech || "",
+    definition: details.definition || lemmaEntry.definition || "",
     usage: details.usage || "",
     commonUses: COMMON_USES[normalized] || COMMON_USES[lemma] || [],
+    dictionarySenses,
+    dictionaryExamples,
+    dictionarySource: Object.keys(lemmaEntry).length
+      ? lemmaEntry.translationSource === "freedict" ? "wordnet-freedict" : "open-wordnet"
+      : "",
+    dictionaryStatus: englishDictionaryState.status,
     ...context,
     lookupKey: `${articleId}:${paragraphIndex}:${Number(offset) || 0}`
   };
 }
 
 export function hasLocalEnglishMeaning(word) {
-  return Boolean(QUIET_NOTICING_GLOSSES[normalizeEnglishWord(word)]);
+  const normalized = normalizeEnglishWord(word);
+  const lemma = openEnglishDictionary[normalized]?.lemma || LEMMA_OVERRIDES[normalized] || normalized;
+  return Boolean(
+    QUIET_NOTICING_GLOSSES[normalized]
+    || QUIET_NOTICING_GLOSSES[lemma]
+    || GENERAL_ENGLISH_GLOSSES[normalized]
+    || GENERAL_ENGLISH_GLOSSES[lemma]
+    || openEnglishDictionary[normalized]?.meaning
+    || openEnglishDictionary[lemma]?.meaning
+  );
 }

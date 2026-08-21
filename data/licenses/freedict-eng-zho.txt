@@ -1,0 +1,31 @@
+FreeDict English-Chinese dictionary notice
+
+Dictionary: English-中文 (Zhōngwén) FreeDict+WikDict dictionary
+FreeDict identifier: eng-zho
+Edition: 2025.11.23
+Extent: 26,660 headwords
+Maintainer and publisher: Karl Bartel
+
+Licensed under the Creative Commons Attribution-ShareAlike 3.0
+Unported license (CC BY-SA 3.0).
+
+License summary:
+https://creativecommons.org/licenses/by-sa/3.0/
+
+Legal code:
+https://creativecommons.org/licenses/by-sa/3.0/legalcode
+
+Official source archive:
+https://download.freedict.org/dictionaries/eng-zho/2025.11.23/freedict-eng-zho-2025.11.23.src.tar.xz
+
+SHA-512:
+25aed0f1d7de68919aa9da1ba92d67f566ae4ea81660f42071c81fc21e56d4b210d61df379315678648c45ca7e52c4a0ba2eec009fbaab7c72e7472489e1fc4c
+
+The upstream TEI header states that WikDict created this bilingual dictionary
+automatically from Wiktionary data obtained through DBnary.
+
+Leafbound extracts only translations for word forms used by its bundled
+English articles, converts Simplified Chinese text to Hong Kong Traditional
+Chinese with OpenCC, and marks those records with
+translationSource: "freedict". These adaptations remain available under
+CC BY-SA 3.0 with the attribution and share-alike requirements above.

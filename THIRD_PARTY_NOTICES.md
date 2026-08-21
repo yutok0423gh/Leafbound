@@ -95,7 +95,7 @@ The app copies the five sample MP3 files and corresponding tagged transcripts di
 ## 冚唪唥粵文讀本 / Hambaanglaang Cantonese Graded Readers
 
 - Source catalog: https://hambaanglaang.hk/all-levels/
-- Imported material: 28 Cantonese story texts, four from each of Levels 1–7
+- Imported material: 56 Cantonese story texts, eight from each of Levels 1–7
 - Current imported licenses: CC BY 4.0, verified from each story’s public text document
 - Site license statement: https://hambaanglaang.hk/
 - Audio: official SoundCloud track is loaded only after the user asks for it; audio files, illustrations, PDFs, videos, and translations are not copied
@@ -129,8 +129,54 @@ NASA material is generally not subject to copyright in the United States, but NA
 
 Standard Ebooks notes that its original site content is dedicated to the public domain through CC0, while the ebooks are public domain in the United States and users elsewhere must check local law. The app stores the opening chapter for focused in-app reading, credits the edition and author, and keeps the official single-page book URL as the full-version source.
 
+## English news desk directory
+
+Leafbound links to the public article entrances of AP News, Reuters, The Guardian, CNN, RFI, and The Economist. These cards are a directory only: no article body, image, logo, subscriber content, or commercial-feed payload from these publishers is copied into the app. Free access, regional availability, and subscription limits remain controlled by each publisher.
+
+- AP News content and licensing: https://www.ap.org/content/
+- Reuters homepage and licensed-content products: https://www.reuters.com/ and https://reutersagency.com/en/products/reuters-connect/
+- The Guardian Open Platform: https://open-platform.theguardian.com/access/
+- The Guardian Open Platform terms: https://www.theguardian.com/open-platform/terms-and-conditions
+- CNN RSS and public reading help: https://www.cnn.com/help/rss.html
+- RFI copyright notice: https://www1.rfi.fr/actuen/articles/110/article_2829.asp
+- The Economist terms of use: https://www.economistgroup.com/terms-of-use
+
+The same directory also links to Global Voices and Open Newswire as discovery routes for openly licensed reporting. Global Voices states that its own material is published under Creative Commons terms, while Open Newswire exposes a license tag per result and asks reusers to check the originating outlet's exact conditions. Leafbound does not treat the aggregator label as a substitute for per-article verification.
+
+- Global Voices republishing guidelines: https://globalvoices.org/about/global-voices-attribution-policy/
+- Open Newswire about and license guidance: https://www.opennewswire.org/about/
+
+## Princeton WordNet 3.0 and Chinese Open Wordnet 2.0
+
+- Distribution: Open Multilingual Wordnet 2.0 — https://github.com/omwn/omw-data/releases/tag/v2.0
+- English package: OMW English Wordnet based on WordNet 3.0 (`omw-en-2.0`)
+- Chinese package: Chinese Open Wordnet (`omw-cmn-2.0`)
+- English license: https://wordnet.princeton.edu/license-and-commercial-use
+- Chinese project: https://bond-lab.github.io/cow/
+- Bundled license copies: `data/licenses/wordnet-3.0.txt` and `data/licenses/chinese-open-wordnet.txt`
+
+The generated local dictionary contains only word forms found in the English articles currently bundled with Leafbound. `scripts/import-english-dictionary.mjs` aligns Princeton WordNet definitions and examples with Chinese Open Wordnet lemmas through their shared WordNet 3.0 synset identifiers, converts Simplified Chinese lemmas to Hong Kong Traditional Chinese with OpenCC, and writes the compact browser module in `src/open-english-dictionary.js`. The compact module keeps a WordNet example only when the clicked surface form or selected lemma occurs in that example; examples remain labelled separately from Leafbound's hand-edited common-use phrases.
+
+Both upstream licenses permit copying, modification, and distribution without a fee or royalty when their copyright notice and disclaimer are preserved. The dictionary module loads from the same Leafbound site only when an English reader is opened. It does not send the clicked word, article text, reading history, or API credentials to a third-party dictionary service.
+
+## FreeDict English–Chinese dictionary
+
+- Dictionary: English-中文 FreeDict+WikDict (`eng-zho`)
+- Version: `2025.11.23` — 26,660 headwords
+- Maintainer and publisher: Karl Bartel
+- Official download: https://download.freedict.org/dictionaries/eng-zho/2025.11.23/
+- Imported source archive: `freedict-eng-zho-2025.11.23.src.tar.xz`
+- Source SHA-512: `25aed0f1d7de68919aa9da1ba92d67f566ae4ea81660f42071c81fc21e56d4b210d61df379315678648c45ca7e52c4a0ba2eec009fbaab7c72e7472489e1fc4c`
+- License: Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)
+- License text: https://creativecommons.org/licenses/by-sa/3.0/legalcode
+- Bundled notice: `data/licenses/freedict-eng-zho.txt`
+
+FreeDict identifies this dictionary as an automatic WikDict build based on Wiktionary data obtained through DBnary. Leafbound uses it only when a selected WordNet entry has no Chinese Open Wordnet meaning. The importer extracts the matching article vocabulary, converts Simplified Chinese to Hong Kong Traditional Chinese, and marks every fallback entry with `translationSource: "freedict"` so its provenance remains machine-readable. The FreeDict-derived translations remain available under CC BY-SA 3.0, including its attribution and share-alike requirements.
+
 ## Content boundary
 
 No text, annotation, translation, or commentary has been copied from 古詩文網. The open-corpus entries in this app contain classical text from the pinned chinese-poetry dataset only. The six curated sample works and their modern explanatory text remain the app's existing hand-authored content. Cantonese character readings are generated by `scripts/import-cantonese-pronunciation.mjs` from the pinned Rime Cantonese source. English metadata and approved plain-text bodies are generated by `scripts/import-english-sources.mjs`; every imported item keeps its canonical source URL, attribution, scope, and rights note.
 
 Hong Kong Education Bureau and commercial textbook pages are not treated as open corpora. No textbook has been copied into the app. Future textbook support must be limited to material with explicit redistribution permission or to private files the user is authorized to import.
+
+Oxford, Cambridge, Collins, Longman, and other commercial dictionary entries are not downloaded, scraped, copied, or republished by this project. A future commercial-dictionary option would require the user's own licensed API plan and a server-side proxy so that credentials are never exposed in this static site.

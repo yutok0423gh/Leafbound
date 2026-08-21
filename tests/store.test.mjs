@@ -2,13 +2,22 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  COMPLETE_PROGRESS_THRESHOLD,
   LEGACY_STORAGE_KEYS,
+  PREFERENCES_COOKIE_KEY,
+  SEEN_PROGRESS_THRESHOLD,
   STORAGE_KEY,
+  contentProgressStatus,
   createDefaultState,
   createStore,
   formatTime,
+  getContentProgress,
   loadState,
   progressPercent,
+  readPreferencesCookie,
+  serializePreferencesCookie,
+  setContentProgressInState,
+  setContentSeenInState,
   setProgressInState,
   toggleFavoriteInState,
   upsertSavedItemInState
@@ -68,6 +77,30 @@ test("reading progress is clamped while playback progress may exceed 100 seconds
   assert.equal(playback.playbackProgress["city-rain"], 140);
 });
 
+test("content activity keeps the highest progress and marks fifty percent as seen", () => {
+  const original = createDefaultState();
+  const halfway = setContentProgressInState(original, "article", "quiet-noticing", 50, "2026-08-21T00:00:00.000Z");
+  const movedBack = setContentProgressInState(halfway, "article", "quiet-noticing", 18, "2026-08-21T00:05:00.000Z");
+
+  assert.equal(SEEN_PROGRESS_THRESHOLD, 50);
+  assert.equal(COMPLETE_PROGRESS_THRESHOLD, 90);
+  assert.equal(getContentProgress(movedBack, "article", "quiet-noticing"), 50);
+  assert.equal(movedBack.contentActivity["article:quiet-noticing"].status, "seen");
+  assert.equal(movedBack.contentActivity["article:quiet-noticing"].seenAt, "2026-08-21T00:00:00.000Z");
+  assert.equal(contentProgressStatus(89.9), "seen");
+  assert.equal(contentProgressStatus(90), "completed");
+});
+
+test("manual seen state can be added and reset with resume progress", () => {
+  const original = createDefaultState();
+  const marked = setContentSeenInState(original, "episode", "city-rain", true, "2026-08-21T01:00:00.000Z");
+  const reset = setContentSeenInState(marked, "episode", "city-rain", false, "2026-08-21T02:00:00.000Z");
+
+  assert.equal(marked.contentActivity["episode:city-rain"].maxProgress, 50);
+  assert.equal(reset.contentActivity["episode:city-rain"], undefined);
+  assert.equal(reset.playbackProgress["city-rain"], 0);
+});
+
 test("state persists and malformed storage falls back safely", () => {
   const storage = memoryStorage();
   const store = createStore(storage);
@@ -95,6 +128,56 @@ test("legacy Shiyip storage migrates to Leafbound without losing data", () => {
   assert.equal(migrated.notes["poem:mountain-autumn"], "保留這則舊筆記");
   assert.match(storage.getItem(STORAGE_KEY), /poem:mountain-autumn/);
   assert.ok(storage.getItem(legacyKey));
+});
+
+test("reading preferences round-trip through the dedicated cookie", () => {
+  const cookie = serializePreferencesCookie({
+    englishDark: true,
+    classicalFont: "kai",
+    playbackSpeed: 1.2
+  }, { path: "/Leafbound/", secure: true });
+
+  assert.match(cookie, new RegExp(`^${PREFERENCES_COOKIE_KEY}=`));
+  assert.match(cookie, /Path=\/Leafbound\//);
+  assert.match(cookie, /SameSite=Lax/);
+  assert.match(cookie, /Secure/);
+  const restored = readPreferencesCookie(cookie);
+  assert.equal(restored.englishDark, true);
+  assert.equal(restored.classicalFont, "kai");
+  assert.equal(restored.playbackSpeed, 1.2);
+  assert.equal(restored.showJyutping, true);
+});
+
+test("the store restores and updates cookie-backed preferences only", () => {
+  let remembered = { englishDark: true, showJyutping: false };
+  const writes = [];
+  const preferencesCookie = {
+    read() {
+      return remembered;
+    },
+    write(preferences) {
+      remembered = { ...preferences };
+      writes.push(remembered);
+      return true;
+    }
+  };
+  const storage = memoryStorage({
+    [STORAGE_KEY]: JSON.stringify({
+      favorites: ["poem:mountain-autumn"],
+      preferences: { englishDark: false, showJyutping: true }
+    })
+  });
+  const store = createStore(storage, preferencesCookie);
+
+  assert.equal(store.getState().preferences.englishDark, true);
+  assert.equal(store.getState().preferences.showJyutping, false);
+  assert.deepEqual(store.getState().favorites, ["poem:mountain-autumn"]);
+  store.update((state) => {
+    state.preferences.playbackSpeed = 1.5;
+    return state;
+  });
+  assert.equal(writes.at(-1).playbackSpeed, 1.5);
+  assert.equal(Object.hasOwn(writes.at(-1), "favorites"), false);
 });
 
 test("classical typography preferences migrate and persist", () => {

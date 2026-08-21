@@ -1,5 +1,24 @@
 export const STORAGE_KEY = "leafbound.personal-library.v1";
 export const LEGACY_STORAGE_KEYS = ["shiyip.personal-library.v1"];
+export const PREFERENCES_COOKIE_KEY = "leafbound_preferences_v1";
+export const PREFERENCES_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+export const SEEN_PROGRESS_THRESHOLD = 50;
+export const COMPLETE_PROGRESS_THRESHOLD = 90;
+
+export function createDefaultPreferences() {
+  return {
+    showJyutping: true,
+    classicalFont: "song",
+    classicalFontScale: 1,
+    classicalLineHeight: 1,
+    englishFontScale: 1,
+    englishLineHeight: 1.78,
+    englishDark: false,
+    transcriptMode: "full",
+    showTranscriptJyutping: true,
+    playbackSpeed: 1
+  };
+}
 
 export function createDefaultState() {
   return {
@@ -17,23 +36,13 @@ export function createDefaultState() {
       "tea-afternoon": 0,
       "ferry-wind": 0
     },
+    contentActivity: {},
     history: {
       poems: ["mountain-autumn"],
       articles: ["quiet-noticing"],
       episodes: ["city-rain"]
     },
-    preferences: {
-      showJyutping: true,
-      classicalFont: "song",
-      classicalFontScale: 1,
-      classicalLineHeight: 1,
-      englishFontScale: 1,
-      englishLineHeight: 1.78,
-      englishDark: false,
-      transcriptMode: "full",
-      showTranscriptJyutping: true,
-      playbackSpeed: 1
-    }
+    preferences: createDefaultPreferences()
   };
 }
 
@@ -41,6 +50,95 @@ function clone(value) {
   return typeof structuredClone === "function"
     ? structuredClone(value)
     : JSON.parse(JSON.stringify(value));
+}
+
+function clampNumber(value, fallback, min, max) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? Math.max(min, Math.min(max, numeric)) : fallback;
+}
+
+export function normalizePreferences(candidate) {
+  const base = createDefaultPreferences();
+  if (!candidate || typeof candidate !== "object") return base;
+  const classicalFonts = ["song", "kai", "sans"];
+  const classicalLeading = [0.94, 1, 1.16];
+  const transcriptModes = ["full", "reveal", "listen"];
+  const playbackSpeeds = [0.75, 0.8, 1, 1.2, 1.5];
+  const requestedClassicalLeading = Number(candidate.classicalLineHeight);
+  const requestedPlaybackSpeed = Number(candidate.playbackSpeed);
+
+  return {
+    showJyutping: typeof candidate.showJyutping === "boolean" ? candidate.showJyutping : base.showJyutping,
+    classicalFont: classicalFonts.includes(candidate.classicalFont) ? candidate.classicalFont : base.classicalFont,
+    classicalFontScale: Number(clampNumber(candidate.classicalFontScale, base.classicalFontScale, 0.84, 1.32).toFixed(2)),
+    classicalLineHeight: classicalLeading.includes(requestedClassicalLeading) ? requestedClassicalLeading : base.classicalLineHeight,
+    englishFontScale: Number(clampNumber(candidate.englishFontScale, base.englishFontScale, 0.84, 1.32).toFixed(2)),
+    englishLineHeight: Number(clampNumber(candidate.englishLineHeight, base.englishLineHeight, 1.44, 2.14).toFixed(2)),
+    englishDark: typeof candidate.englishDark === "boolean" ? candidate.englishDark : base.englishDark,
+    transcriptMode: transcriptModes.includes(candidate.transcriptMode) ? candidate.transcriptMode : base.transcriptMode,
+    showTranscriptJyutping: typeof candidate.showTranscriptJyutping === "boolean"
+      ? candidate.showTranscriptJyutping
+      : base.showTranscriptJyutping,
+    playbackSpeed: playbackSpeeds.includes(requestedPlaybackSpeed) ? requestedPlaybackSpeed : base.playbackSpeed
+  };
+}
+
+export function readPreferencesCookie(cookieHeader = "") {
+  const prefix = `${PREFERENCES_COOKIE_KEY}=`;
+  const entry = String(cookieHeader)
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(prefix));
+  if (!entry) return null;
+  try {
+    return normalizePreferences(JSON.parse(decodeURIComponent(entry.slice(prefix.length))));
+  } catch {
+    return null;
+  }
+}
+
+function normalizeCookiePath(pathname = "/") {
+  const safePath = String(pathname).replace(/[;,\s]/g, "");
+  if (!safePath.startsWith("/")) return "/";
+  if (safePath.endsWith("/")) return safePath;
+  const lastSlash = safePath.lastIndexOf("/");
+  return lastSlash >= 0 ? safePath.slice(0, lastSlash + 1) : "/";
+}
+
+export function serializePreferencesCookie(preferences, options = {}) {
+  const path = normalizeCookiePath(options.path || "/");
+  const maxAge = Math.max(0, Math.floor(Number(options.maxAge) || PREFERENCES_COOKIE_MAX_AGE));
+  const value = encodeURIComponent(JSON.stringify(normalizePreferences(preferences)));
+  return [
+    `${PREFERENCES_COOKIE_KEY}=${value}`,
+    `Max-Age=${maxAge}`,
+    `Path=${path}`,
+    "SameSite=Lax",
+    options.secure ? "Secure" : ""
+  ].filter(Boolean).join("; ");
+}
+
+export function createBrowserPreferencesCookie(
+  documentRef = globalThis.document,
+  locationRef = globalThis.location
+) {
+  if (!documentRef) return null;
+  return {
+    read() {
+      return readPreferencesCookie(documentRef.cookie);
+    },
+    write(preferences) {
+      try {
+        documentRef.cookie = serializePreferencesCookie(preferences, {
+          path: locationRef?.pathname || "/",
+          secure: locationRef?.protocol === "https:"
+        });
+        return readPreferencesCookie(documentRef.cookie) !== null;
+      } catch {
+        return false;
+      }
+    }
+  };
 }
 
 export function normalizeState(candidate) {
@@ -55,15 +153,29 @@ export function normalizeState(candidate) {
     notes: candidate.notes && typeof candidate.notes === "object" ? candidate.notes : base.notes,
     readingProgress: { ...base.readingProgress, ...(candidate.readingProgress || {}) },
     playbackProgress: { ...base.playbackProgress, ...(candidate.playbackProgress || {}) },
+    contentActivity: normalizeContentActivity(candidate.contentActivity),
     history: {
       ...base.history,
       ...(candidate.history || {})
     },
-    preferences: {
-      ...base.preferences,
-      ...(candidate.preferences || {})
-    }
+    preferences: normalizePreferences(candidate.preferences)
   };
+}
+
+function normalizeContentActivity(candidate) {
+  if (!candidate || typeof candidate !== "object") return {};
+  return Object.fromEntries(Object.entries(candidate).flatMap(([key, value]) => {
+    if (!value || typeof value !== "object") return [];
+    const maxProgress = clampNumber(value.maxProgress, 0, 0, 100);
+    const status = contentProgressStatus(maxProgress);
+    return [[key, {
+      maxProgress,
+      status,
+      ...(status === "seen" || status === "completed" ? { seenAt: String(value.seenAt || value.updatedAt || "") } : {}),
+      ...(status === "completed" ? { completedAt: String(value.completedAt || value.updatedAt || "") } : {}),
+      updatedAt: String(value.updatedAt || "")
+    }]];
+  }));
 }
 
 export function loadState(storage) {
@@ -88,13 +200,15 @@ export function loadState(storage) {
   return createDefaultState();
 }
 
-export function persistState(storage, state) {
-  if (!storage) return;
-  try {
-    storage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    // The app remains usable when storage is unavailable (for example, strict privacy mode).
+export function persistState(storage, state, preferencesCookie = null) {
+  if (storage) {
+    try {
+      storage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // The app remains usable when storage is unavailable (for example, strict privacy mode).
+    }
   }
+  preferencesCookie?.write?.(state.preferences);
 }
 
 export function toggleFavoriteInState(state, key) {
@@ -132,6 +246,54 @@ export function setProgressInState(state, kind, id, value) {
   return next;
 }
 
+export function contentActivityKey(kind, id) {
+  return `${String(kind || "content")}:${String(id || "")}`;
+}
+
+export function contentProgressStatus(value) {
+  const progress = clampNumber(value, 0, 0, 100);
+  if (progress >= COMPLETE_PROGRESS_THRESHOLD) return "completed";
+  if (progress >= SEEN_PROGRESS_THRESHOLD) return "seen";
+  if (progress > 0) return "in-progress";
+  return "unread";
+}
+
+export function getContentProgress(state, kind, id, fallback = 0) {
+  const key = contentActivityKey(kind, id);
+  const recorded = Number(state?.contentActivity?.[key]?.maxProgress) || 0;
+  return clampNumber(Math.max(recorded, Number(fallback) || 0), 0, 0, 100);
+}
+
+export function setContentProgressInState(state, kind, id, value, timestamp = new Date().toISOString()) {
+  const next = clone(state);
+  const key = contentActivityKey(kind, id);
+  const previous = next.contentActivity?.[key] || {};
+  const maxProgress = clampNumber(Math.max(Number(previous.maxProgress) || 0, Number(value) || 0), 0, 0, 100);
+  const previousStatus = contentProgressStatus(previous.maxProgress);
+  const status = contentProgressStatus(maxProgress);
+  next.contentActivity = next.contentActivity && typeof next.contentActivity === "object" ? next.contentActivity : {};
+  next.contentActivity[key] = {
+    maxProgress,
+    status,
+    ...(status === "seen" || status === "completed"
+      ? { seenAt: previous.seenAt || (previousStatus === "seen" || previousStatus === "completed" ? previous.updatedAt : timestamp) }
+      : {}),
+    ...(status === "completed" ? { completedAt: previous.completedAt || timestamp } : {}),
+    updatedAt: timestamp
+  };
+  return next;
+}
+
+export function setContentSeenInState(state, kind, id, seen = true, timestamp = new Date().toISOString()) {
+  if (seen) return setContentProgressInState(state, kind, id, SEEN_PROGRESS_THRESHOLD, timestamp);
+  const next = clone(state);
+  const key = contentActivityKey(kind, id);
+  if (next.contentActivity && typeof next.contentActivity === "object") delete next.contentActivity[key];
+  if (kind === "article") next.readingProgress[id] = 0;
+  if (kind === "episode") next.playbackProgress[id] = 0;
+  return next;
+}
+
 export function touchHistoryInState(state, kind, id) {
   const next = clone(state);
   const list = Array.isArray(next.history[kind]) ? next.history[kind] : [];
@@ -151,8 +313,19 @@ export function progressPercent(current, total) {
   return Math.max(0, Math.min(100, Math.round((Number(current) / Number(total)) * 100)));
 }
 
-export function createStore(storage = globalThis.localStorage) {
+export function createStore(
+  storage = globalThis.localStorage,
+  preferencesCookie = createBrowserPreferencesCookie()
+) {
   let state = loadState(storage);
+  const rememberedPreferences = preferencesCookie?.read?.();
+  if (rememberedPreferences) {
+    state = normalizeState({
+      ...state,
+      preferences: { ...state.preferences, ...rememberedPreferences }
+    });
+  }
+  persistState(storage, state, preferencesCookie);
   const subscribers = new Set();
 
   return {
@@ -161,7 +334,7 @@ export function createStore(storage = globalThis.localStorage) {
     },
     replace(nextState, notify = true) {
       state = normalizeState(nextState);
-      persistState(storage, state);
+      persistState(storage, state, preferencesCookie);
       if (notify) subscribers.forEach((subscriber) => subscriber(state));
       return state;
     },

@@ -15,7 +15,7 @@ const outputUrl = new URL("../src/open-cantonese.js", import.meta.url);
 
 const HBL_CATALOG_URL = "https://hambaanglaang.hk/all-levels/";
 const HBL_HOMEPAGE = "https://hambaanglaang.hk/";
-const HBL_STORIES_PER_LEVEL = 4;
+const HBL_STORIES_PER_LEVEL = 8;
 const HKCANCOR_HOME = "https://github.com/fcbond/hkcancor";
 const HKCANCOR_RAW = "https://raw.githubusercontent.com/fcbond/hkcancor/master";
 const CC_BY_4_URL = "https://creativecommons.org/licenses/by/4.0/";
