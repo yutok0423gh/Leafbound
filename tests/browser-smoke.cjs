@@ -476,6 +476,40 @@ async function auditReadingStatus(browser) {
   await page.locator('[data-english-word="headline"]').click();
   result.englishHeadlineUses = (await page.locator(".lookup-common-uses li").allTextContents()).join(" · ");
   result.englishOriginalSentenceSections = await page.locator(".lookup-context").count();
+  await page.getByRole("button", { name: "夜讀" }).click();
+  await page.waitForSelector(".article-reader.is-dark");
+  await page.locator('[data-english-word="headline"]').click();
+  result.englishNightSurfaces = await page.evaluate(() => {
+    const alphaOf = (value) => {
+      if (!value || value === "transparent") return 0;
+      if (!value.startsWith("rgba")) return 1;
+      const parts = value.match(/[\d.]+/g) || [];
+      return Number(parts[3] ?? 1);
+    };
+    const surface = (selector) => {
+      const style = getComputedStyle(document.querySelector(selector));
+      return { background: style.backgroundColor, alpha: alphaOf(style.backgroundColor) };
+    };
+    return {
+      reader: surface(".article-reader"),
+      lookup: surface(".english-lookup-card"),
+      topbar: surface(".topbar"),
+      navigation: surface(".bottom-nav"),
+      lookupBackdrop: getComputedStyle(document.querySelector(".english-lookup-card")).backdropFilter
+    };
+  });
+  await page.screenshot({ path: path.join(artifactDir, "english-reader-night-desktop.png"), fullPage: true });
+  await page.getByRole("button", { name: "打開筆記" }).click();
+  await page.waitForSelector(".article-note-panel");
+  result.englishNightSurfaces.note = await page.locator(".article-note-panel").evaluate((node) => {
+    const value = getComputedStyle(node).backgroundColor;
+    const parts = value.startsWith("rgba") ? value.match(/[\d.]+/g) || [] : [];
+    return { background: value, alpha: value === "transparent" ? 0 : value.startsWith("rgba") ? Number(parts[3] ?? 1) : 1 };
+  });
+  await page.screenshot({ path: path.join(artifactDir, "english-reader-night-note-desktop.png"), fullPage: true });
+  await page.getByRole("button", { name: "關閉筆記" }).click();
+  await page.getByRole("button", { name: "夜讀" }).click();
+  await page.waitForSelector(".article-reader:not(.is-dark)");
   await page.locator('[data-english-word="imperceptibly"]').click();
   result.englishLookupMeaning = await page.locator(".lookup-meaning p").textContent();
   result.englishCommonUses = (await page.locator(".lookup-common-uses li").allTextContents()).join(" · ");
@@ -758,6 +792,12 @@ async function auditReadingStatus(browser) {
     || result.englishLookupMeaning !== "難以察覺地"
     || !result.englishHeadlineUses.includes("make the headlines")
     || result.englishOriginalSentenceSections !== 0
+    || result.englishNightSurfaces.reader.alpha !== 1
+    || result.englishNightSurfaces.lookup.alpha !== 1
+    || result.englishNightSurfaces.note.alpha !== 1
+    || result.englishNightSurfaces.topbar.alpha !== 1
+    || result.englishNightSurfaces.navigation.alpha !== 1
+    || result.englishNightSurfaces.lookupBackdrop !== "none"
     || !result.englishCommonUses.includes("almost imperceptibly")
     || result.englishPronunciationControl !== 1
     || !result.savedEnglishWordMarked.includes("is-saved")
