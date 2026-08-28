@@ -17,15 +17,46 @@ export const cantoneseLexiconState = {
 
 let loadingPromise = null;
 
+// A small, audited bridge for source corpora that mix simplified or variant
+// glyphs into otherwise traditional text. Readings still come from the pinned
+// local dictionaries; this only redirects the glyph lookup.
+const pronunciationVariantFallbacks = Object.freeze({
+  "荆": "荊",
+  "衮": "袞"
+});
+
+function resolveCantoneseReading(word, entries, characterEntries) {
+  const wordReadings = Array.isArray(entries?.[word]) ? entries[word] : [];
+  if (wordReadings.length) return { readings: wordReadings, source: "words-hk", normalizedWord: "" };
+
+  const characterReadings = Array.isArray(characterEntries?.[word]) ? characterEntries[word] : [];
+  if (characterReadings.length) return { readings: characterReadings, source: "rime-cantonese", normalizedWord: "" };
+
+  const normalizedWord = pronunciationVariantFallbacks[word] || "";
+  if (!normalizedWord) return { readings: [], source: "", normalizedWord: "" };
+
+  const normalizedWordReadings = Array.isArray(entries?.[normalizedWord]) ? entries[normalizedWord] : [];
+  if (normalizedWordReadings.length) {
+    return { readings: normalizedWordReadings, source: "words-hk", normalizedWord };
+  }
+
+  const normalizedCharacterReadings = Array.isArray(characterEntries?.[normalizedWord])
+    ? characterEntries[normalizedWord]
+    : [];
+  if (normalizedCharacterReadings.length) {
+    return { readings: normalizedCharacterReadings, source: "rime-cantonese", normalizedWord };
+  }
+
+  return { readings: [], source: "", normalizedWord: "" };
+}
+
 export function lookupCantoneseReadings(
   word,
   entries = cantoneseLexiconState.entries,
   characterEntries = entries === cantoneseLexiconState.entries ? cantoneseLexiconState.characterEntries : null
 ) {
   if (!word) return [];
-  const wordReadings = Array.isArray(entries?.[word]) ? entries[word] : [];
-  if (wordReadings.length) return wordReadings;
-  return Array.isArray(characterEntries?.[word]) ? characterEntries[word] : [];
+  return resolveCantoneseReading(word, entries, characterEntries).readings;
 }
 
 export function getCantoneseTermData(
@@ -35,20 +66,23 @@ export function getCantoneseTermData(
   characterEntries = entries === cantoneseLexiconState.entries ? cantoneseLexiconState.characterEntries : null
 ) {
   if (curatedTerms[word]) return { ...curatedTerms[word], dictionaryOnly: false };
-  const wordReadings = Array.isArray(entries?.[word]) ? entries[word] : [];
-  const readings = wordReadings.length ? wordReadings : lookupCantoneseReadings(word, entries, characterEntries);
+  const lookup = resolveCantoneseReading(word, entries, characterEntries);
+  const { readings } = lookup;
   if (!readings.length) return null;
-  const fromCharacterFallback = !wordReadings.length && Array.isArray(characterEntries?.[word]);
+  const fromCharacterFallback = lookup.source === "rime-cantonese";
+  const fromVariantFallback = Boolean(lookup.normalizedWord);
   return {
     text: word,
     jyutping: readings.join(" / "),
-    mandarin: fromCharacterFallback
+    mandarin: fromVariantFallback
+      ? `異體字「${word}」按「${lookup.normalizedWord}」提供候選讀音；古典語境及多音字可能有不同讀法。`
+      : fromCharacterFallback
       ? "Rime Cantonese 單字表補充的候選讀音；古典語境及多音字可能有不同讀法。"
       : "粵典公有詞表目前只提供候選讀音；可前往原站查看完整釋義。",
     english: fromCharacterFallback
       ? "Pronunciation candidates from the Rime Cantonese character dictionary."
       : "Pronunciation candidates from the public-domain words.hk word list.",
-    type: fromCharacterFallback ? "Rime 單字表" : "粵典詞表",
+    type: fromVariantFallback ? "異體字候選" : fromCharacterFallback ? "Rime 單字表" : "粵典詞表",
     dictionaryOnly: true,
     source: fromCharacterFallback ? "Rime Cantonese" : "粵典 words.hk",
     sourceUrl: fromCharacterFallback
@@ -147,16 +181,16 @@ export function segmentCantonesePronunciation(
     }
 
     const character = characters[index];
-    const wordReadings = Array.isArray(entries?.[character]) ? entries[character] : [];
-    const fallbackReadings = Array.isArray(characterEntries?.[character]) ? characterEntries[character] : [];
-    const readings = wordReadings.length ? wordReadings : fallbackReadings;
+    const lookup = resolveCantoneseReading(character, entries, characterEntries);
+    const { readings } = lookup;
     if (readings.length) {
       segments.push({
         text: character,
         isWord: true,
         isCurated: false,
         readings,
-        source: wordReadings.length ? "words-hk" : "rime-cantonese"
+        source: lookup.source,
+        normalizedWord: lookup.normalizedWord
       });
     } else {
       appendPlain(character);
@@ -181,6 +215,67 @@ export function buildCantonesePronunciationLine(
     .join(" ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function appendAlignedPlain(segments, value) {
+  if (!value) return;
+  const previous = segments.at(-1);
+  if (previous && !previous.syllables.length) previous.text += value;
+  else segments.push({ text: value, bases: [], syllables: [], reading: "" });
+}
+
+// Aligns source-supplied Jyutping with visible text only when the relationship
+// is unambiguous. HKCanCor stores spaces between words and tone numbers between
+// syllables, so a token such as faat3laai1lei2 can safely map to 法拉利. Any
+// malformed or mismatched line returns an empty list and the reader falls back
+// to the pinned local word and character dictionaries.
+export function alignCantonesePronunciation(text, jyutping) {
+  const sourceText = String(text || "");
+  const sourceJyutping = String(jyutping || "").trim();
+  if (!sourceText || !sourceJyutping) return [];
+
+  const speakerMatch = sourceText.match(/^[A-Za-z]{1,4}[：:]\s*/u);
+  const prefix = speakerMatch?.[0] || "";
+  const body = sourceText.slice(prefix.length);
+  const units = body.match(/[A-Za-z]+(?:['’-][A-Za-z]+)*|\d+|\p{Script=Han}|[^]/gu) || [];
+  const words = sourceJyutping.split(/\s+/u).map((reading) => ({
+    reading,
+    syllables: reading.match(/[A-Za-z'’-]+?[0-6]/gu) || []
+  }));
+  if (words.some((word) => !word.syllables.length)) return [];
+
+  const isPronounceable = (unit) => /^(?:\p{Script=Han}|[A-Za-z]+(?:['’-][A-Za-z]+)*|\d+)$/u.test(unit);
+  const pronounceableCount = units.filter(isPronounceable).length;
+  const syllableCount = words.reduce((count, word) => count + word.syllables.length, 0);
+  if (pronounceableCount !== syllableCount) return [];
+
+  const segments = [];
+  if (prefix) appendAlignedPlain(segments, prefix);
+  let unitIndex = 0;
+
+  for (const word of words) {
+    while (unitIndex < units.length && !isPronounceable(units[unitIndex])) {
+      appendAlignedPlain(segments, units[unitIndex]);
+      unitIndex += 1;
+    }
+
+    const bases = [];
+    for (let index = 0; index < word.syllables.length; index += 1) {
+      const unit = units[unitIndex];
+      if (!unit || !isPronounceable(unit)) return [];
+      bases.push(unit);
+      unitIndex += 1;
+    }
+    segments.push({ text: bases.join(""), bases, syllables: word.syllables, reading: word.reading });
+  }
+
+  while (unitIndex < units.length) {
+    if (isPronounceable(units[unitIndex])) return [];
+    appendAlignedPlain(segments, units[unitIndex]);
+    unitIndex += 1;
+  }
+
+  return segments;
 }
 
 export async function loadCantoneseLexicon() {

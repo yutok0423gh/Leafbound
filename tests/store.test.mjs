@@ -114,6 +114,23 @@ test("state persists and malformed storage falls back safely", () => {
   assert.deepEqual(loadState(broken).favorites, []);
 });
 
+test("daily shelf selections persist by local date and discard malformed entries", () => {
+  const storage = memoryStorage({
+    [STORAGE_KEY]: JSON.stringify({
+      dailySelections: {
+        "2026-08-28": { poem: "mountain-autumn", article: "quiet-noticing", episode: "city-rain" },
+        "not-a-day": { poem: "spring-dawn" },
+        "2026-08-29": "broken"
+      }
+    })
+  });
+
+  const restored = loadState(storage);
+  assert.deepEqual(restored.dailySelections, {
+    "2026-08-28": { poem: "mountain-autumn", article: "quiet-noticing", episode: "city-rain" }
+  });
+});
+
 test("legacy Shiyip storage migrates to Leafbound without losing data", () => {
   const legacyKey = LEGACY_STORAGE_KEYS[0];
   const storage = memoryStorage({

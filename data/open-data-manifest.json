@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-08-20T04:49:23.229Z",
+  "generatedAt": "2026-08-28T12:29:41.968Z",
   "cantonese": {
     "source": "粵典 words.hk word list",
     "sourceUrl": "https://words.hk/faiman/analysis/wordslist.json",
     "license": "Public domain",
     "licenseUrl": "https://words.hk/faiman/analysis/",
-    "importedAt": "2026-08-20T04:49:23.229Z",
+    "importedAt": "2026-08-28T12:29:41.968Z",
     "entries": 62274,
     "sourceSha256": "7703caef2f40c324eaf27f423bd35ac6403fcdc1eac5804d07212ef45d98a50d"
   },
@@ -15,13 +15,55 @@
     "license": "MIT",
     "licenseUrl": "https://github.com/chinese-poetry/chinese-poetry/blob/master/LICENSE",
     "revision": "b8594f81a89752241442f2ce267d6f66f96704ee",
-    "imported": 863,
+    "imported": 17367,
+    "normalization": [
+      "OpenCC cn → hk for simplified source files",
+      "Expanded CJK iteration marks for per-character pronunciation",
+      "Corrected two contextual Yuan-qu typos: 埯女/埯哥哥 → 俺女/俺哥哥"
+    ],
     "collections": {
       "tangPoetry": {
         "title": "唐詩三百首",
         "imported": 362,
         "sourceUrl": "https://raw.githubusercontent.com/chinese-poetry/chinese-poetry/b8594f81a89752241442f2ce267d6f66f96704ee/%E5%85%A8%E5%94%90%E8%AF%97/%E5%94%90%E8%AF%97%E4%B8%89%E7%99%BE%E9%A6%96.json",
         "sourceSha256": "d77a145f7470da2ed2f79515944563c062ffc43fceda07f195a36ead66b7e5c7"
+      },
+      "qianjiashi": {
+        "title": "千家詩",
+        "imported": 212,
+        "sourceUrl": "https://raw.githubusercontent.com/chinese-poetry/chinese-poetry/b8594f81a89752241442f2ce267d6f66f96704ee/%E8%92%99%E5%AD%A6/qianjiashi.json",
+        "sourceSha256": "cf34d01ed29528052da5d96543e725ab67814a6cb093183808c889400ff62417",
+        "conversion": "OpenCC cn → hk where needed"
+      },
+      "selectedTangPoetry": {
+        "title": "全唐詩選",
+        "imported": 2592,
+        "sourceFiles": 58,
+        "selectedAuthors": [
+          "李白",
+          "杜甫",
+          "王維",
+          "孟浩然",
+          "白居易",
+          "李商隱",
+          "杜牧",
+          "王昌齡",
+          "岑參",
+          "高適",
+          "韓愈",
+          "柳宗元",
+          "劉禹錫",
+          "元稹",
+          "賀知章",
+          "張九齡",
+          "王之渙",
+          "陳子昂",
+          "韋應物",
+          "溫庭筠"
+        ],
+        "maximumPerAuthor": 160,
+        "sourceSha256": "c958429a225453193b1f3bfe1ac2f74a8839e36f5d7f10445c2ada87f46533c8",
+        "conversion": "OpenCC cn → hk where needed"
       },
       "songCi": {
         "title": "宋詞三百首",
@@ -30,11 +72,138 @@
         "sourceSha256": "ca5d74f7fdb9d5a6acc22a7c8b4395228cad4bb8be53df44c19ba83ab6983b20",
         "conversion": "OpenCC cn → hk"
       },
+      "selectedSongCi": {
+        "title": "全宋詞選",
+        "imported": 1912,
+        "sourceFiles": 22,
+        "selectedAuthors": [
+          "蘇軾",
+          "辛棄疾",
+          "李清照",
+          "柳永",
+          "周邦彥",
+          "晏殊",
+          "晏幾道",
+          "秦觀",
+          "姜夔",
+          "賀鑄",
+          "陸游",
+          "歐陽修",
+          "張先",
+          "吳文英",
+          "黃庭堅",
+          "蔣捷"
+        ],
+        "maximumPerAuthor": 140,
+        "sourceSha256": "ad5de1e19a0ab4c1bc5872b272eb1a64e18ff18c75ecea8db0cb0dc13abb9ed3",
+        "conversion": "OpenCC cn → hk"
+      },
       "guwen": {
         "title": "古文觀止",
         "imported": 222,
         "sourceUrl": "https://raw.githubusercontent.com/chinese-poetry/chinese-poetry/b8594f81a89752241442f2ce267d6f66f96704ee/%E8%92%99%E5%AD%A6/guwenguanzhi.json",
         "sourceSha256": "ba10ec02849d58bebcc8da575dda3da07a1123e2a31dab3f734acd95d48c5cac"
+      },
+      "shijing": {
+        "title": "詩經",
+        "imported": 305,
+        "sourceUrl": "https://raw.githubusercontent.com/chinese-poetry/chinese-poetry/b8594f81a89752241442f2ce267d6f66f96704ee/%E8%AF%97%E7%BB%8F/shijing.json",
+        "sourceSha256": "3c7ca54d59424542ada99adfcc85420287fbbd5c8a511e9baf705cb2b04051e7",
+        "conversion": "OpenCC cn → hk"
+      },
+      "chuci": {
+        "title": "楚辭",
+        "imported": 65,
+        "sourceUrl": "https://raw.githubusercontent.com/chinese-poetry/chinese-poetry/b8594f81a89752241442f2ce267d6f66f96704ee/%E6%A5%9A%E8%BE%9E/chuci.json",
+        "sourceSha256": "5069e733d93781cecd55405c6d4699a7c17125b3f13cf79810d68792482e5b9b",
+        "conversion": "OpenCC cn → hk"
+      },
+      "yuanqu": {
+        "title": "元曲",
+        "imported": 10906,
+        "sourceUrl": "https://raw.githubusercontent.com/chinese-poetry/chinese-poetry/b8594f81a89752241442f2ce267d6f66f96704ee/%E5%85%83%E6%9B%B2/yuanqu.json",
+        "sourceSha256": "c2be37d2349cec99ec7f2d7c4107eb08bbb3ac869221db24531c8ffed2a88b12",
+        "conversion": "OpenCC cn → hk"
+      },
+      "caocao": {
+        "title": "曹操詩集",
+        "imported": 26,
+        "sourceUrl": "https://raw.githubusercontent.com/chinese-poetry/chinese-poetry/b8594f81a89752241442f2ce267d6f66f96704ee/%E6%9B%B9%E6%93%8D%E8%AF%97%E9%9B%86/caocao.json",
+        "sourceSha256": "3c44e2fd296ca99b61b73f6f276e6d6272e9ae54d5ed2adfd77dc90752f85332",
+        "conversion": "OpenCC cn → hk"
+      },
+      "nalan": {
+        "title": "納蘭性德詞集",
+        "imported": 257,
+        "sourceUrl": "https://raw.githubusercontent.com/chinese-poetry/chinese-poetry/b8594f81a89752241442f2ce267d6f66f96704ee/%E7%BA%B3%E5%85%B0%E6%80%A7%E5%BE%B7/%E7%BA%B3%E5%85%B0%E6%80%A7%E5%BE%B7%E8%AF%97%E9%9B%86.json",
+        "sourceSha256": "5f86295be820c517a7d44c10db6e8dcfa04cfd3da4c8be06cd346a2b7860fc67",
+        "conversion": "OpenCC cn → hk"
+      },
+      "fourBooks": {
+        "title": "四書",
+        "imported": 36,
+        "files": {
+          "lunyu": {
+            "sourceUrl": "https://raw.githubusercontent.com/chinese-poetry/chinese-poetry/b8594f81a89752241442f2ce267d6f66f96704ee/%E8%AE%BA%E8%AF%AD/lunyu.json",
+            "sourceSha256": "bc336a3839706377892719db44c48a09794a493190535a42bf1c7d4c4233e96c"
+          },
+          "daxue": {
+            "sourceUrl": "https://raw.githubusercontent.com/chinese-poetry/chinese-poetry/b8594f81a89752241442f2ce267d6f66f96704ee/%E5%9B%9B%E4%B9%A6%E4%BA%94%E7%BB%8F/daxue.json",
+            "sourceSha256": "1939dfeb2cb8fde6c96fb5ce6bd1cff93df05460027c90c685f4863b05c550e8"
+          },
+          "zhongyong": {
+            "sourceUrl": "https://raw.githubusercontent.com/chinese-poetry/chinese-poetry/b8594f81a89752241442f2ce267d6f66f96704ee/%E5%9B%9B%E4%B9%A6%E4%BA%94%E7%BB%8F/zhongyong.json",
+            "sourceSha256": "2962a8b52bf78c010b051622b8803a956b461813ae0ed86148e4851e7d605ed8"
+          },
+          "mengzi": {
+            "sourceUrl": "https://raw.githubusercontent.com/chinese-poetry/chinese-poetry/b8594f81a89752241442f2ce267d6f66f96704ee/%E5%9B%9B%E4%B9%A6%E4%BA%94%E7%BB%8F/mengzi.json",
+            "sourceSha256": "349888018acd0b3fea58de92e53403b8c77640d84b1ae9d37360d5ff1966bcdc"
+          }
+        },
+        "conversion": "OpenCC cn → hk where needed"
+      },
+      "youmengying": {
+        "title": "幽夢影",
+        "imported": 19,
+        "sourceEntries": 219,
+        "grouping": "12 aphorisms per local reading unit",
+        "sourceUrl": "https://raw.githubusercontent.com/chinese-poetry/chinese-poetry/b8594f81a89752241442f2ce267d6f66f96704ee/%E5%B9%BD%E6%A2%A6%E5%BD%B1/youmengying.json",
+        "sourceSha256": "02fe9f8d80ec2506e7b4b797953b15ed0145dc7ebacecab2798647ebff4419e4",
+        "conversion": "OpenCC cn → hk"
+      },
+      "primers": {
+        "title": "蒙學原典",
+        "imported": 175,
+        "collections": {
+          "幼學瓊林": 33,
+          "聲律啓蒙": 30,
+          "弟子規": 8,
+          "增廣賢文": 63,
+          "文字蒙求": 41
+        },
+        "files": {
+          "youxueqionglin": {
+            "sourceUrl": "https://raw.githubusercontent.com/chinese-poetry/chinese-poetry/b8594f81a89752241442f2ce267d6f66f96704ee/%E8%92%99%E5%AD%A6/youxueqionglin.json",
+            "sourceSha256": "26174c52acfccbe3b7ff3e3c32bdb99cd7e35d89590328b4df21fb8f5dc2d006"
+          },
+          "shenglvqimeng": {
+            "sourceUrl": "https://raw.githubusercontent.com/chinese-poetry/chinese-poetry/b8594f81a89752241442f2ce267d6f66f96704ee/%E8%92%99%E5%AD%A6/shenglvqimeng.json",
+            "sourceSha256": "fdc2decf61a63c9c26712f5b340be67239c1c50249feb4d03a831b8c2f0223fd"
+          },
+          "dizigui": {
+            "sourceUrl": "https://raw.githubusercontent.com/chinese-poetry/chinese-poetry/b8594f81a89752241442f2ce267d6f66f96704ee/%E8%92%99%E5%AD%A6/dizigui.json",
+            "sourceSha256": "db784beb207c4f6ba481063f07a020159366e40bba79bb7fccf7f7bffb90e74f"
+          },
+          "zengguangxianwen": {
+            "sourceUrl": "https://raw.githubusercontent.com/chinese-poetry/chinese-poetry/b8594f81a89752241442f2ce267d6f66f96704ee/%E8%92%99%E5%AD%A6/zengguangxianwen.json",
+            "sourceSha256": "b172194c227f1dcccdd2598d23f7c17b5906504085b142f482b35f5fca982fcb"
+          },
+          "wenzimengqiu": {
+            "sourceUrl": "https://raw.githubusercontent.com/chinese-poetry/chinese-poetry/b8594f81a89752241442f2ce267d6f66f96704ee/%E8%92%99%E5%AD%A6/wenzimengqiu.json",
+            "sourceSha256": "39893076a50ad6e87d81073d5ef5a322d177895bd2de5840429b13c6b2d4c90f"
+          }
+        },
+        "conversion": "OpenCC cn → hk where needed"
       }
     }
   }

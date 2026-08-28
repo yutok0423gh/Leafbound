@@ -343,13 +343,12 @@ export const poetryFacets = {
   theme: ["全部", ...new Set(poems.flatMap((poem) => poem.themes))]
 };
 
-export const poetryKinds = ["全部", "詩", "詞", "古文"];
+export const poetryKinds = ["全部", "詩", "詞", "曲", "古文"];
 
 export const navItems = [
   { id: "today", label: "今日", icon: "sun" },
   { id: "poetry", label: "詩詞", icon: "book" },
-  { id: "cantonese", label: "粵語", icon: "wave" },
-  { id: "english", label: "English", icon: "type" },
+  { id: "language", label: "Language", icon: "language" },
   { id: "library", label: "我的", icon: "bookmark" }
 ];
 
@@ -368,6 +367,49 @@ export function getDailyIndex(length, date = new Date(), offset = 0) {
   const localDayNumber = Math.floor(Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()) / 86_400_000);
   const index = (localDayNumber + Math.trunc(Number(offset) || 0)) % count;
   return index < 0 ? index + count : index;
+}
+
+export function pickDailyItem(items, options = {}) {
+  const candidates = Array.isArray(items) ? items.filter((item) => item?.id) : [];
+  if (!candidates.length) return { item: null, reread: false };
+
+  const recentIds = Array.isArray(options.recentIds)
+    ? [...new Set(options.recentIds.map((id) => String(id || "")).filter(Boolean))]
+    : [];
+  const recentSet = new Set(recentIds);
+  const withoutRecent = (pool) => {
+    const fresh = pool.filter((item) => !recentSet.has(String(item.id)));
+    if (fresh.length) return fresh;
+    const previousId = recentIds[0];
+    if (previousId && pool.length > 1) {
+      const withoutPrevious = pool.filter((item) => String(item.id) !== previousId);
+      if (withoutPrevious.length) return withoutPrevious;
+    }
+    return pool;
+  };
+  const isSeen = typeof options.isSeen === "function" ? options.isSeen : () => false;
+  const unread = candidates.filter((item) => !isSeen(item));
+
+  if (unread.length) {
+    const pool = withoutRecent(unread);
+    const preferredId = String(options.preferred?.id || options.preferred || "");
+    const preferred = preferredId && pool.find((item) => String(item.id) === preferredId);
+    return {
+      item: preferred || pool[getDailyIndex(pool.length, options.date, options.offset)] || pool[0],
+      reread: false
+    };
+  }
+
+  const pool = withoutRecent(candidates);
+  const seenAt = typeof options.seenAt === "function" ? options.seenAt : () => Number.NaN;
+  const dated = pool
+    .map((item) => ({ item, seenAt: Number(seenAt(item)) }))
+    .filter((entry) => Number.isFinite(entry.seenAt))
+    .sort((a, b) => a.seenAt - b.seenAt);
+  return {
+    item: dated[0]?.item || pool[getDailyIndex(pool.length, options.date, options.offset)] || pool[0],
+    reread: true
+  };
 }
 
 export function getTodayPoem(date = new Date()) {

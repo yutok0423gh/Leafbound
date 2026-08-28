@@ -37,6 +37,7 @@ export function createDefaultState() {
       "ferry-wind": 0
     },
     contentActivity: {},
+    dailySelections: {},
     history: {
       poems: ["mountain-autumn"],
       articles: ["quiet-noticing"],
@@ -154,12 +155,25 @@ export function normalizeState(candidate) {
     readingProgress: { ...base.readingProgress, ...(candidate.readingProgress || {}) },
     playbackProgress: { ...base.playbackProgress, ...(candidate.playbackProgress || {}) },
     contentActivity: normalizeContentActivity(candidate.contentActivity),
+    dailySelections: normalizeDailySelections(candidate.dailySelections),
     history: {
       ...base.history,
       ...(candidate.history || {})
     },
     preferences: normalizePreferences(candidate.preferences)
   };
+}
+
+function normalizeDailySelections(candidate) {
+  if (!candidate || typeof candidate !== "object") return {};
+  return Object.fromEntries(Object.entries(candidate).flatMap(([dayKey, selection]) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dayKey) || !selection || typeof selection !== "object") return [];
+    const normalized = Object.fromEntries(["poem", "article", "episode"].flatMap((field) => {
+      const id = String(selection[field] || "").trim();
+      return id ? [[field, id]] : [];
+    }));
+    return Object.keys(normalized).length ? [[dayKey, normalized]] : [];
+  }));
 }
 
 function normalizeContentActivity(candidate) {

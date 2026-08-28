@@ -60,16 +60,6 @@ export const englishNewsDesks = Object.freeze([
     homepage: "https://www.economist.com/"
   },
   {
-    id: "global-voices",
-    name: "Global Voices",
-    shortName: "Global Voices",
-    mark: "GV",
-    mode: "開放授權",
-    access: "open",
-    description: "全球在地視角，多數原創內容採 CC BY；可作下一批站內全文來源。",
-    homepage: "https://globalvoices.org/"
-  },
-  {
     id: "open-newswire",
     name: "Open Newswire",
     shortName: "Open Newswire",

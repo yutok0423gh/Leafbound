@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { getDailyIndex, getLocalDayKey, getTodayPoem, poems } from "../src/data.js";
+import { getDailyIndex, getLocalDayKey, getTodayPoem, pickDailyItem, poems, poetryKinds } from "../src/data.js";
 
 test("daily selections follow the local calendar and rotate after midnight", () => {
   const morning = new Date(2026, 7, 20, 0, 5);
@@ -16,6 +16,30 @@ test("daily selections follow the local calendar and rotate after midnight", () 
   assert.notEqual(getDailyIndex(19, evening, 11), getDailyIndex(19, nextDay, 11));
   assert.notEqual(getDailyIndex(3, evening, 2), getDailyIndex(3, nextDay, 2));
   assert.equal(getDailyIndex(0, morning), -1);
+});
+
+test("daily shelves do not repeat a presented item before the pool is exhausted", () => {
+  const items = ["a", "b", "c", "d"].map((id) => ({ id }));
+  const recentIds = [];
+  const selections = [];
+
+  for (let day = 0; day < items.length; day += 1) {
+    const selected = pickDailyItem(items, {
+      date: new Date(2026, 7, 20 + day),
+      preferred: items[0],
+      recentIds
+    }).item;
+    selections.push(selected.id);
+    recentIds.unshift(selected.id);
+  }
+
+  assert.equal(new Set(selections).size, items.length);
+  const nextCycle = pickDailyItem(items, {
+    date: new Date(2026, 7, 24),
+    preferred: items[0],
+    recentIds
+  }).item;
+  assert.notEqual(nextCycle.id, selections.at(-1));
 });
 
 test("each poem has a featured quote composed from its own lines", () => {
@@ -33,15 +57,16 @@ test("each poem has a featured quote composed from its own lines", () => {
 
 test("open poetry entries remain source-only and traceable", () => {
   const imported = poems.filter((poem) => poem.isOpenCorpus);
-  assert.equal(poems.length, 869);
-  assert.equal(imported.length, 863);
+  assert.equal(poems.length, 17_373);
+  assert.equal(imported.length, 17_367);
   assert.equal(new Set(poems.map((poem) => poem.id)).size, poems.length);
   assert.deepEqual(
-    Object.fromEntries(["詩", "詞", "古文"].map((kind) => [kind, poems.filter((poem) => poem.kind === kind).length])),
-    { 詩: 367, 詞: 280, 古文: 222 }
+    Object.fromEntries(["詩", "詞", "曲", "古文"].map((kind) => [kind, poems.filter((poem) => poem.kind === kind).length])),
+    { 詩: 3_566, 詞: 2_449, 曲: 10_906, 古文: 452 }
   );
+  assert.deepEqual(poetryKinds, ["全部", "詩", "詞", "曲", "古文"]);
   imported.forEach((poem) => {
-    assert.ok(["詩", "詞", "古文"].includes(poem.kind));
+    assert.ok(["詩", "詞", "曲", "古文"].includes(poem.kind));
     assert.equal(poem.sourceLicense, "MIT");
     assert.match(poem.sourceUrl, /^https:\/\/github\.com\/chinese-poetry\/chinese-poetry\/blob\/[0-9a-f]{40}\//);
     assert.ok(poem.sourceRevision);
@@ -50,6 +75,50 @@ test("open poetry entries remain source-only and traceable", () => {
     assert.equal(poem.appreciation, "");
     assert.equal(poem.allusion, "");
   });
+});
+
+test("expanded classical shelf includes complete canonical open collections", () => {
+  const collectionCounts = Object.fromEntries(
+    [
+      "詩經", "楚辭", "元曲", "曹操詩集", "納蘭性德詞集", "四書", "幽夢影",
+      "全唐詩選", "千家詩", "全宋詞選", "幼學瓊林", "聲律啓蒙", "弟子規", "增廣賢文", "文字蒙求"
+    ]
+      .map((collection) => [collection, poems.filter((poem) => poem.collection === collection).length])
+  );
+  assert.deepEqual(collectionCounts, {
+    詩經: 305,
+    楚辭: 65,
+    元曲: 10_906,
+    曹操詩集: 26,
+    納蘭性德詞集: 257,
+    四書: 36,
+    幽夢影: 19,
+    全唐詩選: 2_592,
+    千家詩: 212,
+    全宋詞選: 1_912,
+    幼學瓊林: 33,
+    聲律啓蒙: 30,
+    弟子規: 8,
+    增廣賢文: 63,
+    文字蒙求: 41
+  });
+
+  const shijing = poems.find((poem) => poem.collection === "詩經" && poem.title === "關雎");
+  assert.equal(shijing.dynasty, "先秦");
+  assert.ok(shijing.lines[0].text.includes("關關雎鳩"));
+
+  const chuci = poems.find((poem) => poem.collection === "楚辭" && poem.title === "離騷");
+  assert.equal(chuci.form, "楚辭");
+  assert.ok(chuci.lines.length > 100);
+
+  const fourBooks = poems.find((poem) => poem.collection === "四書" && poem.title === "論語 · 學而篇");
+  assert.equal(fourBooks.kind, "古文");
+  assert.equal(fourBooks.originalSource, "《論語》");
+  assert.ok(fourBooks.lines[0].text.includes("學而時習之"));
+
+  const yuanqu = poems.find((poem) => poem.collection === "元曲");
+  assert.equal(yuanqu.kind, "曲");
+  assert.equal(yuanqu.dynasty, "元");
 });
 
 test("Song ci are traditional Chinese and ancient prose preserves its paragraph source", () => {

@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { articles } from "../src/data.js";
+import { englishDiscoveries } from "../src/open-english.js";
 import { englishNewsDesks } from "../src/english-news-sources.js";
 import {
   englishDictionarySnapshot,
@@ -18,7 +19,7 @@ const quietNoticing = articles.find((article) => article.id === "quiet-noticing"
 const wordPattern = /[A-Za-z]+(?:[’'][A-Za-z]+)*(?:-[A-Za-z]+)*/g;
 
 test("English news directory separates public reading entrances from bundled text", () => {
-  assert.equal(englishNewsDesks.length, 8);
+  assert.equal(englishNewsDesks.length, 7);
   assert.deepEqual(englishNewsDesks.map((source) => source.shortName), [
     "AP",
     "Reuters",
@@ -26,7 +27,6 @@ test("English news directory separates public reading entrances from bundled tex
     "CNN",
     "RFI",
     "Economist",
-    "Global Voices",
     "Open Newswire"
   ]);
   assert.equal(new Set(englishNewsDesks.map((source) => source.id)).size, englishNewsDesks.length);
@@ -82,6 +82,26 @@ test("headline lookup supplies common collocations instead of relying on source 
   ]);
 });
 
+test("gives exposes a concise five-part learning entry", async () => {
+  await loadEnglishDictionary();
+  const entry = lookupEnglishWord({ word: "gives" });
+
+  assert.equal(entry.lemma, "give");
+  assert.equal(entry.partOfSpeech, "verb");
+  assert.equal(entry.pronunciation, "/ɡɪvz/");
+  assert.equal(entry.meaning, "給；給予；提供；使某人獲得或感受到");
+  assert.equal(entry.definition, "to hand something to someone, or to cause someone to have or experience something");
+  assert.deepEqual(entry.commonUses.map((item) => item.pattern), [
+    "give someone something",
+    "give something to someone",
+    "give directions / advice"
+  ]);
+  assert.deepEqual(entry.dictionaryExamples, [
+    "Could you give me a few minutes?",
+    "This seat gives you a clear view of the city."
+  ]);
+});
+
 test("open WordNet data resolves inflected article vocabulary locally", async () => {
   await loadEnglishDictionary();
   const paragraph = articles.find((article) => article.id === "phrases-carry").paragraphs[0];
@@ -134,13 +154,14 @@ test("editorial overrides keep irregular homonyms useful in context", async () =
 });
 
 test("dictionary snapshot stays compact and covers most current article vocabulary", () => {
-  assert.equal(englishDictionarySnapshot.articleCount, 19);
+  assert.equal(englishDictionarySnapshot.articleCount, articles.length + englishDiscoveries.length);
+  assert.match(englishDictionarySnapshot.contentDigest, /^[a-f0-9]{64}$/);
   assert.ok(englishDictionarySnapshot.articleWordCount >= 3_500);
   assert.ok(englishDictionarySnapshot.matchedWordCount >= 3_600);
   assert.ok(englishDictionarySnapshot.bilingualWordCount >= 3_350);
   assert.ok(englishDictionarySnapshot.freedictFallbackWordCount >= 750);
   assert.ok(englishDictionarySnapshot.matchedWordCount / englishDictionarySnapshot.articleWordCount > 0.9);
-  assert.ok(englishDictionarySnapshot.bilingualWordCount / englishDictionarySnapshot.articleWordCount > 0.85);
+  assert.ok(englishDictionarySnapshot.bilingualWordCount / englishDictionarySnapshot.matchedWordCount > 0.88);
 });
 
 test("every word in The quiet work of noticing has a local Chinese gloss", () => {

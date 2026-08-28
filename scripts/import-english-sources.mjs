@@ -1,6 +1,10 @@
-import { writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { load } from "cheerio";
+import {
+  readGeneratedExport,
+  stableSnapshot,
+  writeTextIfChanged
+} from "./generated-content-utils.mjs";
 
 const outputUrl = new URL("../src/open-english.js", import.meta.url);
 
@@ -29,7 +33,17 @@ const VOA_FEEDS = [
 
 const NASA_FEED = "https://www.nasa.gov/technology/feed/";
 const STANDARD_EBOOKS_FEED = "https://standardebooks.org/feeds/atom/new-releases";
+const GLOBAL_VOICES_FEED = "https://globalvoices.org/feed/?cat=-28";
 const VOA_WIRE_PATTERN = /\b(?:AP|AFP|Reuters|Associated Press|Agence France-Presse)\b/i;
+const GLOBAL_VOICES_PARTNER_PATTERN = /\b(?:content-sharing agreement|content sharing agreement|republished (?:from|with permission)|originally (?:published|appeared) (?:at|by|on) (?!Global Voices\b))\b/i;
+const VOA_ITEMS_PER_FEED = 10;
+const VOA_CANDIDATES_PER_FEED = 40;
+const NASA_ITEM_LIMIT = 12;
+const NASA_CANDIDATE_LIMIT = 24;
+const STANDARD_EBOOK_ITEM_LIMIT = 12;
+const STANDARD_EBOOK_CANDIDATE_LIMIT = 24;
+const GLOBAL_VOICES_ITEM_LIMIT = 14;
+const GLOBAL_VOICES_CANDIDATE_LIMIT = 24;
 
 const sourceCatalog = [
   {
@@ -70,6 +84,16 @@ const sourceCatalog = [
     mode: "首章長讀",
     homepage: "https://standardebooks.org/",
     licenseUrl: "https://standardebooks.org/help"
+  },
+  {
+    id: "global-voices",
+    name: "Global Voices",
+    shortName: "Global Voices",
+    mark: "G",
+    description: "全球在地作者的 CC BY 文章；只匯入 Global Voices 原創純文字並保留作者署名。",
+    mode: "開放授權全文",
+    homepage: "https://globalvoices.org/",
+    licenseUrl: "https://globalvoices.org/about/global-voices-attribution-policy/"
   }
 ];
 
@@ -93,6 +117,11 @@ function decodeXml(value = "") {
 function tag(block, name) {
   const match = block.match(new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${name}>`, "i"));
   return decodeXml(match?.[1] || "");
+}
+
+function rawTag(block, name) {
+  const match = block.match(new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${name}>`, "i"));
+  return String(match?.[1] || "").replace(/^<!\[CDATA\[|\]\]>$/g, "").trim();
 }
 
 function blocks(xml, tagName) {
@@ -144,16 +173,30 @@ function readingMinutes(text) {
 }
 
 async function fetchText(url, accept = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.5") {
-  const response = await fetch(url, {
-    headers: {
-      "user-agent": "Leafbound personal language library source importer/0.2",
-      accept
-    },
-    redirect: "follow",
-    signal: AbortSignal.timeout(30_000)
-  });
-  if (!response.ok) throw new Error(`${url} returned ${response.status}`);
-  return response.text();
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    let response;
+    try {
+      response = await fetch(url, {
+        headers: {
+          "user-agent": "Leafbound personal language library source importer/0.2",
+          accept
+        },
+        redirect: "follow",
+        signal: AbortSignal.timeout(30_000)
+      });
+    } catch (error) {
+      lastError = error;
+    }
+    if (response?.ok) return response.text();
+    if (response) {
+      const error = new Error(`${url} returned ${response.status}`);
+      if (response.status !== 429 && response.status < 500) throw error;
+      lastError = error;
+    }
+    if (attempt < 3) await new Promise((resolvePromise) => setTimeout(resolvePromise, attempt * 750));
+  }
+  throw lastError || new Error(`${url} could not be fetched`);
 }
 
 function htmlParagraphs($, root, { allowShort = false, exclude = [] } = {}) {
@@ -257,6 +300,56 @@ async function extractStandardEbookOpening(sourceUrl) {
   };
 }
 
+function globalVoicesCategory(itemCategories) {
+  const values = new Set(itemCategories.map((value) => value.toLocaleLowerCase()));
+  const has = (...names) => names.some((name) => values.has(name.toLocaleLowerCase()));
+  if (has("Language", "Education")) return "語言";
+  if (has("Literature")) return "文學";
+  if (has("Science", "Technology", "Environment", "Health")) return "科學";
+  if (has("Arts & Culture", "Film", "Music", "History", "Food", "Photography")) return "文化";
+  return "生活";
+}
+
+function englishOnlyGlobalVoicesText(value) {
+  return cleanText(String(value)
+    .replace(/\s*[（(][^()（）]*\p{Script=Han}[^()（）]*[)）]/gu, "")
+    .replace(/\p{Script=Han}+/gu, ""));
+}
+
+function extractGlobalVoicesBody(itemBlock) {
+  const encoded = rawTag(itemBlock, "content:encoded");
+  if (!encoded) throw new Error("RSS item did not include a full article body");
+  if (GLOBAL_VOICES_PARTNER_PATTERN.test(decodeXml(encoded))) {
+    throw new Error("external content-sharing or republication notice detected");
+  }
+
+  const $ = load(encoded);
+  const root = $("body").first().length ? $("body").first() : $.root();
+  const originalLink = root.find(".originally-published a[href]").first().attr("href") || "";
+  const creditLink = root.find(".gv-rss-footer a.user-link[href]").last();
+  const creditedAuthor = cleanText(creditLink.text());
+  const creditUrl = creditLink.attr("href") || "";
+  if (!/^https:\/\/globalvoices\.org\//i.test(originalLink)) {
+    throw new Error("Global Voices original-publication marker was not found");
+  }
+  if (!creditedAuthor || !/^https:\/\/globalvoices\.org\/author\//i.test(creditUrl)) {
+    throw new Error("Global Voices author credit was not found");
+  }
+
+  root.find("blockquote, figure, figcaption, .wp-caption, .originally-published, .gv-rss-footer, big.tagline, script, style, noscript, svg, form, button, audio, video, iframe").remove();
+  const paragraphs = htmlParagraphs($, root, {
+    exclude: [
+      /^This post is part of Global Voices[’']/i,
+      /^You can support this coverage/i,
+      /^Support our work$/i,
+      /(?:©|copyright|all rights reserved)/i,
+      /\b(?:photo|image|screenshot)\b.*\b(?:fair use|used with permission|courtesy|creative commons)\b/i
+    ]
+  }).map(englishOnlyGlobalVoicesText).filter(Boolean);
+  if (paragraphs.join(" ").length < 450) throw new Error("Global Voices article body was too short after rights-safe cleanup");
+  return { paragraphs, contentScope: "full", sectionTitle: "", creditedAuthor };
+}
+
 function withBody(item, body) {
   const joined = body.paragraphs.join(" ");
   return {
@@ -294,11 +387,11 @@ async function importVoa() {
         };
       })
       .filter((item) => item.title && item.sourceUrl)
-      .slice(0, 12);
+      .slice(0, VOA_CANDIDATES_PER_FEED);
 
     const imported = [];
     for (const candidate of candidates) {
-      if (imported.length >= 3) break;
+      if (imported.length >= VOA_ITEMS_PER_FEED) break;
       try {
         imported.push(withBody(candidate, await extractVoaBody(candidate.sourceUrl)));
       } catch (error) {
@@ -333,11 +426,11 @@ async function importNasa() {
       };
     })
     .filter((item) => item.title && item.sourceUrl)
-    .slice(0, 8);
+    .slice(0, NASA_CANDIDATE_LIMIT);
 
   const imported = [];
   for (const candidate of candidates) {
-    if (imported.length >= 4) break;
+    if (imported.length >= NASA_ITEM_LIMIT) break;
     try {
       imported.push(withBody(candidate, await extractNasaBody(candidate.sourceUrl)));
     } catch (error) {
@@ -372,11 +465,11 @@ async function importStandardEbooks() {
       };
     })
     .filter((item) => item.title && item.sourceUrl)
-    .slice(0, 8);
+    .slice(0, STANDARD_EBOOK_CANDIDATE_LIMIT);
 
   const imported = [];
   for (const candidate of candidates) {
-    if (imported.length >= 4) break;
+    if (imported.length >= STANDARD_EBOOK_ITEM_LIMIT) break;
     try {
       imported.push(withBody(candidate, await extractStandardEbookOpening(candidate.sourceUrl)));
     } catch (error) {
@@ -386,25 +479,75 @@ async function importStandardEbooks() {
   return imported;
 }
 
+async function importGlobalVoices() {
+  const xml = await fetchText(GLOBAL_VOICES_FEED, "application/rss+xml,application/xml,text/xml;q=0.9,*/*;q=0.5");
+  const candidates = blocks(xml, "item")
+    .map((item, index) => {
+      const sourceUrl = tag(item, "link") || tag(item, "guid");
+      const itemCategories = categories(item);
+      const author = tag(item, "dc:creator");
+      return {
+        block: item,
+        item: {
+          id: stableId("global-voices", sourceUrl, index),
+          title: tag(item, "title"),
+          deck: tag(item, "description") || "A Global Voices story selected for close reading.",
+          source: "Global Voices",
+          sourceId: "global-voices",
+          sourceUrl,
+          sourceFeed: GLOBAL_VOICES_FEED,
+          category: globalVoicesCategory(itemCategories),
+          topic: itemCategories.filter((value) => !/^(?:English|Weblog|Feature)$/i.test(value)).slice(0, 3).join(" · ") || "World perspectives",
+          publishedAt: isoDate(tag(item, "pubDate")),
+          license: "Global Voices original text is licensed under Creative Commons Attribution 3.0 (CC BY 3.0).",
+          attribution: `Text: ${author || "Global Voices contributor"} · Originally published by Global Voices`,
+          contentNote: "只匯入 Global Voices 原創文章的英文純文字改編；外部內容共享稿、圖片、圖說、影音、長篇引文與括號內非英文原文拼寫均不複製。"
+        }
+      };
+    })
+    .filter(({ item }) => item.title && item.sourceUrl)
+    .slice(0, GLOBAL_VOICES_CANDIDATE_LIMIT);
+
+  const imported = [];
+  for (const candidate of candidates) {
+    if (imported.length >= GLOBAL_VOICES_ITEM_LIMIT) break;
+    try {
+      const body = extractGlobalVoicesBody(candidate.block);
+      imported.push(withBody({
+        ...candidate.item,
+        attribution: `Text: ${body.creditedAuthor} · Originally published by Global Voices · Plain-text adaptation: Leafbound`
+      }, body));
+    } catch (error) {
+      console.warn(`Skipped Global Voices item "${candidate.item.title}": ${error.message}`);
+    }
+  }
+  return imported;
+}
+
 function serialize(name, value) {
   return `export const ${name} = Object.freeze(${JSON.stringify(value, null, 2)});`;
 }
 
-const [voa, nasa, standardEbooks] = await Promise.all([
+const [voa, nasa, standardEbooks, globalVoices] = await Promise.all([
   importVoa(),
   importNasa(),
-  importStandardEbooks()
+  importStandardEbooks(),
+  importGlobalVoices()
 ]);
 
-const discoveries = [...voa, ...nasa, ...standardEbooks];
-const generatedAt = new Date().toISOString();
-const output = `// Generated by scripts/import-english-sources.mjs. Do not edit by hand.\n\n${serialize("englishSourceSnapshot", {
-  generatedAt,
-  feeds: [...VOA_FEEDS.map((feed) => feed.url), NASA_FEED, STANDARD_EBOOKS_FEED],
+const discoveries = [...voa, ...nasa, ...standardEbooks, ...globalVoices];
+const previousSnapshot = await readGeneratedExport(outputUrl, "englishSourceSnapshot");
+const snapshotPayload = {
+  feeds: [...VOA_FEEDS.map((feed) => feed.url), NASA_FEED, STANDARD_EBOOKS_FEED, GLOBAL_VOICES_FEED],
   itemCount: discoveries.length,
   fullArticleCount: discoveries.filter((item) => item.contentScope === "full").length,
   chapterCount: discoveries.filter((item) => item.contentScope === "chapter").length
-})}\n\n${serialize("englishSourceCatalog", sourceCatalog)}\n\n${serialize("englishDiscoveries", discoveries)}\n`;
+};
+const snapshot = stableSnapshot(previousSnapshot, snapshotPayload, {
+  sourceCatalog,
+  discoveries
+});
+const output = `// Generated by scripts/import-english-sources.mjs. Do not edit by hand.\n\n${serialize("englishSourceSnapshot", snapshot)}\n\n${serialize("englishSourceCatalog", sourceCatalog)}\n\n${serialize("englishDiscoveries", discoveries)}\n`;
 
-await writeFile(outputUrl, output, "utf8");
-console.log(`Wrote ${discoveries.length} readable English items to ${fileURLToPath(outputUrl)}`);
+const changed = await writeTextIfChanged(outputUrl, output);
+console.log(`${changed ? "Updated" : "No content changes in"} ${fileURLToPath(outputUrl)} (${discoveries.length} readable English items)`);

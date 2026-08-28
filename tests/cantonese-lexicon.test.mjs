@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 import {
+  alignCantonesePronunciation,
   buildCantonesePronunciationLine,
   getCantoneseTermData,
   lookupCantoneseReadings,
@@ -81,6 +82,35 @@ test("transcript pronunciation lines keep first candidates and readable Latin wo
   );
 });
 
+test("source Jyutping aligns to words without shifting across punctuation", () => {
+  const aligned = alignCantonesePronunciation(
+    "H：但係我都知道你鍾意法拉利。",
+    "daan6hai6 ngo5 dou1 zi1dou3 nei5 zung1ji3 faat3laai1lei2"
+  );
+  assert.deepEqual(
+    aligned.filter((segment) => segment.syllables.length).map(({ text, syllables }) => [text, syllables]),
+    [
+      ["但係", ["daan6", "hai6"]],
+      ["我", ["ngo5"]],
+      ["都", ["dou1"]],
+      ["知道", ["zi1", "dou3"]],
+      ["你", ["nei5"]],
+      ["鍾意", ["zung1", "ji3"]],
+      ["法拉利", ["faat3", "laai1", "lei2"]]
+    ]
+  );
+  assert.equal(aligned[0].text, "H：");
+  assert.equal(aligned.at(-1).text, "。");
+
+  assert.deepEqual(
+    alignCantonesePronunciation(
+      "A：基本上哩個旅行呢都幾好喇。",
+      "ge3i1bun2soeng6 ni1go3 leoi5hang4 ne1 dou1 gei2 hou2 laa1"
+    ),
+    []
+  );
+});
+
 test("curated transcript pronunciations agree with the pinned words.hk candidates", () => {
   const payload = JSON.parse(readFileSync(new URL("../data/words-hk-wordslist.json", import.meta.url), "utf8"));
   Object.values(cantoneseTerms).forEach((term) => {
@@ -91,22 +121,47 @@ test("curated transcript pronunciations agree with the pinned words.hk candidate
   });
 });
 
-test("local pronunciation data covers every Han character in the ancient prose library", () => {
+test("local pronunciation data covers every meaningful line in the classical library", () => {
   const wordPayload = JSON.parse(readFileSync(new URL("../data/words-hk-wordslist.json", import.meta.url), "utf8"));
   const characterPayload = JSON.parse(readFileSync(new URL("../data/rime-cantonese-chars.json", import.meta.url), "utf8"));
   const missing = new Set();
+  const maxWordLength = Math.min(
+    16,
+    Object.keys(wordPayload.entries).reduce((maximum, word) => Math.max(maximum, Array.from(word).length), 2)
+  );
 
-  poems.filter((poem) => poem.kind === "古文").forEach((poem) => {
+  poems.forEach((poem) => {
     poem.lines.forEach((line) => {
-      Array.from(line.text).forEach((character) => {
-        if (/\p{Script=Han}/u.test(character)
-          && !wordPayload.entries[character]?.length
-          && !characterPayload.entries[character]?.length) missing.add(character);
+      segmentCantonesePronunciation(
+        line.text,
+        wordPayload.entries,
+        characterPayload.entries,
+        maxWordLength
+      ).forEach((segment) => {
+        if (segment.isWord) return;
+        Array.from(segment.text).forEach((character) => {
+          if (/\p{Script=Han}/u.test(character)) missing.add(character);
+        });
       });
+
+      if (/[\p{Script=Han}A-Za-z0-9]/u.test(line.text)) {
+        assert.ok(
+          buildCantonesePronunciationLine(
+            line.text,
+            wordPayload.entries,
+            characterPayload.entries,
+            maxWordLength
+          ),
+          `${poem.id} has a meaningful line without a generated pronunciation: ${line.text}`
+        );
+      }
     });
   });
 
   assert.deepEqual([...missing], []);
+  assert.deepEqual(lookupCantoneseReadings("荆", wordPayload.entries, characterPayload.entries), ["ging1"]);
+  assert.deepEqual(lookupCantoneseReadings("衮", wordPayload.entries, characterPayload.entries), ["gwan2", "kwan2"]);
+  assert.deepEqual(lookupCantoneseReadings("万俟", wordPayload.entries, characterPayload.entries), ["mak6 kei4"]);
   assert.equal(characterPayload.meta.sourceRevision, "259f0e48bba840c3a2e0d117539e96937f3d89bc");
   assert.equal(characterPayload.meta.license, "CC BY 4.0");
 });

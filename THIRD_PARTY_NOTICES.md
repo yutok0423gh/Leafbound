@@ -27,10 +27,23 @@ The build-time importer normalizes the upstream single-character Rime dictionary
 - Source repository: https://github.com/chinese-poetry/chinese-poetry
 - Imported files:
   - `全唐诗/唐诗三百首.json` — 362 works
+  - `全唐诗/poet.tang.{0..57000}.json` — 2,592 selected works from 20 representative poets after pronunciation validation
+  - `蒙学/qianjiashi.json` — 212 works
   - `宋词/宋词三百首.json` — 279 works after removing one duplicate of the curated collection
+  - `宋词/ci.song.{0..21000}.json` — 1,912 selected works from 16 representative lyricists
   - `蒙学/guwenguanzhi.json` — 222 works
+  - `诗经/shijing.json` — 305 works
+  - `楚辞/chuci.json` — 65 works
+  - `元曲/yuanqu.json` — 10,906 unique works
+  - `曹操诗集/caocao.json` — 26 works
+  - `纳兰性德/纳兰性德诗集.json` — 257 unique works
+  - `论语/lunyu.json` and `四书五经/{daxue,zhongyong,mengzi}.json` — 36 Four Books chapters
+  - `幽梦影/youmengying.json` — 219 aphorisms grouped into 19 local reading units
+  - `蒙学/{youxueqionglin,shenglvqimeng,dizigui,zengguangxianwen,wenzimengqiu}.json` — 175 local primer reading units after pronunciation validation
 - Pinned revision: `b8594f81a89752241442f2ce267d6f66f96704ee`
 - License: MIT
+
+Simplified-Chinese source files are converted to Hong Kong Traditional Chinese with OpenCC during the build. For complete per-character pronunciation, CJK iteration marks are expanded; two contextual Yuan-qu source typos, `埯女` and `埯哥哥`, are narrowly corrected to `俺女` and `俺哥哥`. Expanded Tang and specialist primer units containing Han characters without a reliable candidate in the pinned local pronunciation dictionaries are excluded rather than assigned a guessed reading. The generated browser module stores repeated source and license fields in a shared table, while each reading unit retains its collection, canonical file URL, pinned revision, and source-only boundary. The app adds no scraped modern translation, annotation, or commentary.
 
 The MIT License (MIT)
 
@@ -59,7 +72,7 @@ THE SOFTWARE.
 - Package: `opencc-js` 1.4.1
 - Source: https://github.com/nk2028/opencc-js
 - License: MIT AND Apache-2.0
-- Use: import-time conversion of the simplified-Chinese Song ci source to Hong Kong Traditional Chinese (`cn` → `hk`)
+- Use: import-time conversion of relevant simplified-Chinese classical and dictionary sources to Hong Kong Traditional Chinese (`cn` → `hk`)
 
 OpenCC JS is a development-only import dependency. The browser app reads the generated local corpus and does not load OpenCC at runtime.
 
@@ -95,7 +108,7 @@ The app copies the five sample MP3 files and corresponding tagged transcripts di
 ## 冚唪唥粵文讀本 / Hambaanglaang Cantonese Graded Readers
 
 - Source catalog: https://hambaanglaang.hk/all-levels/
-- Imported material: 56 Cantonese story texts, eight from each of Levels 1–7
+- Imported material: 149 Cantonese story texts; 20 from Level 1, 24 from each of Levels 2–5, 20 from Level 6, and 13 from Level 7
 - Current imported licenses: CC BY 4.0, verified from each story’s public text document
 - Site license statement: https://hambaanglaang.hk/
 - Audio: official SoundCloud track is loaded only after the user asks for it; audio files, illustrations, PDFs, videos, and translations are not copied
@@ -129,6 +142,16 @@ NASA material is generally not subject to copyright in the United States, but NA
 
 Standard Ebooks notes that its original site content is dedicated to the public domain through CC0, while the ebooks are public domain in the United States and users elsewhere must check local law. The app stores the opening chapter for focused in-app reading, credits the edition and author, and keeps the official single-page book URL as the full-version source.
 
+## Global Voices English stories feed
+
+- Feed: https://globalvoices.org/feed/?cat=-28
+- Feed directory: https://globalvoices.org/feeds/
+- Republishing guidelines: https://globalvoices.org/about/global-voices-attribution-policy/
+- License: Creative Commons Attribution 3.0 (CC BY 3.0) for Global Voices-created content unless otherwise stated
+- Local use: cleaned plain text from 12 current original English stories, with the credited author and canonical story URL retained on every item
+
+Global Voices permits sharing and adaptation of its own stories with author credit, an original-story link, a license link, and an indication of changes, while warning that photos, video, and audio from other creators may have different rights. The importer therefore requires both a Global Voices original-publication marker and a Global Voices author profile in the feed item. It rejects any item that declares a content-sharing agreement, external republication, or non-Global-Voices original publication. Images, captions, embeds, audio, video, long block quotations, navigation, scripts, donation copy, and parenthetical non-English source spellings are removed before the text is stored. Each item identifies Leafbound's plain-text adaptation in its attribution.
+
 ## English news desk directory
 
 Leafbound links to the public article entrances of AP News, Reuters, The Guardian, CNN, RFI, and The Economist. These cards are a directory only: no article body, image, logo, subscriber content, or commercial-feed payload from these publishers is copied into the app. Free access, regional availability, and subscription limits remain controlled by each publisher.
@@ -141,9 +164,8 @@ Leafbound links to the public article entrances of AP News, Reuters, The Guardia
 - RFI copyright notice: https://www1.rfi.fr/actuen/articles/110/article_2829.asp
 - The Economist terms of use: https://www.economistgroup.com/terms-of-use
 
-The same directory also links to Global Voices and Open Newswire as discovery routes for openly licensed reporting. Global Voices states that its own material is published under Creative Commons terms, while Open Newswire exposes a license tag per result and asks reusers to check the originating outlet's exact conditions. Leafbound does not treat the aggregator label as a substitute for per-article verification.
+The same directory also links to Open Newswire as a discovery route for openly licensed reporting. Open Newswire exposes a license tag per result and asks reusers to check the originating outlet's exact conditions. Leafbound does not treat the aggregator label as a substitute for per-article verification.
 
-- Global Voices republishing guidelines: https://globalvoices.org/about/global-voices-attribution-policy/
 - Open Newswire about and license guidance: https://www.opennewswire.org/about/
 
 ## Princeton WordNet 3.0 and Chinese Open Wordnet 2.0

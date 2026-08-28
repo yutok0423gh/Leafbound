@@ -7,24 +7,27 @@ import {
   englishSourceSnapshot
 } from "../src/open-english.js";
 
-test("English source snapshot contains readable text from the three connected public feeds", () => {
-  assert.equal(englishSourceCatalog.length, 4);
+test("English source snapshot contains readable text from four connected public source families", () => {
+  assert.equal(englishSourceCatalog.length, 5);
   assert.equal(englishSourceSnapshot.itemCount, englishDiscoveries.length);
-  assert.ok(englishDiscoveries.length >= 12);
+  assert.equal(englishSourceSnapshot.feeds.length, 7);
+  assert.ok(englishDiscoveries.length >= 50);
   assert.equal(englishSourceSnapshot.fullArticleCount + englishSourceSnapshot.chapterCount, englishDiscoveries.length);
-  assert.ok(englishSourceSnapshot.fullArticleCount >= 8);
-  assert.ok(englishSourceSnapshot.chapterCount >= 1);
+  assert.ok(englishSourceSnapshot.fullArticleCount >= 40);
+  assert.ok(englishSourceSnapshot.chapterCount >= 10);
   assert.ok(new Date(englishSourceSnapshot.generatedAt).getTime() > 0);
+  assert.match(englishSourceSnapshot.contentDigest, /^[a-f0-9]{64}$/);
 
   const counts = Object.fromEntries(
-    ["VOA Learning English", "NASA", "Standard Ebooks"].map((source) => [
+    ["VOA Learning English", "NASA", "Standard Ebooks", "Global Voices"].map((source) => [
       source,
       englishDiscoveries.filter((item) => item.source === source).length
     ])
   );
-  assert.ok(counts["VOA Learning English"] >= 4);
-  assert.ok(counts.NASA >= 1);
-  assert.ok(counts["Standard Ebooks"] >= 1);
+  assert.ok(counts["VOA Learning English"] >= 20);
+  assert.ok(counts.NASA >= 8);
+  assert.ok(counts["Standard Ebooks"] >= 10);
+  assert.ok(counts["Global Voices"] >= 10);
 });
 
 test("connected English text remains traceable, sanitized, and usable by the reader", () => {
@@ -32,10 +35,11 @@ test("connected English text remains traceable, sanitized, and usable by the rea
     "learningenglish.voanews.com",
     "www.nasa.gov",
     "science.nasa.gov",
-    "standardebooks.org"
+    "standardebooks.org",
+    "globalvoices.org"
   ]);
   const categories = new Set(englishDiscoveries.map((item) => item.category));
-  assert.deepEqual([...categories].sort(), ["文化", "文學", "科學", "語言"].sort());
+  assert.deepEqual([...categories].sort(), ["文化", "文學", "科學", "語言", "生活"].sort());
 
   englishDiscoveries.forEach((item) => {
     assert.ok(item.title);
@@ -50,6 +54,7 @@ test("connected English text remains traceable, sanitized, and usable by the rea
     assert.deepEqual(item.phrases, []);
     assert.ok(item.license);
     assert.ok(item.attribution);
+    assert.doesNotMatch(item.paragraphs.join(" "), /\p{Script=Han}/u);
     item.paragraphs.forEach((paragraph) => {
       assert.equal(typeof paragraph, "string");
       assert.doesNotMatch(paragraph, /<\/?(?:script|style|iframe|img|video|audio)\b/i);
@@ -58,5 +63,12 @@ test("connected English text remains traceable, sanitized, and usable by the rea
       assert.doesNotMatch([item.deck, ...item.paragraphs].join(" "), /\b(?:AP|AFP|Reuters|Associated Press|Agence France-Presse)\b/i);
     }
     if (item.source === "Standard Ebooks") assert.equal(item.contentScope, "chapter");
+    if (item.source === "Global Voices") {
+      assert.equal(item.contentScope, "full");
+      assert.match(item.license, /CC BY 3\.0/);
+      assert.match(item.attribution, /^Text: .+ · Originally published by Global Voices · Plain-text adaptation: Leafbound$/);
+      assert.doesNotMatch(item.paragraphs.join(" "), /content-sharing agreement|republished from/i);
+      assert.doesNotMatch(item.paragraphs.join(" "), /\b(?:Photo|Image|Screenshot)\b.*\b(?:fair use|used with permission|courtesy)\b/i);
+    }
   });
 });

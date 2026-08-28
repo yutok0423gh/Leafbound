@@ -288,6 +288,7 @@ doesn't	不；沒有
 energy-efficient	節能的；能源效率高的
 flexibility	彈性；靈活性
 fluent	流利的；流暢的
+give	給；給予；提供；使某人獲得或感受到
 haven't	尚未；沒有
 high-altitude	高海拔的；高空的
 i'll	我會；我將會
@@ -320,6 +321,16 @@ const RICH_ENTRIES = Object.freeze({
   distinguish: { lemma: "distinguish", partOfSpeech: "verb", pronunciation: "/dɪˈstɪŋɡwɪʃ/", definition: "to recognise the difference between things" },
   emphasis: { lemma: "emphasis", partOfSpeech: "noun", pronunciation: "/ˈemfəsɪs/", definition: "extra force given to a sound, word, or idea" },
   fluent: { lemma: "fluent", partOfSpeech: "adjective", pronunciation: "/ˈfluːənt/", definition: "able to speak or write smoothly and easily" },
+  gives: {
+    lemma: "give",
+    partOfSpeech: "verb",
+    pronunciation: "/ɡɪvz/",
+    definition: "to hand something to someone, or to cause someone to have or experience something",
+    dictionaryExamples: [
+      "Could you give me a few minutes?",
+      "This seat gives you a clear view of the city."
+    ]
+  },
   hesitation: { lemma: "hesitation", partOfSpeech: "noun", pronunciation: "/ˌhezɪˈteɪʃən/", definition: "a pause caused by uncertainty" },
   headline: { lemma: "headline", partOfSpeech: "noun", pronunciation: "/ˈhedlaɪn/", definition: "the title printed above a news story" },
   imperceptibly: { lemma: "imperceptible", partOfSpeech: "adverb", pronunciation: "/ˌɪmpərˈseptəbli/", definition: "so slightly that the change is almost impossible to notice", usage: "修飾 changing，強調變化細微到幾乎察覺不到。" },
@@ -362,6 +373,7 @@ distinguish	distinguish between A and B::區分 A 與 B | distinguish A from B::
 emphasis	place emphasis on::著重於…… | with emphasis::加重語氣地 | shift the emphasis::轉移重點
 flexibility	greater flexibility::更大彈性 | flexibility to do something::做某事的靈活空間 | improve flexibility::提升靈活性
 fluent	fluent in English::英語流利 | speak fluent English::說流利英語 | a fluent speaker::說話流暢的人
+give	give someone something::給某人某物 | give something to someone::把某物給某人 | give directions / advice::指路／提供建議
 headline	headline news::頭條新聞 | make the headlines::成為新聞焦點 | grab the headlines::搶佔頭條
 hesitation	without hesitation::毫不猶豫地 | a moment's hesitation::片刻猶豫 | show hesitation::表現出遲疑
 imperceptibly	almost imperceptibly::幾乎難以察覺地 | change imperceptibly::不知不覺地改變 | move imperceptibly::極輕微地移動

@@ -10,7 +10,11 @@
     "import:cantonese": "node scripts/import-cantonese-pronunciation.mjs",
     "import:cantonese-content": "node scripts/import-cantonese-sources.mjs",
     "import:english": "node scripts/import-english-sources.mjs",
-    "import:english-dictionary": "node scripts/import-english-dictionary.mjs"
+    "import:english-dictionary": "node scripts/import-english-dictionary.mjs",
+    "prepare:english-dictionary": "node scripts/prepare-english-dictionary.mjs",
+    "content:update": "node scripts/update-content.mjs",
+    "content:update:english": "node scripts/update-content.mjs --target english",
+    "content:update:cantonese": "node scripts/update-content.mjs --target cantonese"
   },
   "devDependencies": {
     "cheerio": "^1.1.2",

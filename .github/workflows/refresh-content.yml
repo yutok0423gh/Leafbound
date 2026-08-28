@@ -1,0 +1,81 @@
+name: Refresh Leafbound content
+
+on:
+  schedule:
+    - cron: "17 2 * * *"
+    - cron: "43 2 * * 1"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Content shelf to refresh
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - english
+          - cantonese
+
+permissions:
+  contents: write
+
+concurrency:
+  group: leafbound-content-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install importer dependencies
+        run: npm ci
+
+      - name: Select refresh target
+        id: target
+        shell: bash
+        env:
+          MANUAL_TARGET: ${{ github.event.inputs.target }}
+          EVENT_SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          if [[ -n "$MANUAL_TARGET" ]]; then
+            target="$MANUAL_TARGET"
+          elif [[ "$EVENT_SCHEDULE" == "43 2 * * 1" ]]; then
+            target="cantonese"
+          else
+            target="english"
+          fi
+          echo "target=$target" >> "$GITHUB_OUTPUT"
+          echo "Refreshing $target content"
+
+      - name: Restore pinned open-dictionary build inputs
+        if: steps.target.outputs.target != 'cantonese'
+        uses: actions/cache@v4
+        with:
+          path: .tmp-data/english-dictionary
+          key: leafbound-english-dictionary-omw-2.0-freedict-2025.11.23-v1
+
+      - name: Import, rebuild local lookups, and verify
+        run: npm run content:update -- --target "${{ steps.target.outputs.target }}"
+
+      - name: Commit verified content changes
+        shell: bash
+        run: |
+          if git diff --quiet -- src/open-english.js src/open-english-dictionary.js src/open-english-dictionary-meta.js src/open-cantonese.js assets/audio/cantonese; then
+            echo "No verified content changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/open-english.js src/open-english-dictionary.js src/open-english-dictionary-meta.js src/open-cantonese.js assets/audio/cantonese
+          git commit -m "content: refresh ${{ steps.target.outputs.target }} shelf"
+          git push
