@@ -1,8 +1,26 @@
 export const STORAGE_KEY = "leafbound.personal-library.v1";
 export const LEGACY_STORAGE_KEYS = ["shiyip.personal-library.v1"];
 export const LEGACY_PREFERENCES_COOKIE_KEY = "leafbound_preferences_v1";
+export const STATE_VERSION = 2;
+export const BACKUP_FORMAT = "leafbound.personal-library";
+export const BACKUP_FORMAT_VERSION = 2;
+export const PERSONAL_DATABASE_NAME = "leafbound-personal-v1";
+export const PERSONAL_DATABASE_VERSION = 1;
 export const SEEN_PROGRESS_THRESHOLD = 50;
 export const COMPLETE_PROGRESS_THRESHOLD = 90;
+
+const PERSONAL_STORE_NAME = "personal-state";
+const PERSONAL_RECORD_KEY = "current";
+const PERSONAL_STATE_FIELDS = Object.freeze([
+  "favorites",
+  "savedItems",
+  "notes",
+  "readingProgress",
+  "playbackProgress",
+  "contentActivity",
+  "dailySelections",
+  "history"
+]);
 
 export function createDefaultPreferences() {
   return {
@@ -10,6 +28,11 @@ export function createDefaultPreferences() {
     classicalFont: "song",
     classicalFontScale: 1,
     classicalLineHeight: 1,
+    classicalReadingMode: "parallel",
+    classicalJyutpingSize: "medium",
+    classicalJyutpingColor: "jade",
+    classicalJyutpingOpacity: "standard",
+    classicalJyutpingGap: "standard",
     englishFontScale: 1,
     englishLineHeight: 1.78,
     englishDark: false,
@@ -21,7 +44,7 @@ export function createDefaultPreferences() {
 
 export function createDefaultState() {
   return {
-    version: 1,
+    version: STATE_VERSION,
     favorites: [],
     savedItems: [],
     notes: {},
@@ -62,6 +85,11 @@ export function normalizePreferences(candidate) {
   if (!candidate || typeof candidate !== "object") return base;
   const classicalFonts = ["song", "kai", "sans"];
   const classicalLeading = [0.94, 1, 1.16];
+  const classicalReadingModes = ["original", "parallel", "translation"];
+  const classicalJyutpingSizes = ["small", "medium", "large"];
+  const classicalJyutpingColors = ["jade", "plum", "ink"];
+  const classicalJyutpingOpacities = ["soft", "standard", "strong"];
+  const classicalJyutpingGaps = ["tight", "standard", "wide"];
   const transcriptModes = ["full", "reveal", "listen"];
   const playbackSpeeds = [0.75, 0.8, 1, 1.2, 1.5];
   const requestedClassicalLeading = Number(candidate.classicalLineHeight);
@@ -72,6 +100,21 @@ export function normalizePreferences(candidate) {
     classicalFont: classicalFonts.includes(candidate.classicalFont) ? candidate.classicalFont : base.classicalFont,
     classicalFontScale: Number(clampNumber(candidate.classicalFontScale, base.classicalFontScale, 0.84, 1.32).toFixed(2)),
     classicalLineHeight: classicalLeading.includes(requestedClassicalLeading) ? requestedClassicalLeading : base.classicalLineHeight,
+    classicalReadingMode: classicalReadingModes.includes(candidate.classicalReadingMode)
+      ? candidate.classicalReadingMode
+      : base.classicalReadingMode,
+    classicalJyutpingSize: classicalJyutpingSizes.includes(candidate.classicalJyutpingSize)
+      ? candidate.classicalJyutpingSize
+      : base.classicalJyutpingSize,
+    classicalJyutpingColor: classicalJyutpingColors.includes(candidate.classicalJyutpingColor)
+      ? candidate.classicalJyutpingColor
+      : base.classicalJyutpingColor,
+    classicalJyutpingOpacity: classicalJyutpingOpacities.includes(candidate.classicalJyutpingOpacity)
+      ? candidate.classicalJyutpingOpacity
+      : base.classicalJyutpingOpacity,
+    classicalJyutpingGap: classicalJyutpingGaps.includes(candidate.classicalJyutpingGap)
+      ? candidate.classicalJyutpingGap
+      : base.classicalJyutpingGap,
     englishFontScale: Number(clampNumber(candidate.englishFontScale, base.englishFontScale, 0.84, 1.32).toFixed(2)),
     englishLineHeight: Number(clampNumber(candidate.englishLineHeight, base.englishLineHeight, 1.44, 2.14).toFixed(2)),
     englishDark: typeof candidate.englishDark === "boolean" ? candidate.englishDark : base.englishDark,
@@ -138,7 +181,7 @@ export function normalizeState(candidate) {
 
   return {
     ...base,
-    ...candidate,
+    version: STATE_VERSION,
     favorites: Array.isArray(candidate.favorites) ? [...new Set(candidate.favorites)] : base.favorites,
     savedItems: Array.isArray(candidate.savedItems) ? candidate.savedItems : base.savedItems,
     notes: candidate.notes && typeof candidate.notes === "object" ? candidate.notes : base.notes,
@@ -212,6 +255,232 @@ export function persistState(storage, state) {
       // The app remains usable when storage is unavailable (for example, strict privacy mode).
     }
   }
+}
+
+function storageEntry(storage, key) {
+  if (!storage) return null;
+  try {
+    const raw = storage.getItem(key);
+    if (!raw) return null;
+    const value = JSON.parse(raw);
+    return value && typeof value === "object" ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function containsPersonalState(candidate) {
+  return Boolean(candidate && PERSONAL_STATE_FIELDS.some((field) => Object.hasOwn(candidate, field)));
+}
+
+function createPersonalStateRecord(state) {
+  const normalized = normalizeState(state);
+  return Object.fromEntries([
+    ["version", STATE_VERSION],
+    ...PERSONAL_STATE_FIELDS.map((field) => [field, clone(normalized[field])]),
+    // Preferences stay in localStorage for synchronous first paint, with this
+    // local IndexedDB copy only acting as a recovery path when localStorage is
+    // blocked or cleared independently.
+    ["preferences", clone(normalized.preferences)]
+  ]);
+}
+
+function createPreferenceEnvelope(state) {
+  return {
+    version: STATE_VERSION,
+    preferences: normalizePreferences(state?.preferences),
+    persistence: {
+      backend: "indexeddb",
+      database: PERSONAL_DATABASE_NAME
+    }
+  };
+}
+
+function persistPreferenceEnvelope(storage, state) {
+  if (!storage) return false;
+  try {
+    storage.setItem(STORAGE_KEY, JSON.stringify(createPreferenceEnvelope(state)));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function valuesEqual(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function applyObjectChanges(persisted, baseline, current) {
+  const result = { ...(persisted || {}) };
+  const baselineObject = baseline && typeof baseline === "object" ? baseline : {};
+  const currentObject = current && typeof current === "object" ? current : {};
+  for (const key of new Set([...Object.keys(baselineObject), ...Object.keys(currentObject)])) {
+    if (valuesEqual(baselineObject[key], currentObject[key])) continue;
+    if (Object.hasOwn(currentObject, key)) result[key] = clone(currentObject[key]);
+    else delete result[key];
+  }
+  return result;
+}
+
+/** Apply interactions made while IndexedDB was opening without losing older data. */
+function mergeHydratedPersonalState(persistedCandidate, baselineCandidate, currentCandidate) {
+  const persisted = normalizeState(persistedCandidate);
+  const baseline = normalizeState(baselineCandidate);
+  const current = normalizeState(currentCandidate);
+  const baselineFavorites = new Set(baseline.favorites);
+  const currentFavorites = new Set(current.favorites);
+  const removedFavorites = new Set([...baselineFavorites].filter((id) => !currentFavorites.has(id)));
+  const addedFavorites = [...currentFavorites].filter((id) => !baselineFavorites.has(id));
+  const favorites = [
+    ...persisted.favorites.filter((id) => !removedFavorites.has(id) && !addedFavorites.includes(id)),
+    ...addedFavorites
+  ];
+
+  const persistedItems = new Map(persisted.savedItems.map((item) => [item.id, item]));
+  const baselineItems = new Map(baseline.savedItems.map((item) => [item.id, item]));
+  const currentItems = new Map(current.savedItems.map((item) => [item.id, item]));
+  for (const id of new Set([...baselineItems.keys(), ...currentItems.keys()])) {
+    if (valuesEqual(baselineItems.get(id), currentItems.get(id))) continue;
+    if (currentItems.has(id)) persistedItems.set(id, clone(currentItems.get(id)));
+    else persistedItems.delete(id);
+  }
+  const changedItemIds = new Set(current.savedItems
+    .filter((item) => !valuesEqual(baselineItems.get(item.id), item))
+    .map((item) => item.id));
+  const savedItems = [
+    ...current.savedItems.filter((item) => changedItemIds.has(item.id)),
+    ...[...persistedItems.values()].filter((item) => !changedItemIds.has(item.id))
+  ];
+
+  const history = Object.fromEntries(["poems", "articles", "episodes"].map((kind) => {
+    const baselineList = Array.isArray(baseline.history[kind]) ? baseline.history[kind] : [];
+    const currentList = Array.isArray(current.history[kind]) ? current.history[kind] : [];
+    const persistedList = Array.isArray(persisted.history[kind]) ? persisted.history[kind] : [];
+    if (valuesEqual(baselineList, currentList)) return [kind, persistedList];
+    const removed = new Set(baselineList.filter((id) => !currentList.includes(id)));
+    return [kind, [
+      ...currentList,
+      ...persistedList.filter((id) => !removed.has(id) && !currentList.includes(id))
+    ].slice(0, 24)];
+  }));
+
+  return normalizeState({
+    ...persisted,
+    favorites,
+    savedItems,
+    notes: applyObjectChanges(persisted.notes, baseline.notes, current.notes),
+    readingProgress: applyObjectChanges(persisted.readingProgress, baseline.readingProgress, current.readingProgress),
+    playbackProgress: applyObjectChanges(persisted.playbackProgress, baseline.playbackProgress, current.playbackProgress),
+    contentActivity: applyObjectChanges(persisted.contentActivity, baseline.contentActivity, current.contentActivity),
+    dailySelections: applyObjectChanges(persisted.dailySelections, baseline.dailySelections, current.dailySelections),
+    history,
+    preferences: current.preferences
+  });
+}
+
+function requestResult(request) {
+  return new Promise((resolve, reject) => {
+    request.addEventListener("success", () => resolve(request.result), { once: true });
+    request.addEventListener("error", () => reject(request.error || new Error("IndexedDB request failed")), { once: true });
+  });
+}
+
+function transactionDone(transaction) {
+  return new Promise((resolve, reject) => {
+    transaction.addEventListener("complete", () => resolve(), { once: true });
+    transaction.addEventListener("abort", () => reject(transaction.error || new Error("IndexedDB transaction aborted")), { once: true });
+    transaction.addEventListener("error", () => reject(transaction.error || new Error("IndexedDB transaction failed")), { once: true });
+  });
+}
+
+/**
+ * Creates the browser-only persistence adapter used by the synchronous app
+ * store. Keeping the adapter injectable makes private-mode failures and data
+ * migrations testable without introducing a remote service or dependency.
+ */
+export function createIndexedDbPersonalState(indexedDb = globalThis.indexedDB) {
+  if (!indexedDb || typeof indexedDb.open !== "function") return null;
+  let databasePromise;
+
+  function openDatabase() {
+    if (databasePromise) return databasePromise;
+    databasePromise = new Promise((resolve, reject) => {
+      let request;
+      try {
+        request = indexedDb.open(PERSONAL_DATABASE_NAME, PERSONAL_DATABASE_VERSION);
+      } catch (error) {
+        reject(error);
+        return;
+      }
+      request.addEventListener("upgradeneeded", () => {
+        const database = request.result;
+        if (!database.objectStoreNames.contains(PERSONAL_STORE_NAME)) {
+          database.createObjectStore(PERSONAL_STORE_NAME);
+        }
+      }, { once: true });
+      request.addEventListener("success", () => {
+        const database = request.result;
+        database.addEventListener("versionchange", () => database.close());
+        resolve(database);
+      }, { once: true });
+      request.addEventListener("error", () => reject(request.error || new Error("IndexedDB could not be opened")), { once: true });
+      request.addEventListener("blocked", () => reject(new Error("IndexedDB upgrade was blocked")), { once: true });
+    });
+    return databasePromise;
+  }
+
+  return {
+    async read() {
+      const database = await openDatabase();
+      const transaction = database.transaction(PERSONAL_STORE_NAME, "readonly");
+      const request = transaction.objectStore(PERSONAL_STORE_NAME).get(PERSONAL_RECORD_KEY);
+      const result = await requestResult(request);
+      await transactionDone(transaction);
+      return result && typeof result === "object" ? result : null;
+    },
+    async write(state) {
+      const database = await openDatabase();
+      const transaction = database.transaction(PERSONAL_STORE_NAME, "readwrite");
+      transaction.objectStore(PERSONAL_STORE_NAME).put(createPersonalStateRecord(state), PERSONAL_RECORD_KEY);
+      await transactionDone(transaction);
+    },
+    async clear() {
+      const database = await openDatabase();
+      const transaction = database.transaction(PERSONAL_STORE_NAME, "readwrite");
+      transaction.objectStore(PERSONAL_STORE_NAME).delete(PERSONAL_RECORD_KEY);
+      await transactionDone(transaction);
+    }
+  };
+}
+
+export function createBackupPayload(state, exportedAt = new Date().toISOString()) {
+  return {
+    format: BACKUP_FORMAT,
+    formatVersion: BACKUP_FORMAT_VERSION,
+    exportedAt,
+    app: "Leafbound",
+    data: normalizeState(state)
+  };
+}
+
+/** Accepts current backups, the original { app, data } export, and raw v1 state. */
+export function parseBackupPayload(payload) {
+  let candidate = payload;
+  if (typeof candidate === "string") {
+    try {
+      candidate = JSON.parse(candidate);
+    } catch {
+      throw new TypeError("備份不是有效的 JSON");
+    }
+  }
+  if (!candidate || typeof candidate !== "object") throw new TypeError("備份內容無效");
+  if (candidate.format && candidate.format !== BACKUP_FORMAT) throw new TypeError("這不是 Leafbound 備份");
+  if (Number(candidate.formatVersion || 1) > BACKUP_FORMAT_VERSION) {
+    throw new RangeError("這份備份來自較新的 Leafbound 版本");
+  }
+  const data = candidate.data && typeof candidate.data === "object" ? candidate.data : candidate;
+  if (!containsPersonalState(data) && !data.preferences) throw new TypeError("備份沒有可匯入的本地資料");
+  return normalizeState(data);
 }
 
 export function toggleFavoriteInState(state, key) {
@@ -318,9 +587,13 @@ export function progressPercent(current, total) {
 
 export function createStore(
   storage = globalThis.localStorage,
-  legacyPreferencesCookie = createLegacyPreferencesCookieMigration()
+  legacyPreferencesCookie = createLegacyPreferencesCookieMigration(),
+  personalPersistence = createIndexedDbPersonalState()
 ) {
   let state = loadState(storage);
+  const localEntry = storageEntry(storage, STORAGE_KEY);
+  const localContainsPersonalState = containsPersonalState(localEntry);
+  const localContainsPreferences = Boolean(localEntry?.preferences);
   const rememberedPreferences = legacyPreferencesCookie?.read?.();
   if (rememberedPreferences) {
     state = normalizeState({
@@ -328,19 +601,101 @@ export function createStore(
       preferences: { ...state.preferences, ...rememberedPreferences }
     });
   }
-  persistState(storage, state);
+  const initialState = clone(state);
   // Preferences used to be duplicated into a first-party cookie. Migrate that
   // value once, then remove the cookie so no Leafbound state is sent in HTTP requests.
   legacyPreferencesCookie?.clear?.();
   const subscribers = new Set();
+  let revision = 0;
+  let replaceAllBeforeReady = false;
+  let persistenceMode = personalPersistence ? "initializing" : "localStorage";
+  let writeQueue = Promise.resolve();
+
+  function notify() {
+    subscribers.forEach((subscriber) => subscriber(state));
+  }
+
+  function fallBackToLocalStorage() {
+    persistenceMode = "localStorage";
+    persistState(storage, state);
+  }
+
+  function enqueuePersonalWrite(snapshot = state) {
+    if (!personalPersistence || persistenceMode === "localStorage") return Promise.resolve();
+    const safeSnapshot = clone(snapshot);
+    writeQueue = writeQueue
+      .then(() => personalPersistence.write(safeSnapshot))
+      .catch(() => {
+        fallBackToLocalStorage();
+      });
+    return writeQueue;
+  }
+
+  function persistCurrentState() {
+    if (persistenceMode === "indexeddb") {
+      // Preferences remain immediately available to the synchronous UI while
+      // the larger state is written outside localStorage's small quota.
+      persistPreferenceEnvelope(storage, state);
+      enqueuePersonalWrite(state);
+      return;
+    }
+    // During first-run migration, keep the complete localStorage record until
+    // IndexedDB has safely committed it. Strict privacy modes also stay here.
+    persistState(storage, state);
+  }
+
+  persistState(storage, state);
+
+  const ready = (async () => {
+    if (!personalPersistence) return state;
+    try {
+      const persistedPersonalState = await personalPersistence.read();
+      let hydrated = false;
+
+      if (!localContainsPersonalState && persistedPersonalState) {
+        const currentPreferences = (localContainsPreferences || rememberedPreferences)
+          ? state.preferences
+          : persistedPersonalState.preferences;
+        state = replaceAllBeforeReady
+          ? normalizeState({ ...state, preferences: currentPreferences })
+          : mergeHydratedPersonalState(
+            persistedPersonalState,
+            initialState,
+            { ...state, preferences: currentPreferences }
+          );
+        hydrated = true;
+      }
+
+      let writtenAtRevision = revision;
+      await personalPersistence.write(state);
+      // An interaction may have changed the in-memory state while IndexedDB
+      // was opening. Commit once more before compacting localStorage.
+      while (revision !== writtenAtRevision) {
+        writtenAtRevision = revision;
+        await personalPersistence.write(state);
+      }
+      persistenceMode = "indexeddb";
+      persistPreferenceEnvelope(storage, state);
+      if (hydrated) notify();
+      return state;
+    } catch {
+      fallBackToLocalStorage();
+      return state;
+    }
+  })();
 
   return {
+    ready,
     getState() {
       return state;
     },
+    getPersistenceMode() {
+      return persistenceMode;
+    },
     replace(nextState, notify = true) {
       state = normalizeState(nextState);
-      persistState(storage, state);
+      revision += 1;
+      persistCurrentState();
       if (notify) subscribers.forEach((subscriber) => subscriber(state));
       return state;
     },
@@ -354,7 +709,20 @@ export function createStore(
       return () => subscribers.delete(subscriber);
     },
     reset() {
+      if (persistenceMode === "initializing") replaceAllBeforeReady = true;
       return this.replace(createDefaultState());
+    },
+    restore(payload, notify = true) {
+      if (persistenceMode === "initializing") replaceAllBeforeReady = true;
+      return this.replace(parseBackupPayload(payload), notify);
+    },
+    createBackup(exportedAt) {
+      return createBackupPayload(state, exportedAt);
+    },
+    async flush() {
+      await ready;
+      await writeQueue;
+      return state;
     }
   };
 }

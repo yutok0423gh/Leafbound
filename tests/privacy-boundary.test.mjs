@@ -6,6 +6,8 @@ const runtimeFiles = [
   "index.html",
   "src/app.js",
   "src/store.js",
+  "src/pwa.js",
+  "service-worker.js",
   "src/english.js",
   "src/cantonese-lexicon.js",
   "src/classical-translations.js",
@@ -22,7 +24,7 @@ test("runtime has no cloud persistence, analytics, or outbound write primitives"
   const combined = Object.values(sources).join("\n");
 
   for (const forbidden of [
-    /\b(?:sendBeacon|XMLHttpRequest|WebSocket|EventSource|indexedDB)\b/,
+    /\b(?:sendBeacon|XMLHttpRequest|WebSocket|EventSource)\b/,
     /(?:firebaseio\.com|supabase\.co|api\.segment\.io|cdn\.segment\.com|api\.mixpanel\.com|plausible\.io|google-analytics\.com)/i,
     /method\s*:\s*["'](?:POST|PUT|PATCH|DELETE)["']/i,
     /fetch\s*\(\s*["']https?:\/\//i
@@ -32,12 +34,15 @@ test("runtime has no cloud persistence, analytics, or outbound write primitives"
   assert.match(sources["index.html"], /form-action 'none'/);
 });
 
-test("personal state uses localStorage and cookies exist only for one-time deletion", async () => {
+test("personal state uses local browser stores and cookies exist only for one-time deletion", async () => {
   const sources = await readRuntime();
   const store = sources["src/store.js"];
   const app = sources["src/app.js"];
 
   assert.match(store, /storage\.setItem\(STORAGE_KEY, JSON\.stringify\(state\)\)/);
+  assert.match(store, /createIndexedDbPersonalState/);
+  assert.match(store, /PERSONAL_DATABASE_NAME = "leafbound-personal-v1"/);
+  assert.match(store, /backend: "indexeddb"/);
   assert.match(store, /Max-Age=0/);
   assert.doesNotMatch(store, /Max-Age=(?!0)\d+/);
   assert.doesNotMatch(store, /preferencesCookie\?\.write|documentRef\.cookie\s*=\s*serialize/);

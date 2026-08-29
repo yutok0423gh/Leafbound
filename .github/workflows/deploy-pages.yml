@@ -35,7 +35,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p _site
-          cp index.html favicon.svg manifest.webmanifest styles.css THIRD_PARTY_NOTICES.md _site/
+          cp index.html favicon.svg manifest.webmanifest styles.css service-worker.js offline.html THIRD_PARTY_NOTICES.md _site/
           cp -R assets data src _site/
           touch _site/.nojekyll
 

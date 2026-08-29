@@ -582,9 +582,13 @@ function normalizeAiTranslation(record, fallbackKind) {
   if (!paragraphs.length) throw new Error("今譯分片中的譯文格式無效");
 
   const metadata = record.metadata;
+  const reviewStatus = String(metadata.status || "machine-draft");
   const source = Object.freeze({
     label: String(metadata.sourceLabel || "Leafbound 今譯草稿"),
-    status: aiTranslationStatus,
+    status: String(metadata.displayStatus || aiTranslationStatus),
+    reviewStatus,
+    productionReady: metadata.productionReady === true && reviewStatus === "reviewed",
+    ...(metadata.editorialTriage ? { editorialTriage: String(metadata.editorialTriage) } : {}),
     ...(metadata.model ? { model: String(metadata.model) } : {}),
     ...(metadata.modelRevision ? { modelRevision: String(metadata.modelRevision) } : {}),
     ...(metadata.promptVersion ? { promptVersion: String(metadata.promptVersion) } : {}),

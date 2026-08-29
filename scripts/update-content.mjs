@@ -27,6 +27,8 @@ function generatedFiles(target) {
   if (target === "all" || target === "cantonese") {
     files.push(
       "src/open-cantonese.js",
+      "src/cantonese-interviews.js",
+      "assets/audio/cantonese/spice-vf19a-family-language.wav",
       ...["m", "d1", "d2", "r1", "r2"].map((id) => `assets/audio/cantonese/hkcancor-${id}.mp3`)
     );
   }
@@ -84,6 +86,7 @@ try {
   }
   if (target === "all" || target === "cantonese") {
     await runNode("scripts/import-cantonese-sources.mjs");
+    await runNode("scripts/import-spice-interview-audio.mjs");
   }
 
   const testFiles = (await readdir(resolve(projectRoot, "tests")))

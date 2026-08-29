@@ -1,13 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   generateTranslationDrafts,
+  glossaryForJob,
+  loadClassicalGlossary,
   loadGeneratorConfig,
   parseChatCompletionResponse,
+  parseCritiqueCompletionResponse,
   requestTranslation,
   runGeneratorCli
 } from "../scripts/generate-classical-translation-drafts.mjs";
@@ -46,10 +49,33 @@ function fixtureEnvironment(overrides = {}) {
   };
 }
 
-function successfulResponse(paragraphs = ["青山仍舊在。", "流水朝東而去。"]) {
+function successfulResponse(paragraphs = ["青山仍旧在。", "流水朝东而去。"]) {
   return new Response(JSON.stringify({
     choices: [{ message: { content: JSON.stringify({ paragraphs }) } }]
   }), { status: 200, headers: { "Content-Type": "application/json" } });
+}
+
+function successfulCritiqueResponse({
+  verdict = "pass",
+  issues = [],
+  paragraphs = ["青山仍旧存在。", "流水朝东流去。"]
+} = {}) {
+  return new Response(JSON.stringify({
+    choices: [{ message: { content: JSON.stringify({ verdict, issues, paragraphs }) } }]
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
+}
+
+function fixtureGlossaryCatalog() {
+  return Object.freeze({
+    source: "Fixture Classical Dictionary",
+    version: "fixture-2026",
+    sourceSha256: "1".repeat(64),
+    upstreamSourceSha256: "2".repeat(64),
+    entriesByFirstCharacter: new Map([
+      ["青", [{ term: "青山", definitions: ["覆有青翠草木的山。"] }]],
+      ["流", [{ term: "流水", definitions: ["流動的水。"] }]]
+    ])
+  });
 }
 
 test("configuration permits unauthenticated localhost but requires HTTPS and credentials remotely", () => {
@@ -57,6 +83,14 @@ test("configuration permits unauthenticated localhost but requires HTTPS and cre
   assert.equal(local.apiKey, "");
   assert.equal(local.baseUrl, "http://127.0.0.1:11434/v1");
   assert.equal(local.concurrency, 1);
+  assert.equal(local.disableThinking, false);
+
+  const qwen = loadGeneratorConfig(fixtureEnvironment({ LEAFBOUND_OPENAI_DISABLE_THINKING: "true" }));
+  assert.equal(qwen.disableThinking, true);
+  assert.throws(
+    () => loadGeneratorConfig(fixtureEnvironment({ LEAFBOUND_OPENAI_DISABLE_THINKING: "sometimes" })),
+    /true or false/u
+  );
 
   assert.throws(
     () => loadGeneratorConfig(fixtureEnvironment({ LEAFBOUND_OPENAI_BASE_URL: "http://example.com/v1" })),
@@ -82,16 +116,41 @@ test("response parser accepts a complete JSON fence but rejects prose and extra 
   assert.throws(() => parseChatCompletionResponse({
     choices: [{ message: { content: "{\"paragraphs\":[\"今譯。\"],\"notes\":\"賞析\"}" } }]
   }), /only paragraphs/u);
+
+  assert.deepEqual(parseCritiqueCompletionResponse({
+    choices: [{ message: { content: "{\"verdict\":\"revised\",\"issues\":[\"修正詞義\"],\"paragraphs\":[\"修正版。\"]}" } }]
+  }), { verdict: "revised", issues: ["修正詞義"], paragraphs: ["修正版。"] });
+  assert.throws(() => parseCritiqueCompletionResponse({
+    choices: [{ message: { content: "{\"verdict\":\"maybe\",\"issues\":[],\"paragraphs\":[\"今譯。\"]}" } }]
+  }), /verdict/u);
+});
+
+test("MOE glossary supplies contextual constraints for known ambiguous classical terms", async () => {
+  const catalog = await loadClassicalGlossary();
+  const job = {
+    ...fixtureJob("classical-ambiguity"),
+    title: "步出夏門行 冬十月",
+    lines: ["鷙鳥潛藏", "熊羆窟棲", "錢鎛停置"]
+  };
+  const glossary = glossaryForJob(job, catalog, { characterFrequency: new Map([["鷙", 1]]) });
+  assert.ok(glossary.terms.includes("錢"));
+  assert.ok(glossary.terms.includes("鎛"));
+  assert.ok(glossary.terms.includes("羆"));
+  assert.ok(glossary.terms.includes("鷙"), "rare corpus characters should receive dictionary constraints automatically");
+  const definitions = JSON.stringify(glossary.entries);
+  assert.match(definitions, /古代的一種農具/u);
+  assert.match(definitions, /鋤頭一類的農具/u);
+  assert.match(definitions, /一種大熊/u);
 });
 
 test("successful generation posts chat completions and checkpoints pipeline-compatible JSONL", async () => {
   const root = await mkdtemp(join(tmpdir(), "leafbound-generator-success-"));
   const outputPath = join(root, "drafts.jsonl");
-  const config = loadGeneratorConfig(fixtureEnvironment());
+  const config = loadGeneratorConfig(fixtureEnvironment({ LEAFBOUND_OPENAI_DISABLE_THINKING: "true" }));
   const requests = [];
   const fetchImpl = async (url, init) => {
     requests.push({ url, init });
-    return successfulResponse();
+    return requests.length === 1 ? successfulResponse() : successfulCritiqueResponse();
   };
 
   const result = await generateTranslationDrafts({
@@ -99,12 +158,13 @@ test("successful generation posts chat completions and checkpoints pipeline-comp
     config,
     outputPath,
     fetchImpl,
+    glossaryCatalog: fixtureGlossaryCatalog(),
     now: () => new Date("2026-08-29T00:00:00.000Z")
   });
 
   assert.equal(result.ok, true);
   assert.equal(result.generatedCount, 1);
-  assert.equal(requests.length, 1);
+  assert.equal(requests.length, 2);
   assert.equal(requests[0].url, "http://127.0.0.1:11434/v1/chat/completions");
   assert.equal(requests[0].init.method, "POST");
   assert.equal("Authorization" in requests[0].init.headers, false);
@@ -113,15 +173,27 @@ test("successful generation posts chat completions and checkpoints pipeline-comp
   assert.equal(requestBody.messages[0].role, "system");
   assert.match(requestBody.messages[0].content, /香港繁體中文/u);
   assert.match(requestBody.messages[0].content, /不加入英文/u);
+  assert.match(requestBody.messages[1].content, /Fixture Classical Dictionary/u);
+  assert.match(requestBody.messages[1].content, /剛好 2 個 paragraphs/u);
+  assert.deepEqual(requestBody.chat_template_kwargs, { enable_thinking: false });
+  const critiqueBody = JSON.parse(requests[1].init.body);
+  assert.match(critiqueBody.messages[0].content, /品質審校員/u);
+  assert.match(critiqueBody.messages[0].content, /農具誤作貨幣/u);
 
   const record = JSON.parse((await readFile(outputPath, "utf8")).trim());
-  assert.equal(record.status, "machine_draft");
+  assert.equal(record.status, "pending-review");
   assert.equal(record.model, "leafbound-test-model");
   assert.equal(record.modelRevision, "fixture-revision");
   assert.equal(record.promptVersion, "fixture-prompt-v1");
   assert.equal(record.sourceHash, fixtureJob().sourceHash);
+  assert.equal(record.pipelineVersion, 2);
+  assert.match(record.promptSha256, /^[0-9a-f]{64}$/u);
+  assert.match(record.critiquePromptSha256, /^[0-9a-f]{64}$/u);
+  assert.equal(record.critique.verdict, "pass");
+  assert.equal(record.critique.promptSha256, record.critiquePromptSha256);
+  assert.deepEqual(record.glossary.terms, ["青山", "流水"]);
   assert.deepEqual(record.warnings, []);
-  assert.deepEqual(record.paragraphs, ["青山仍舊在。", "流水朝東而去。"]);
+  assert.deepEqual(record.paragraphs, ["青山仍舊存在。", "流水朝東流去。"]);
   const validation = validateDraftRecords([record], fixturePlan());
   assert.equal(validation.valid, true, JSON.stringify(validation.errors));
 });
@@ -139,7 +211,7 @@ test("429 and 5xx responses retry with backoff while other 4xx responses fail im
     },
     sleepImpl: async (delay) => delays.push(delay)
   });
-  assert.deepEqual(paragraphs, ["青山仍舊在。", "流水朝東而去。"]);
+  assert.deepEqual(paragraphs, ["青山仍旧在。", "流水朝东而去。"]);
   assert.equal(attempts, 3);
   assert.deepEqual(delays, [1000, 2000]);
 
@@ -157,30 +229,30 @@ test("429 and 5xx responses retry with backoff while other 4xx responses fail im
   assert.equal(rejectedAttempts, 1);
 });
 
-test("resume skips an exact source/model/revision/prompt checkpoint", async () => {
+test("resume skips only an exact second-pass source/model/prompt/glossary checkpoint", async () => {
   const root = await mkdtemp(join(tmpdir(), "leafbound-generator-resume-"));
   const outputPath = join(root, "drafts.jsonl");
   const config = loadGeneratorConfig(fixtureEnvironment());
   const job = fixtureJob();
-  const checkpoint = {
-    id: job.id,
-    kind: job.kind,
-    paragraphs: ["已完成今譯。"],
-    status: "machine_draft",
-    model: config.model,
-    modelRevision: config.modelRevision,
-    promptVersion: config.promptVersion,
-    sourceHash: job.sourceHash,
-    warnings: []
-  };
-  const original = `${JSON.stringify(checkpoint)}\n`;
-  await writeFile(outputPath, original, "utf8");
+  let callCount = 0;
+  await generateTranslationDrafts({
+    plan: fixturePlan([job]),
+    config,
+    outputPath,
+    glossaryCatalog: fixtureGlossaryCatalog(),
+    fetchImpl: async () => {
+      callCount += 1;
+      return callCount === 1 ? successfulResponse() : successfulCritiqueResponse();
+    }
+  });
+  const original = await readFile(outputPath, "utf8");
 
   const result = await generateTranslationDrafts({
     plan: fixturePlan([job]),
     config,
     outputPath,
     resume: true,
+    glossaryCatalog: fixtureGlossaryCatalog(),
     fetchImpl: async () => assert.fail("exact checkpoint must not call fetch")
   });
   assert.equal(result.generatedCount, 0);
@@ -197,6 +269,7 @@ test("dry-run makes no request or file and CLI logs never reveal the API key", a
     argv: ["--dry-run", "--limit", "1", "--output", outputPath, "--kinds", "曲"],
     environment: fixtureEnvironment({ LEAFBOUND_OPENAI_API_KEY: secret }),
     planFactory: () => fixturePlan(),
+    glossaryLoader: async () => fixtureGlossaryCatalog(),
     fetchImpl: async () => assert.fail("dry-run must not call fetch"),
     logger: { log: (message) => messages.push(message) }
   });

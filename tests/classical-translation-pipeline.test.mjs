@@ -7,9 +7,14 @@ import { tmpdir } from "node:os";
 import { poems } from "../src/data.js";
 import { getClassicalTranslation } from "../src/classical-translations.js";
 import {
+  CLASSICAL_EDITORIAL_TRIAGE,
   CLASSICAL_KINDS,
+  TRANSLATION_REVIEW_STATUSES,
   buildTranslationArtifacts,
   createTranslationPlan,
+  isProductionReadyTranslation,
+  normalizeClassicalEditorialTriage,
+  normalizeTranslationReviewStatus,
   readDraftRecords,
   shardIdFor,
   sourceHashFor,
@@ -86,6 +91,12 @@ test("draft validation enforces schema, hashes, labels, refusals, ratios, script
     assert.equal(result.errors[0].code, expectedCode);
   }
 
+  const legitimateInability = validateDraftRecords([{
+    ...valid,
+    paragraphs: [expandedText(first, "事情不能完成，仍要另尋方法。")]
+  }], plan);
+  assert.equal(legitimateInability.valid, true, "ordinary translated prose must not be mistaken for an assistant refusal");
+
   const shared = "現代中文譯意".repeat(8);
   const duplicates = validateDraftRecords([
     { ...draftFor(first), paragraphs: [shared] },
@@ -93,6 +104,72 @@ test("draft validation enforces schema, hashes, labels, refusals, ratios, script
   ], plan);
   assert.equal(duplicates.valid, false);
   assert.ok(duplicates.errors.some((error) => error.code === "duplicate-translation"));
+});
+
+test("review lifecycle is backward compatible but only blocker-free human review is production-ready", () => {
+  const plan = createTranslationPlan({ kinds: ["詩"] });
+  const job = plan.jobs.find((candidate) => candidate.sourceCharacterCount >= 20 && candidate.lines.length >= 2);
+  assert.equal(normalizeTranslationReviewStatus("machine_draft"), TRANSLATION_REVIEW_STATUSES.MACHINE_DRAFT);
+
+  const alignedParagraphs = job.lines.map((_, index) => `這是第${index + 1}句的清楚現代譯意。`);
+  const base = {
+    ...draftFor(job),
+    paragraphs: alignedParagraphs,
+    status: TRANSLATION_REVIEW_STATUSES.PENDING_REVIEW
+  };
+  const pending = validateDraftRecords([base], plan);
+  assert.equal(pending.valid, true, JSON.stringify(pending.errors));
+  assert.equal(pending.productionReadyCount, 0);
+  assert.equal(isProductionReadyTranslation(pending.records[0]), false);
+
+  const triaged = validateDraftRecords([{
+    ...base,
+    editorialTriage: CLASSICAL_EDITORIAL_TRIAGE.INITIALLY_USABLE
+  }], plan);
+  assert.equal(triaged.valid, true, JSON.stringify(triaged.errors));
+  assert.equal(triaged.records[0].metadata.editorialTriage, "initially-usable");
+  assert.equal(triaged.productionReadyCount, 0);
+  assert.equal(normalizeClassicalEditorialTriage("initially-usable"), "initially-usable");
+  assert.equal(normalizeClassicalEditorialTriage("reviewed"), null);
+
+  const reviewed = validateDraftRecords([{
+    ...base,
+    status: TRANSLATION_REVIEW_STATUSES.REVIEWED,
+    review: { reviewer: "Leafbound editor", reviewedAt: "2026-08-29T00:00:00.000Z" }
+  }], plan);
+  assert.equal(reviewed.valid, true, JSON.stringify(reviewed.errors));
+  assert.equal(reviewed.productionReadyCount, 1);
+  assert.equal(isProductionReadyTranslation(reviewed.records[0]), true);
+
+  const blocked = validateDraftRecords([{
+    ...base,
+    paragraphs: [alignedParagraphs.join("")],
+    status: TRANSLATION_REVIEW_STATUSES.REVIEWED,
+    warnings: ["paragraph-count-mismatch"],
+    review: { reviewer: "Leafbound editor", reviewedAt: "2026-08-29T00:00:00.000Z" }
+  }], plan);
+  assert.equal(blocked.valid, false);
+  assert.equal(blocked.errors[0].code, "reviewed-with-blockers");
+
+  const rejected = validateDraftRecords([{
+    ...base,
+    status: TRANSLATION_REVIEW_STATUSES.REJECTED,
+    review: { reviewer: "Leafbound editor", reviewedAt: "2026-08-29T00:00:00.000Z", note: "詞義不可靠" }
+  }], plan);
+  assert.equal(rejected.valid, true, JSON.stringify(rejected.errors));
+  assert.equal(rejected.publishableCount, 0);
+});
+
+test("pipeline v2 requires reproducible prompts, glossary selection, and second-pass critique", () => {
+  const plan = createTranslationPlan({ kinds: ["曲"] });
+  const job = plan.jobs.find((candidate) => candidate.sourceCharacterCount >= 20);
+  const incomplete = validateDraftRecords([{
+    ...draftFor(job),
+    status: TRANSLATION_REVIEW_STATUSES.PENDING_REVIEW,
+    pipelineVersion: 2
+  }], plan);
+  assert.equal(incomplete.valid, false);
+  assert.equal(incomplete.errors[0].code, "invalid-generation-provenance");
 });
 
 test("source-copy detection does not reject a short source merely for sharing a few characters", () => {
@@ -168,6 +245,10 @@ test("build is deterministic, dry-run is write-free, and later builds preserve p
   const manifest = JSON.parse(await readFile(join(root, "manifest.json"), "utf8"));
   assert.equal(manifest.coverage.generatedCount, 2);
   assert.equal(manifest.coverage.remainingCount, plan.missingCount - 2);
+  assert.equal(manifest.coverage.productionReadyGeneratedCount, 0);
+  assert.equal(manifest.coverage.statusCounts["machine-draft"], 2);
+  assert.equal(manifest.quality.productionReadyStatus, "reviewed");
+  assert.ok(manifest.quality.blockingWarnings.includes("paragraph-count-mismatch"));
   assert.equal(manifest.shards.reduce((sum, shard) => sum + shard.count, 0), 2);
 });
 

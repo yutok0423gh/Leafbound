@@ -1,5 +1,22 @@
-import { openPoems } from "./open-poems.js";
+import { openPoemIndex } from "./open-poems-index.js";
+import { getHydratedOpenPoem, loadOpenPoemContent } from "./open-poem-loader.js";
 import { openCantoneseEpisodes } from "./open-cantonese.js";
+import { cantoneseInterviewEpisodes } from "./cantonese-interviews.js";
+
+const annotatedOpenCantoneseEpisodes = openCantoneseEpisodes.map((episode) => {
+  if (episode.id !== "hkcancor-d1") return episode;
+  return Object.freeze({
+    ...episode,
+    episode: "真人錄音 · 訪談式對話",
+    contentForm: "訪談式對話",
+    transcriptScope: "two-party",
+    speakers: Object.freeze({
+      H: Object.freeze({ role: "提問者", name: "H", side: "question" }),
+      L: Object.freeze({ role: "受訪者", name: "L", side: "answer" })
+    }),
+    roleAttribution: "Leafbound 依這段語料的提問與回答話輪加上功能標記；H／L 仍保留語料原說話者代號。"
+  });
+});
 
 const curatedPoems = [
   {
@@ -143,7 +160,7 @@ const curatedWorks = curatedPoems.map((poem) => ({
   kind: poem.form === "詞" ? "詞" : "詩"
 }));
 
-export const poems = [...curatedWorks, ...openPoems];
+export const poems = [...curatedWorks, ...openPoemIndex];
 
 export const cantoneseTerms = {
   "嗰陣": {
@@ -246,7 +263,8 @@ const curatedEpisodes = [
 ];
 
 export const episodes = [
-  ...openCantoneseEpisodes,
+  ...cantoneseInterviewEpisodes,
+  ...annotatedOpenCantoneseEpisodes,
   ...curatedEpisodes.map((episode) => ({
     ...episode,
     sourceId: "local",
@@ -417,7 +435,12 @@ export function getTodayPoem(date = new Date()) {
 }
 
 export function findPoem(id) {
-  return poems.find((poem) => poem.id === id) || poems[0];
+  return getHydratedOpenPoem(id) || poems.find((poem) => poem.id === id) || poems[0];
+}
+
+export async function loadPoem(id) {
+  const poem = findPoem(id);
+  return poem?.contentShard ? loadOpenPoemContent(poem) : poem;
 }
 
 export function findEpisode(id) {

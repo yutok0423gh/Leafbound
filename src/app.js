@@ -8,10 +8,16 @@ import {
   getLocalDayKey,
   getTodayPoem,
   navItems,
+  loadPoem,
   pickDailyItem,
   poems,
   poetryKinds
 } from "./data.js";
+import {
+  alignClassicalReadingUnits,
+  classicalReadingModes,
+  classicalTranslationReviewMeta
+} from "./classical-reading.js";
 import { icon } from "./icons.js";
 import {
   englishDictionarySnapshot,
@@ -21,7 +27,8 @@ import {
   loadEnglishDictionary,
   lookupEnglishWord
 } from "./english.js";
-import { cantoneseSourceCatalog, cantoneseSourceSnapshot } from "./open-cantonese.js";
+import { cantoneseSourceCatalog as openCantoneseSourceCatalog, cantoneseSourceSnapshot } from "./open-cantonese.js";
+import { cantoneseInterviewSource } from "./cantonese-interviews.js";
 import { englishDiscoveries, englishSourceCatalog, englishSourceSnapshot } from "./open-english.js";
 import { englishNewsDesks } from "./english-news-sources.js";
 import {
@@ -75,6 +82,11 @@ import {
   upsertSavedItemInState
 } from "./store.js";
 
+const cantoneseSourceCatalog = Object.freeze([
+  openCantoneseSourceCatalog[0],
+  cantoneseInterviewSource,
+  ...openCantoneseSourceCatalog.slice(1)
+]);
 const app = document.querySelector("#app");
 const liveRegion = document.querySelector("#live-region");
 const dailyEnglishArticles = [...articles, ...englishDiscoveries]
@@ -96,6 +108,50 @@ const completeClassicalTranslationByKind = Object.keys({
 }, {});
 const completeClassicalTranslationCount = classicalTranslationSnapshot.count + inlineClassicalTranslationCount;
 const classicalTranslationLoadStates = new Map();
+const poemContentLoadStates = new Map();
+const COLLECTION_BATCH_SIZE = 24;
+const COLLECTION_SESSION_KEY = "leafbound.collection-view.v1";
+
+function collectionSessionDefaults() {
+  return {
+    cantonese: { sourceFilter: "全部", level: "全部", limit: COLLECTION_BATCH_SIZE, scrollY: 0 },
+    english: { sourceFilter: "全部", category: "全部", limit: COLLECTION_BATCH_SIZE, scrollY: 0 }
+  };
+}
+
+function normalizedCollectionLimit(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric < COLLECTION_BATCH_SIZE) return COLLECTION_BATCH_SIZE;
+  return Math.min(2400, Math.ceil(numeric / COLLECTION_BATCH_SIZE) * COLLECTION_BATCH_SIZE);
+}
+
+function readCollectionSession() {
+  const defaults = collectionSessionDefaults();
+  try {
+    const parsed = JSON.parse(window.sessionStorage.getItem(COLLECTION_SESSION_KEY) || "null");
+    if (!parsed || parsed.version !== 1 || typeof parsed.routes !== "object") return defaults;
+    const cantonese = parsed.routes.cantonese || {};
+    const english = parsed.routes.english || {};
+    return {
+      cantonese: {
+        sourceFilter: typeof cantonese.sourceFilter === "string" ? cantonese.sourceFilter : defaults.cantonese.sourceFilter,
+        level: typeof cantonese.level === "string" ? cantonese.level : defaults.cantonese.level,
+        limit: normalizedCollectionLimit(cantonese.limit),
+        scrollY: Math.max(0, Number(cantonese.scrollY) || 0)
+      },
+      english: {
+        sourceFilter: typeof english.sourceFilter === "string" ? english.sourceFilter : defaults.english.sourceFilter,
+        category: typeof english.category === "string" ? english.category : defaults.english.category,
+        limit: normalizedCollectionLimit(english.limit),
+        scrollY: Math.max(0, Number(english.scrollY) || 0)
+      }
+    };
+  } catch {
+    return defaults;
+  }
+}
+
+const collectionSession = readCollectionSession();
 
 function uniqueDailyPoems(items) {
   const signatures = new Set();
@@ -165,10 +221,12 @@ const ui = {
   poetryLimit: 24,
   libraryFilter: "all",
   libraryPanel: null,
-  sourceFilter: "全部",
-  cantoneseLevel: "全部",
-  englishSourceFilter: "全部",
-  englishCategory: "全部",
+  sourceFilter: collectionSession.cantonese.sourceFilter,
+  cantoneseLevel: collectionSession.cantonese.level,
+  cantoneseLimit: collectionSession.cantonese.limit,
+  englishSourceFilter: collectionSession.english.sourceFilter,
+  englishCategory: collectionSession.english.category,
+  englishLimit: collectionSession.english.limit,
   searchOpen: false,
   searchQuery: "",
   selectedTerm: null,
@@ -176,6 +234,7 @@ const ui = {
   selectedText: null,
   immersivePoemId: null,
   classicalTypographyOpen: false,
+  classicalFocusIndex: null,
   poemThreadOpen: false,
   cantoneseVoiceGuideOpen: false,
   notePanel: null,
@@ -203,6 +262,29 @@ const classicalLeadingOptions = [
   { value: 1.16, label: "寬鬆" }
 ];
 
+const classicalJyutpingOptions = Object.freeze({
+  size: Object.freeze([
+    Object.freeze({ value: "small", label: "小" }),
+    Object.freeze({ value: "medium", label: "中" }),
+    Object.freeze({ value: "large", label: "大" })
+  ]),
+  color: Object.freeze([
+    Object.freeze({ value: "jade", label: "玉" }),
+    Object.freeze({ value: "plum", label: "朱" }),
+    Object.freeze({ value: "ink", label: "墨" })
+  ]),
+  opacity: Object.freeze([
+    Object.freeze({ value: "soft", label: "淡" }),
+    Object.freeze({ value: "standard", label: "適中" }),
+    Object.freeze({ value: "strong", label: "清晰" })
+  ]),
+  gap: Object.freeze([
+    Object.freeze({ value: "tight", label: "緊" }),
+    Object.freeze({ value: "standard", label: "適中" }),
+    Object.freeze({ value: "wide", label: "寬" })
+  ])
+});
+
 const englishLeadingOptions = [
   { value: 1.58, label: "緊湊" },
   { value: 1.78, label: "適中" },
@@ -228,6 +310,19 @@ const englishCategoryLabels = Object.freeze({
   文學: "Literature",
   生活: "Everyday life"
 });
+
+if (!["全部", ...cantoneseSourceCatalog.map((source) => source.id)].includes(ui.sourceFilter)) {
+  ui.sourceFilter = "全部";
+}
+if (!cantoneseLearningBands.some((group) => group.id === ui.cantoneseLevel)) {
+  ui.cantoneseLevel = "全部";
+}
+if (!["全部", ...englishSourceCatalog.map((source) => source.id)].includes(ui.englishSourceFilter)) {
+  ui.englishSourceFilter = "全部";
+}
+if (!Object.hasOwn(englishCategoryLabels, ui.englishCategory)) {
+  ui.englishCategory = "全部";
+}
 
 const englishSourceUiCopy = Object.freeze({
   local: {
@@ -309,7 +404,20 @@ function getClassicalTypography(preferences = {}) {
   const scale = Number(Math.max(0.84, Math.min(1.32, Number.isFinite(requestedScale) ? requestedScale : 1)).toFixed(2));
   const requestedLeading = Number(preferences.classicalLineHeight);
   const leading = classicalLeadingOptions.some((option) => option.value === requestedLeading) ? requestedLeading : 1;
-  return { font, scale, leading };
+  const optionValue = (group, candidate, fallback) => classicalJyutpingOptions[group]
+    .some((option) => option.value === candidate) ? candidate : fallback;
+  return {
+    font,
+    scale,
+    leading,
+    readingMode: classicalReadingModes.some((option) => option.id === preferences.classicalReadingMode)
+      ? preferences.classicalReadingMode
+      : "parallel",
+    jyutpingSize: optionValue("size", preferences.classicalJyutpingSize, "medium"),
+    jyutpingColor: optionValue("color", preferences.classicalJyutpingColor, "jade"),
+    jyutpingOpacity: optionValue("opacity", preferences.classicalJyutpingOpacity, "standard"),
+    jyutpingGap: optionValue("gap", preferences.classicalJyutpingGap, "standard")
+  };
 }
 
 const player = {
@@ -433,7 +541,47 @@ function parseRoute() {
   return { page, id: parts[1] || null };
 }
 
+function isCollectionListRoute(route) {
+  return !route?.id && ["cantonese", "english"].includes(route?.page);
+}
+
+function writeCollectionSession() {
+  try {
+    window.sessionStorage.setItem(COLLECTION_SESSION_KEY, JSON.stringify({
+      version: 1,
+      routes: collectionSession
+    }));
+  } catch {
+    // Session storage can be unavailable in privacy-restricted contexts; the view still works in memory.
+  }
+}
+
+function persistCollectionRoute(route, scrollY = window.scrollY) {
+  if (!isCollectionListRoute(route)) return;
+  if (route.page === "cantonese") {
+    collectionSession.cantonese = {
+      sourceFilter: ui.sourceFilter,
+      level: ui.cantoneseLevel,
+      limit: normalizedCollectionLimit(ui.cantoneseLimit),
+      scrollY: Math.max(0, Number(scrollY) || 0)
+    };
+  } else {
+    collectionSession.english = {
+      sourceFilter: ui.englishSourceFilter,
+      category: ui.englishCategory,
+      limit: normalizedCollectionLimit(ui.englishLimit),
+      scrollY: Math.max(0, Number(scrollY) || 0)
+    };
+  }
+  writeCollectionSession();
+}
+
+let lastRenderedRoute = parseRoute();
+let collectionScrollRestorePage = isCollectionListRoute(lastRenderedRoute) ? lastRenderedRoute.page : null;
+let collectionScrollPersistTimer = null;
+
 function routeTo(page, id = null) {
+  persistCollectionRoute(parseRoute());
   const nextHash = `#${page}${id ? `/${id}` : ""}`;
   if (window.location.hash === nextHash) {
     recordRouteVisit({ page, id });
@@ -1147,6 +1295,29 @@ function renderProseText(text, showJyutping, interactive = true) {
   return renderClassicalAnnotatedText(text, "", interactive, "prose-jyutping-token");
 }
 
+function requestPoemContent(poem, retry = false) {
+  if (!poem?.contentShard || poem.contentLoaded) return null;
+  const current = poemContentLoadStates.get(poem.id);
+  if (!retry && (current?.status === "loading" || current?.status === "ready" || current?.status === "error")) {
+    return current.promise || null;
+  }
+  const pending = loadPoem(poem.id)
+    .then((hydrated) => {
+      poemContentLoadStates.set(poem.id, { status: "ready", promise: null });
+      const route = parseRoute();
+      if (route.page === "poetry" && route.id === poem.id) render();
+      return hydrated;
+    })
+    .catch((error) => {
+      poemContentLoadStates.set(poem.id, { status: "error", error, promise: null });
+      const route = parseRoute();
+      if (route.page === "poetry" && route.id === poem.id) render();
+      return null;
+    });
+  poemContentLoadStates.set(poem.id, { status: "loading", promise: pending });
+  return pending;
+}
+
 function requestClassicalTranslation(poem, retry = false) {
   if (!poem || poem.translation || getClassicalTranslation(poem)) return null;
   const current = classicalTranslationLoadStates.get(poem.id);
@@ -1175,57 +1346,83 @@ function requestClassicalTranslation(poem, retry = false) {
   return pending;
 }
 
+function classicalTranslationFor(poem) {
+  if (String(poem?.translation || "").trim()) {
+    return {
+      paragraphs: [String(poem.translation).trim()],
+      source: {
+        label: "Leafbound 今譯",
+        status: "人工已校",
+        reviewStatus: "reviewed",
+        productionReady: true
+      }
+    };
+  }
+  return getClassicalTranslation(poem);
+}
+
+function effectiveClassicalReadingMode(requested, translation) {
+  const review = classicalTranslationReviewMeta(translation, { inline: Boolean(translation && !translation.source) });
+  if (!translation || review.id === "rejected") return "original";
+  return classicalReadingModes.some((option) => option.id === requested) ? requested : "parallel";
+}
+
+function renderClassicalReadingControls(poem, translation, requestedMode) {
+  const loadState = classicalTranslationLoadStates.get(poem.id)?.status;
+  const review = classicalTranslationReviewMeta(translation, { inline: Boolean(poem.translation) });
+  const mode = effectiveClassicalReadingMode(requestedMode, translation);
+  const available = Boolean(translation) && review.id !== "rejected";
+  const warnings = Array.isArray(translation?.source?.warnings) ? translation.source.warnings : [];
+  const reviewCopy = review.id === "reviewed"
+    ? "已完成內容校對"
+    : review.id === "machine-draft"
+      ? "只作理解參考，尚未人工校對"
+      : review.id === "rejected"
+        ? "此稿已退回，不會作為今譯展示"
+        : available
+          ? review.label === "初步可用"
+            ? "已完成初篩，仍待逐篇內容精校"
+            : "等待內容校對"
+          : loadState === "loading"
+            ? "正在載入本地今譯"
+            : loadState === "error"
+              ? "今譯載入失敗"
+              : "這篇尚未收錄今譯";
+
+  return `
+    <section class="classical-reading-controls" aria-label="閱讀模式">
+      <div class="classical-reading-tabs" role="tablist" aria-label="切換原文與今譯">
+        ${classicalReadingModes.map((option) => {
+          const disabled = option.id !== "original" && !available;
+          return `<button type="button" role="tab" data-classical-reading-mode="${option.id}"
+            class="${mode === option.id ? "is-active" : ""}" aria-selected="${mode === option.id}"
+            ${disabled ? "disabled" : ""}>${option.label}</button>`;
+        }).join("")}
+      </div>
+      <div class="translation-review is-${review.tone}" data-translation-review-status="${review.id}">
+        <span aria-hidden="true">${review.id === "reviewed" ? "校" : review.id === "machine-draft" ? "機" : review.id === "rejected" ? "退" : "譯"}</span>
+        <p><strong>${escapeHtml(review.label)}</strong><small>${escapeHtml(reviewCopy)}${warnings.length ? ` · ${warnings.length} 項結構警告` : ""}</small></p>
+        ${loadState === "error" ? `<button type="button" data-retry-classical-translation="${escapeHtml(poem.id)}">重試</button>` : ""}
+      </div>
+    </section>`;
+}
+
 function renderPoemDetails(poem) {
-  const importedTranslation = getClassicalTranslation(poem);
-  const translation = poem.translation
-    ? { paragraphs: [poem.translation], source: null }
-    : importedTranslation;
-  const translationLoadState = classicalTranslationLoadStates.get(poem.id);
   const details = [
     { label: "注釋", content: poem.annotation, open: true },
-    ...(translation || translationLoadState?.status === "error" ? [{
-      label: "今譯",
-      content: translation,
-      open: !poem.annotation || !translation,
-      loadStatus: translation ? "ready" : "error"
-    }] : []),
     { label: "賞析", content: poem.appreciation, open: false },
     { label: "典故", content: poem.allusion, open: false }
-  ].filter(({ label, content }) => label === "今譯" || Boolean(content));
+  ].filter(({ content }) => Boolean(content));
 
-  if (!details.length) {
-    const saveCopy = poem.kind === "古文" ? "收藏段落" : poem.kind === "詞" ? "收藏詞句" : poem.kind === "曲" ? "收藏曲句" : "收藏詩句";
-    return `
-      <section class="source-only-note">
-        <span aria-hidden="true">譯</span>
-        <div><strong>這一篇的今譯仍在校訂</strong><p>Leafbound 不會用來源不明或未核對的文字填補空缺；目前仍可${saveCopy}、寫筆記與點詞查音。</p></div>
-      </section>`;
-  }
+  if (!details.length) return "";
 
-  return details.map(({ label, content, open, loadStatus }) => {
-    if (label === "今譯" && !content) {
-      return `
-    <details class="reader-detail is-translation" open data-classical-translation-state="${loadStatus}">
-      <summary><span>今譯<small>載入失敗</small></span>${icon("chevron")}</summary>
-      <div class="reader-detail-body" aria-live="polite">
-        <p>今譯分片暫時未能載入；原文、收藏、筆記與粵拼仍可正常使用。</p>
-        <button class="quiet-button" type="button" data-retry-classical-translation="${escapeHtml(poem.id)}">重新載入今譯</button>
-      </div>
-    </details>`;
-    }
-    const paragraphs = Array.isArray(content?.paragraphs)
-      ? content.paragraphs
-      : [content];
-    const source = content?.source;
-    const sourceStatus = source
-      ? `${source.label}${source.status ? ` · ${source.status}` : ""}`
-      : "";
+  return details.map(({ label, content, open }) => {
+    const paragraphs = [content];
     return `
-    <details class="reader-detail ${label === "今譯" ? "is-translation" : ""}" ${open ? "open" : ""}>
-      <summary><span>${label}${source ? `<small>${escapeHtml(source.status || source.label)}</small>` : ""}</span>${icon("chevron")}</summary>
+    <details class="reader-detail" ${open ? "open" : ""}>
+      <summary><span>${label}</span>${icon("chevron")}</summary>
       <div class="reader-detail-body">
         ${paragraphs.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("")}
-        ${sourceStatus ? `<div class="reader-detail-source"><span>${escapeHtml(sourceStatus)}</span>${source.license ? `<small>${escapeHtml(source.license)}</small>` : ""}</div>` : ""}
       </div>
     </details>`;
   }).join("");
@@ -1293,12 +1490,13 @@ function renderClassicalPronunciationNote(poem) {
     </aside>`;
 }
 
-function renderPoemBody(poem, savedLineIds, showJyutping) {
+function renderPoemSourceLines(poem, lines, savedLineIds, showJyutping, parallel = false) {
   if (poem.kind === "古文") {
     const jyutpingVisible = showJyutping && cantoneseLexiconState.status === "ready";
     return `
-      <div class="prose-work ${jyutpingVisible ? "is-showing-jyutping" : ""}" lang="zh-Hant">
-        ${poem.lines.map((line, lineIndex) => {
+      <div class="prose-work ${parallel ? "is-parallel" : ""} ${jyutpingVisible ? "is-showing-jyutping" : ""}" lang="zh-Hant">
+        ${lines.map((line) => {
+          const lineIndex = Number.isInteger(line.sourceIndex) ? line.sourceIndex : poem.lines.indexOf(line);
           const lineId = poetryLineId(poem.id, lineIndex);
           const saved = savedLineIds.has(lineId);
           return `
@@ -1315,8 +1513,9 @@ function renderPoemBody(poem, savedLineIds, showJyutping) {
 
   const lineKind = poem.kind === "詞" ? "詞句" : poem.kind === "曲" ? "曲句" : "詩句";
   return `
-    <div class="full-poem" lang="zh-Hant">
-      ${poem.lines.map((line, lineIndex) => {
+    <div class="full-poem ${parallel ? "is-parallel" : ""}" lang="zh-Hant">
+      ${lines.map((line) => {
+        const lineIndex = Number.isInteger(line.sourceIndex) ? line.sourceIndex : poem.lines.indexOf(line);
         const lineId = poetryLineId(poem.id, lineIndex);
         const saved = savedLineIds.has(lineId);
         const pronunciation = showJyutping ? classicalLinePronunciation(line) : { value: "", kind: "pending" };
@@ -1340,6 +1539,66 @@ function renderPoemBody(poem, savedLineIds, showJyutping) {
           </div>`;
       }).join("")}
     </div>`;
+}
+
+function renderPoemBody(poem, savedLineIds, showJyutping, mode = "original", translation = null) {
+  if (mode === "translation") {
+    const paragraphs = translation?.paragraphs || [];
+    return `
+      <div class="classical-translation-only" lang="zh-Hant">
+        ${paragraphs.map((paragraph, index) => `<p><span aria-hidden="true">${String(index + 1).padStart(2, "0")}</span>${escapeHtml(paragraph)}</p>`).join("")}
+      </div>`;
+  }
+
+  if (mode !== "parallel" || !translation) {
+    const sourceLines = poem.lines.map((line, sourceIndex) => ({ ...line, sourceIndex }));
+    return renderPoemSourceLines(poem, sourceLines, savedLineIds, showJyutping);
+  }
+
+  const units = alignClassicalReadingUnits(poem.lines, translation);
+  const focusActive = Number.isInteger(ui.classicalFocusIndex);
+  return `
+    <div class="classical-reading-flow ${poem.kind === "古文" ? "is-prose" : "is-verse"}" data-classical-alignment-count="${units.length}">
+      ${units.map((unit, unitIndex) => {
+        const isFocused = ui.classicalFocusIndex === unitIndex;
+        const alignmentNote = unit.alignment === "structural"
+          ? "原文與今譯段數不同，按篇章順序相鄰展示，不作逐句對應。"
+          : unit.alignment === "whole-work"
+            ? "此今譯按全篇相鄰展示，並非逐句對譯。"
+            : "";
+        return `
+          <section class="classical-reading-unit ${isFocused ? "is-focused" : ""} ${focusActive && !isFocused ? "is-muted" : ""}"
+            data-classical-reading-unit="${unitIndex}" data-classical-alignment="${unit.alignment}" tabindex="0"
+            aria-label="第 ${unitIndex + 1} 組原文與今譯${isFocused ? "，已聚焦" : ""}">
+            <span class="classical-reading-thread" aria-hidden="true"><i></i></span>
+            <div class="classical-reading-source">
+              ${renderPoemSourceLines(poem, unit.sourceLines, savedLineIds, showJyutping, true)}
+            </div>
+            <div class="classical-reading-translation" lang="zh-Hant">
+              <small>今譯</small>
+              ${unit.translations.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("")}
+              ${alignmentNote ? `<p class="classical-reading-alignment-note">${escapeHtml(alignmentNote)}</p>` : ""}
+            </div>
+          </section>`;
+      }).join("")}
+    </div>`;
+}
+
+function renderPoemContentState(poem) {
+  const state = poemContentLoadStates.get(poem.id);
+  if (state?.status === "error") {
+    return `
+      <section class="poem-content-state is-error" role="alert">
+        <span aria-hidden="true">再</span>
+        <div><strong>正文未能載入</strong><p>分片仍保存在本站；可重新讀取，不會影響收藏或進度。</p></div>
+        <button type="button" data-retry-poem-content="${escapeHtml(poem.id)}">重新載入</button>
+      </section>`;
+  }
+  return `
+    <section class="poem-content-state is-loading" aria-live="polite" aria-busy="true">
+      <span aria-hidden="true">讀</span>
+      <div><strong>正在展開正文</strong><p>只載入這一篇的原文、粵拼與今譯資料。</p></div>
+    </section>`;
 }
 
 function renderClassicalTypographyPanel(typography) {
@@ -1380,14 +1639,36 @@ function renderClassicalTypographyPanel(typography) {
           </div>
         </fieldset>
       </div>
+      <div class="classical-jyutping-heading">
+        <span aria-hidden="true">音</span>
+        <p><strong>粵拼顯示</strong><small>只調整字上方的讀音，不改變原文字級</small></p>
+      </div>
+      <div class="classical-jyutping-grid">
+        ${[
+          { id: "size", label: "字號", value: typography.jyutpingSize },
+          { id: "color", label: "顏色", value: typography.jyutpingColor },
+          { id: "opacity", label: "濃淡", value: typography.jyutpingOpacity },
+          { id: "gap", label: "上下距", value: typography.jyutpingGap }
+        ].map((group) => `
+          <fieldset class="classical-type-group">
+            <legend>${group.label}</legend>
+            <div class="classical-segmented" role="group" aria-label="調整粵拼${group.label}">
+              ${classicalJyutpingOptions[group.id].map((option) => `
+                <button class="${group.value === option.value ? "is-active" : ""}" type="button"
+                  data-classical-jyutping-setting="${group.id}" data-classical-jyutping-value="${option.value}"
+                  aria-pressed="${group.value === option.value}">${option.label}</button>`).join("")}
+            </div>
+          </fieldset>`).join("")}
+      </div>
     </section>`;
 }
 
 function renderPoemReader(id) {
   const poem = findPoem(id);
   const state = appStore.getState();
+  const contentReady = !poem.contentShard || poem.contentLoaded;
   const showJyutping = state.preferences.showJyutping;
-  const hasCuratedJyutping = poem.lines.some((line) => Boolean(String(line.jyutping || "").trim()));
+  const hasCuratedJyutping = contentReady && poem.lines.some((line) => Boolean(String(line.jyutping || "").trim()));
   const savedLineIds = new Set(state.savedItems.map((item) => item.id));
   const noteKey = `poem:${poem.id}`;
   const note = state.notes[noteKey]?.content || "";
@@ -1397,11 +1678,15 @@ function renderPoemReader(id) {
   const canShowJyutping = hasCuratedJyutping || lexiconReady;
   const jyutpingVisible = showJyutping && canShowJyutping;
   const typography = getClassicalTypography(state.preferences);
+  const translation = contentReady ? classicalTranslationFor(poem) : null;
+  const readingMode = effectiveClassicalReadingMode(typography.readingMode, translation);
   const thread = poemThreadCopy(poem);
   const progress = itemProgress(state, "poem", poem);
 
   return `
-    <article class="poem-reader page-enter ${isProse ? "is-prose" : ""} classical-font-${typography.font}"
+    <article class="poem-reader page-enter ${isProse ? "is-prose" : ""} classical-font-${typography.font}
+      jyutping-size-${typography.jyutpingSize} jyutping-color-${typography.jyutpingColor}
+      jyutping-opacity-${typography.jyutpingOpacity} jyutping-gap-${typography.jyutpingGap}"
       style="--classical-scale:${typography.scale}; --classical-leading:${typography.leading}" data-poetry-progress="${escapeHtml(poem.id)}">
       <header class="reader-toolbar">
         <button class="back-button" type="button" data-route="poetry">${icon("back")} 詩詞</button>
@@ -1417,7 +1702,7 @@ function renderPoemReader(id) {
           ${renderReadingStateButton("poem", poem.id, progress, poem.title)}
           <button class="icon-button" type="button" data-toggle-note="${noteKey}" aria-label="${noteOpen ? "關閉筆記" : "打開筆記"}">${icon("note")}</button>
           ${favoriteButton(`poem:${poem.id}`, poem.title)}
-          <button class="icon-button" type="button" data-immersive="${poem.id}" aria-label="進入沉浸閱讀">${icon("expand")}</button>
+          <button class="icon-button" type="button" data-immersive="${poem.id}" aria-label="進入沉浸閱讀" ${contentReady ? "" : "disabled"}>${icon("expand")}</button>
         </div>
       </header>
 
@@ -1440,9 +1725,12 @@ function renderPoemReader(id) {
               aria-expanded="${ui.poemThreadOpen}" aria-controls="poem-thread-panel">${thread.label} · ${escapeHtml(poem.poet)} · ${escapeHtml(poem.form)}</button>
           </header>
 
-          ${renderPoemBody(poem, savedLineIds, jyutpingVisible)}
+          ${contentReady ? renderClassicalReadingControls(poem, translation, typography.readingMode) : ""}
+          ${contentReady
+            ? renderPoemBody(poem, savedLineIds, jyutpingVisible, readingMode, translation)
+            : renderPoemContentState(poem)}
 
-          ${renderClassicalPronunciationNote(poem)}
+          ${contentReady && readingMode !== "translation" ? renderClassicalPronunciationNote(poem) : ""}
         </div>
 
         <aside class="poem-aside">
@@ -1454,7 +1742,7 @@ function renderPoemReader(id) {
               <textarea data-note-input="${noteKey}" placeholder="記下你想再回來的感受……">${escapeHtml(note)}</textarea>
               <button class="primary-button compact" type="button" data-save-note="${noteKey}">保存筆記</button>
             </section>` : ""}
-          ${renderPoemDetails(poem)}
+          ${contentReady ? renderPoemDetails(poem) : ""}
         </aside>
       </div>
     </article>`;
@@ -1470,6 +1758,7 @@ function renderCantoneseFeed() {
     const levelMatches = !selectedLevelGroup.levels || selectedLevelGroup.levels.includes(episode.level);
     return sourceMatches && levelMatches;
   });
+  const renderedEpisodes = visible.slice(0, ui.cantoneseLimit);
   const activeSource = cantoneseSourceCatalog.find((source) => source.id === ui.sourceFilter);
   const sourceLabel = activeSource?.shortName || "全部內容";
 
@@ -1480,7 +1769,7 @@ function renderCantoneseFeed() {
           <p class="eyebrow">Cantonese Listening</p>
           <h1>先聽見語氣，<br>再追上每個字。</h1>
         </div>
-        <p>香港口語原聲、七級粵文故事與本地練習，全部可以在 Leafbound 閱讀全文。真人錄音優先；沒有原聲時，也不會用普通話代替。</p>
+        <p>香港口語原聲、1997–1998 雙人訪談式對話、研究訪談口述與七級粵文故事，全部可以在 Leafbound 閱讀文字。只有受訪者對齊稿的資料會明確標記，不冒充雙方文稿。</p>
       </header>
 
       <section class="cantonese-source-shelf" aria-labelledby="cantonese-shelf-title">
@@ -1495,7 +1784,7 @@ function renderCantoneseFeed() {
             const count = episodes.filter((episode) => episode.sourceId === source.id).length;
             const detail = source.id === "hbl"
               ? `${count} 篇站內全文 · 原目錄 ${cantoneseSourceSnapshot.catalogCount} 篇`
-              : `${count} ${source.id === "hkcancor" ? "段" : "篇"}可用內容`;
+              : `${count} ${["hkcancor", "spice"].includes(source.id) ? "段" : "篇"}可用內容`;
             return `
               <button type="button" class="cantonese-source-card ${ui.sourceFilter === source.id ? "is-active" : ""}" data-source-filter="${escapeHtml(source.id)}" aria-pressed="${ui.sourceFilter === source.id}">
                 <span class="cantonese-source-mark" aria-hidden="true">${escapeHtml(source.mark)}</span>
@@ -1525,12 +1814,12 @@ function renderCantoneseFeed() {
       ${ui.sourceFilter === "local" ? renderCantoneseVoiceNotice() : ""}
 
       <div class="feed-heading">
-        <div><span>${escapeHtml(sourceLabel)}</span><small>${visible.length} items</small></div>
+        <div><span>${escapeHtml(sourceLabel)}</span><small>顯示 ${renderedEpisodes.length} / ${visible.length} 篇</small></div>
         <p>站內保留正文；原聲、粵拼與授權狀態按每篇內容分別標示。</p>
       </div>
 
-      <div class="episode-list">
-        ${visible.map((episode) => {
+      <div class="episode-list" aria-live="polite">
+        ${renderedEpisodes.map((episode, index) => {
           const current = state.playbackProgress[episode.id] || 0;
           const progress = itemProgress(state, "episode", episode);
           const readingStatus = contentStatusMeta(progress);
@@ -1538,21 +1827,31 @@ function renderCantoneseFeed() {
             ? new Intl.DateTimeFormat("zh-Hant", { year: "numeric", month: "short", day: "numeric" }).format(new Date(episode.publishedAt))
             : episode.recordedPeriod || "";
           const availability = episode.audioKind === "local"
-            ? `真人原聲 ${formatTime(episode.duration)} · 語料粵拼`
+            ? `真人原聲 ${formatTime(episode.duration)} · ${episode.timing === "aligned" ? "對齊逐字稿" : "全文逐字粵拼"}`
             : episode.audioKind === "soundcloud"
               ? `真人原聲 · ${episode.transcript.length} 段完整粵文`
+              : episode.audioKind === "source-reference"
+                ? `官方原聲可查 · ${episode.transcript.length} 段對齊文稿`
               : `本機粵語朗讀 · ${formatTime(episode.duration)}`;
           const progressCopy = readingStatus.seen
             ? readingStatus.detail
             : episode.audioKind === "soundcloud"
               ? "站內全文"
+              : episode.audioKind === "source-reference"
+                ? "站內文稿"
               : current ? `${progressPercent(current, episode.duration)}%` : "未開始";
           const learningBand = getCantoneseLearningBand(episode.level);
-          const artMark = episode.sourceId === "hbl" ? learningBand?.mark || "讀" : episode.sourceId === "hkcancor" ? "港" : "";
+          const artMark = episode.sourceId === "hbl"
+            ? learningBand?.mark || "讀"
+            : episode.sourceId === "hkcancor"
+              ? "港"
+              : episode.sourceId === "spice"
+                ? "訪"
+                : "";
           const episodeSourceLabel = cantoneseEpisodeSourceLabel(episode);
           const episodeDescription = cantoneseEpisodeDescription(episode);
           return `
-            <article class="episode-row is-${escapeHtml(episode.sourceId)} is-${readingStatus.status}" ${learningBand ? `data-learning-band="${learningBand.id}"` : ""}>
+            <article class="episode-row is-${escapeHtml(episode.sourceId)} is-${readingStatus.status}" data-cantonese-row-index="${index}" ${learningBand ? `data-learning-band="${learningBand.id}"` : ""}>
               <button class="episode-main" type="button" data-route="cantonese" data-route-id="${episode.id}">
                 <span class="episode-art is-${escapeHtml(episode.sourceId)}" aria-hidden="true">
                   ${artMark ? `<b>${escapeHtml(artMark)}</b>` : ""}<i></i><i></i><i></i><i></i><i></i>
@@ -1580,6 +1879,15 @@ function renderCantoneseFeed() {
             <button class="secondary-button" type="button" data-source-filter="全部" data-cantonese-level="全部">查看全部粵語內容</button>
           </div>`}
       </div>
+      ${renderedEpisodes.length < visible.length ? `
+        <div class="collection-load-more" aria-label="粵語內容分頁">
+          <p role="status">已顯示 ${renderedEpisodes.length} 篇，尚有 ${visible.length - renderedEpisodes.length} 篇</p>
+          <button class="secondary-button" type="button" data-load-more-cantonese
+            aria-label="再顯示 ${Math.min(COLLECTION_BATCH_SIZE, visible.length - renderedEpisodes.length)} 篇粵語內容">
+            再顯示 ${Math.min(COLLECTION_BATCH_SIZE, visible.length - renderedEpisodes.length)} 篇 ${icon("arrow")}
+          </button>
+        </div>` : visible.length ? `
+        <p class="collection-end-note" role="status">已顯示這個書架的全部 ${visible.length} 篇內容</p>` : ""}
     </section>`;
 }
 
@@ -1590,6 +1898,18 @@ function renderTranscriptPlainText(segment) {
     const pronunciation = part.readings.length ? ` title="${escapeHtml(part.readings.join(" / "))}"` : "";
     return `<button class="term-button ${part.isCurated ? "is-curated" : "is-dictionary"}" type="button" ${attribute}="${escapeHtml(part.text)}"${pronunciation}>${escapeHtml(part.text)}</button>`;
   }).join("");
+}
+
+function transcriptSpeakerDetails(episode, segment) {
+  const prefix = String(segment.text || "").match(/^([^:：\s]{1,12})[:：]\s*([\s\S]*)$/u);
+  const speakerId = String(segment.speaker || prefix?.[1] || "").trim();
+  const profile = speakerId ? episode.speakers?.[speakerId] : null;
+  const text = profile && prefix?.[1] === speakerId ? prefix[2] : segment.text;
+  return {
+    segment: text === segment.text ? segment : { ...segment, text },
+    speakerId,
+    profile
+  };
 }
 
 function renderTranscriptRuby(bases, syllables, kind) {
@@ -1662,21 +1982,29 @@ function transcriptSegmentHtml(segment, index, mode, episodeId, showJyutping) {
   if (mode === "listen") return "";
   const episode = findEpisode(episodeId);
   const hidden = mode === "reveal" && !ui.revealedSegments.has(`${episodeId}:${index}`);
-  const reading = renderTranscriptReading(segment, showJyutping);
-  const suppliedJyutping = String(segment.jyutping || "").trim();
+  const speaker = transcriptSpeakerDetails(episode, segment);
+  const reading = renderTranscriptReading(speaker.segment, showJyutping);
+  const suppliedJyutping = String(speaker.segment.jyutping || "").trim();
   const generatedJyutping = showJyutping && !suppliedJyutping && cantoneseLexiconState.status === "ready"
-    ? buildCantonesePronunciationLine(segment.text)
+    ? buildCantonesePronunciationLine(speaker.segment.text)
     : "";
   const hasJyutping = Boolean(reading.kind && (suppliedJyutping || generatedJyutping || reading.kind === "auto"));
+  const speakerSide = ["question", "answer"].includes(speaker.profile?.side) ? speaker.profile.side : "voice";
+  const speakerMark = speakerSide === "question" ? "問" : speakerSide === "answer" ? "答" : "聲";
 
   return `
-    <div class="transcript-segment ${hidden ? "is-hidden" : ""} ${hasJyutping ? "has-jyutping" : ""}" data-segment-index="${index}">
+    <div class="transcript-segment ${hidden ? "is-hidden" : ""} ${hasJyutping ? "has-jyutping" : ""} ${speaker.profile ? `has-speaker is-speaker-${speakerSide}` : ""}" data-segment-index="${index}">
       ${episode.timing === "untimed"
         ? `<span class="segment-time is-label">${escapeHtml(segment.label || String(index + 1).padStart(2, "0"))}</span>`
         : `<button class="segment-time" type="button" data-jump-time="${segment.at}" aria-label="跳到約 ${formatTime(segment.at)}">${formatTime(segment.at)}</button>`}
       ${hidden ? `
         <button class="reveal-line" type="button" data-reveal-segment="${episodeId}:${index}">顯示這一句</button>` : `
          <div class="segment-copy">
+           ${speaker.profile ? `<div class="transcript-speaker" data-speaker-role="${escapeHtml(speaker.profile.role)}">
+             <span aria-hidden="true">${speakerMark}</span>
+             <small>${escapeHtml(speaker.profile.role)}</small>
+             <strong>${escapeHtml(speaker.profile.name || speaker.speakerId)}</strong>
+           </div>` : ""}
            <p lang="yue-Hant"${hasJyutping ? ` data-segment-jyutping="${reading.kind}"` : ""}>${reading.html}</p>
          </div>`}
     </div>`;
@@ -1716,6 +2044,7 @@ function renderEpisodePlayer(id) {
   const speechReady = cantoneseSpeech.status === "available";
   const hasLocalRecording = episode.audioKind === "local" && Boolean(episode.audioFile);
   const hasRemoteRecording = episode.audioKind === "soundcloud" && Boolean(episode.audioUrl);
+  const hasSourceRecordingReference = episode.audioKind === "source-reference" && Boolean(episode.sourceUrl);
   const canUseTransport = hasLocalRecording || speechReady;
   const voiceMessage = cantoneseVoiceMessage();
   const playbackLabel = hasLocalRecording ? "真人粵語原聲" : speechReady ? "粵語合成示範" : "僅粵語逐字稿";
@@ -1723,6 +2052,20 @@ function renderEpisodePlayer(id) {
   const soundcloudEmbed = hasRemoteRecording
     ? `https://w.soundcloud.com/player/?url=${encodeURIComponent(episode.audioUrl)}&color=%23183f38&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&visual=false`
     : "";
+  const transcriptEyebrow = episode.sourceId === "hbl"
+    ? `HBL Level ${episode.level}`
+    : episode.transcriptScope === "two-party"
+      ? "Two-party transcript · 1997–1998"
+      : episode.transcriptScope === "participant-only"
+        ? "Participant-aligned excerpt · CC BY 4.0"
+        : "Transcript";
+  const transcriptTitle = episode.sourceId === "hbl"
+    ? "故事全文"
+    : episode.transcriptScope === "two-party"
+      ? "雙方訪談式文稿"
+      : episode.transcriptScope === "participant-only"
+        ? "受訪者口述節錄"
+        : "逐字稿";
 
   return `
     <section class="episode-player-view page-enter">
@@ -1743,6 +2086,16 @@ function renderEpisodePlayer(id) {
           <p class="eyebrow">${escapeHtml(episodeSourceLabel)}</p>
           <h1>${escapeHtml(episode.title)}</h1>
           <p>${escapeHtml(episodeDescription)}</p>
+
+          ${hasSourceRecordingReference ? `
+            <aside class="source-recording-reference">
+              <span aria-hidden="true">引</span>
+              <div>
+                <strong>官方原聲保留在 SpiCE</strong>
+                <p>Leafbound 收錄受訪者對齊文稿，不複製整段研究錄音；來源頁可查看完整資料與 CC BY 4.0 授權。</p>
+                <a href="${safeExternalHref(episode.sourceUrl)}" target="_blank" rel="noreferrer">前往官方資料庫 ${icon("external")}</a>
+              </div>
+            </aside>` : ""}
 
           ${hasRemoteRecording ? `
             <div class="soundcloud-player" data-soundcloud-shell>
@@ -1768,7 +2121,9 @@ function renderEpisodePlayer(id) {
             </div>
             <button class="ab-button ${player.abStart != null ? "is-active" : ""}" type="button" data-ab-repeat>${escapeHtml(abLabel)}</button>
             <p class="player-caption">${hasLocalRecording
-              ? "HKCanCor 真人錄音保存在本機；句段位置按字數估算，播放進度與速度也只保存在本機。"
+              ? episode.sourceId === "spice"
+                ? "SpiCE 原始資料是雙聲道研究訪談；本站離線片段與文字均只取受訪者聲道，不會補寫訪者台詞。"
+                : "HKCanCor 真人錄音保存在本機；句段位置按字數估算，播放進度與速度也只保存在本機。"
               : `使用「${escapeHtml(cantoneseSpeech.voice.name)}」逐句合成；這不是節目原聲。進度與速度會保存在本機。`}</p>` : `
             <div class="player-voice-block is-${cantoneseSpeech.status}" data-cantonese-voice-status="${cantoneseSpeech.status}">
               <span aria-hidden="true">止</span>
@@ -1782,8 +2137,8 @@ function renderEpisodePlayer(id) {
         <section class="transcript-panel">
           <header class="transcript-heading">
             <div>
-              <p class="eyebrow">${episode.sourceId === "hbl" ? `HBL Level ${episode.level}` : "Transcript"}</p>
-              <h2>${episode.sourceId === "hbl" ? "故事全文" : "逐字稿"}</h2>
+              <p class="eyebrow">${escapeHtml(transcriptEyebrow)}</p>
+              <h2>${escapeHtml(transcriptTitle)}</h2>
             </div>
             <div class="transcript-controls">
               <div class="mode-switch" role="group" aria-label="字幕顯示方式">
@@ -1799,6 +2154,16 @@ function renderEpisodePlayer(id) {
                 aria-label="${showTranscriptJyutping ? "隱藏逐字稿粵拼" : "顯示逐字稿粵拼"}">粵拼</button>
             </div>
           </header>
+
+          ${episode.transcriptScope ? `<aside class="transcript-scope-note is-${escapeHtml(episode.transcriptScope)}">
+            <span aria-hidden="true">${episode.transcriptScope === "two-party" ? "雙" : "單"}</span>
+            <div>
+              <strong>${episode.transcriptScope === "two-party" ? "雙方文稿" : "單方對齊稿"}</strong>
+              <p>${escapeHtml(episode.transcriptScope === "two-party"
+                ? episode.roleAttribution || "每個話輪都標明提問者與受訪者。"
+                : "原資料只提供受訪者的對齊文字；訪者的問句未經核對，所以不在這裏臆補。")}</p>
+            </div>
+          </aside>` : ""}
 
           ${mode === "listen" ? `
             <div class="listen-only-state">
@@ -1845,6 +2210,7 @@ function renderEnglishIndex() {
     const categoryMatches = ui.englishCategory === "全部" || item.category === ui.englishCategory;
     return sourceMatches && categoryMatches;
   });
+  const renderedArticles = visible.slice(0, ui.englishLimit);
   const syncedAt = englishSourceSnapshot.generatedAt
     ? new Intl.DateTimeFormat("en-GB", { year: "numeric", month: "short", day: "numeric" }).format(new Date(englishSourceSnapshot.generatedAt))
     : "Not yet synced";
@@ -1877,7 +2243,7 @@ function renderEnglishIndex() {
       <span class="row-arrow">${icon(isExternal ? "external" : "arrow")}</span>`;
 
     return `
-      <article class="article-row ${isExternal ? "is-external" : `is-internal is-${readingStatus.status}`}" data-english-source-row="${escapeHtml(article.sourceId)}" data-english-category-row="${escapeHtml(article.category)}">
+      <article class="article-row ${isExternal ? "is-external" : `is-internal is-${readingStatus.status}`}" data-english-row-index="${index}" data-english-source-row="${escapeHtml(article.sourceId)}" data-english-category-row="${escapeHtml(article.category)}">
         ${isExternal
           ? `<a class="article-main" href="${escapeHtml(article.sourceUrl)}" target="_blank" rel="noreferrer" aria-label="Read ${escapeHtml(article.title)} at ${escapeHtml(sourceName)}">${main}</a>`
           : `<button class="article-main" type="button" data-route="english" data-route-id="${article.id}">${main}</button>`}
@@ -1945,11 +2311,11 @@ function renderEnglishIndex() {
           ${categories.map((category) => `
             <button type="button" role="tab" class="${ui.englishCategory === category ? "is-active" : ""}" data-english-category="${escapeHtml(category)}" aria-selected="${ui.englishCategory === category}">${escapeHtml(englishCategoryLabels[category] || "Other")}</button>`).join("")}
         </div>
-        <p><span>${visible.length}</span> texts · ${ui.englishSourceFilter === "全部" ? "All sources" : escapeHtml(englishSourceCatalog.find((source) => source.id === ui.englishSourceFilter)?.shortName || "Source")}</p>
+        <p><span>${renderedArticles.length} / ${visible.length}</span> texts · ${ui.englishSourceFilter === "全部" ? "All sources" : escapeHtml(englishSourceCatalog.find((source) => source.id === ui.englishSourceFilter)?.shortName || "Source")}</p>
       </div>
 
       <div class="article-stack" aria-live="polite">
-        ${visible.length ? visible.map(renderIndexRow).join("") : `
+        ${visible.length ? renderedArticles.map(renderIndexRow).join("") : `
           <div class="empty-state english-empty">
             <span class="empty-glyph">Aa</span>
             <h2>Nothing in this shelf yet</h2>
@@ -1957,6 +2323,15 @@ function renderEnglishIndex() {
             <button class="secondary-button" type="button" data-english-source="全部" data-english-category="全部">View all reading</button>
           </div>`}
       </div>
+      ${renderedArticles.length < visible.length ? `
+        <div class="collection-load-more is-english" aria-label="English reading pagination">
+          <p role="status">Showing ${renderedArticles.length} of ${visible.length} texts</p>
+          <button class="secondary-button" type="button" data-load-more-english
+            aria-label="Show ${Math.min(COLLECTION_BATCH_SIZE, visible.length - renderedArticles.length)} more English texts">
+            Show ${Math.min(COLLECTION_BATCH_SIZE, visible.length - renderedArticles.length)} more ${icon("arrow")}
+          </button>
+        </div>` : visible.length ? `
+        <p class="collection-end-note is-english" role="status">All ${visible.length} texts in this shelf are showing</p>` : ""}
 
     </section>`;
 }
@@ -2497,9 +2872,10 @@ function renderAboutPanel() {
             <p>${poems.length} 篇本地內容，包括 ${kindCount("詩")} 首詩、${kindCount("詞")} 首詞、${kindCount("曲")} 首曲與 ${kindCount("古文")} 篇古文；其中 ${openWorks} 篇來自固定版本的 chinese-poetry 開放資料。</p>
             <dl>
               <div><dt>收錄</dt><dd>唐詩三百首 · 全唐詩選 · 千家詩 · 宋詞三百首 · 全宋詞選 · 古文觀止 · 詩經 · 楚辭 · 元曲 · 四書 · 曹操詩集 · 納蘭詞 · 幽夢影 · 蒙學原典</dd></div>
-              <div><dt>今譯</dt><dd>${completeClassicalTranslationCount} 篇已有現代中文：${completeClassicalTranslationByKind.詩 || 0} 首詩、${completeClassicalTranslationByKind.詞 || 0} 首詞、${completeClassicalTranslationByKind.曲 || 0} 首曲、${completeClassicalTranslationByKind.古文 || 0} 篇古文；其中 ${classicalTranslationSnapshot.openCount} 篇為精確原文匹配的開放機器語料，其餘 ${completeClassicalTranslationCount - classicalTranslationSnapshot.openCount} 篇為 Leafbound 編輯稿</dd></div>
+              <div><dt>內置今譯</dt><dd>${completeClassicalTranslationCount} 篇隨主程式提供：${completeClassicalTranslationByKind.詩 || 0} 首詩、${completeClassicalTranslationByKind.詞 || 0} 首詞、${completeClassicalTranslationByKind.曲 || 0} 首曲、${completeClassicalTranslationByKind.古文 || 0} 篇古文；其中 ${classicalTranslationSnapshot.openCount} 篇為精確原文匹配的開放機器語料，其餘 ${completeClassicalTranslationCount - classicalTranslationSnapshot.openCount} 篇為 Leafbound 編輯稿</dd></div>
+              <div><dt>AI 分片</dt><dd>每篇保留繁體、漏譯、照抄、長度、拒答、重複與段落結構檢查結果；有阻斷警告的草稿不算成品。閱讀頁只按需載入目前作品所在分片，並明確標示機器草稿、待校對、人工已校或已退回</dd></div>
               <div><dt>授權</dt><dd>古典正文 MIT · 開放今譯 Apache 2.0</dd></div>
-              <div><dt>邊界</dt><dd>機器今譯逐篇標示「未校訂」；沒有精確匹配的作品不以同題、近似文字或來源不明的網頁譯文補位</dd></div>
+              <div><dt>邊界</dt><dd>只有無阻斷項的「人工已校」記錄才算可發布成品；機器稿只作理解參考。沒有精確匹配的作品不以同題、近似文字或來源不明的網頁譯文補位</dd></div>
             </dl>
             <div class="about-source-links">
               <a href="https://github.com/chinese-poetry/chinese-poetry" target="_blank" rel="noreferrer">查看資料庫</a>
@@ -2515,16 +2891,18 @@ function renderAboutPanel() {
           <span class="about-source-mark" aria-hidden="true">聲</span>
           <div class="about-source-copy">
             <p class="eyebrow">Cantonese listening shelf</p>
-            <h3>香港口語與分級故事</h3>
-            <p>${cantoneseSourceSnapshot.authenticSampleCount} 段 HKCanCor 真人錄音與標注逐字稿保存在本機；另收錄 ${cantoneseSourceSnapshot.importedStoryCount} 篇冚唪唥粵文故事，保留原站 HBL L1–7。</p>
+            <h3>香港口語、研究訪談口述與分級故事</h3>
+            <p>${cantoneseSourceSnapshot.authenticSampleCount} 段 HKCanCor 真人錄音與標注逐字稿保存在本機，其中一段以「問／答」呈現雙方訪談式話輪；另有 ${episodes.filter((episode) => episode.sourceId === "spice").length} 段 SpiCE 受訪者對齊口述及 ${cantoneseSourceSnapshot.importedStoryCount} 篇冚唪唥粵文故事。</p>
             <dl>
-              <div><dt>HKCanCor</dt><dd>1997–1998 香港自然對話／電台樣本 · 原有粵拼 · CC BY 4.0</dd></div>
+              <div><dt>HKCanCor</dt><dd>1997–1998 香港自然對話／電台樣本 · 保留說話者代號與原有粵拼 · CC BY 4.0</dd></div>
+              <div><dt>SpiCE</dt><dd>12 段匿名受訪者對齊稿；1 段本機受訪者聲道，其餘原聲只作官方引用 · CC BY 4.0</dd></div>
               <div><dt>冚唪唥</dt><dd>${cantoneseSourceSnapshot.catalogCount} 篇公開目錄中，匯入 ${cantoneseSourceSnapshot.importedStoryCount} 篇有正文、署名與原聲入口的故事</dd></div>
               <div><dt>分組</dt><dd>原站按詞頻與用法分級；Leafbound 整理為起步、日常、進階三組，不等同 CEFR</dd></div>
               <div><dt>教材邊界</dt><dd>香港教育局與出版社教材不整套複製；只接受使用者有權使用的個人檔案</dd></div>
             </dl>
             <div class="about-source-links">
               <a href="https://github.com/fcbond/hkcancor" target="_blank" rel="noreferrer">HKCanCor</a>
+              <a href="https://doi.org/10.5683/SP2/MJOXP3" target="_blank" rel="noreferrer">SpiCE 訪談語料</a>
               <a href="https://hambaanglaang.hk/all-levels/" target="_blank" rel="noreferrer">冚唪唥 7 級目錄</a>
               <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>
             </div>
@@ -2604,7 +2982,7 @@ function renderAboutPanel() {
 
       <section class="about-data-note">
         <span aria-hidden="true">本</span>
-        <div><h3>所有個人資料只留在本機</h3><p>收藏、筆記、詞庫、最近閱讀／收聽記錄、閱讀與播放進度、每日選擇和設定只寫入目前瀏覽器的 localStorage；Leafbound 不設帳戶同步、分析 SDK 或遠端資料庫，也不以 Cookie 保存狀態。SoundCloud 與線上語音只在你明確操作後讀取，可能按各自政策處理網路請求，但不會收到上述個人狀態。清除瀏覽器資料前，建議先使用上方的「匯出備份」。</p></div>
+        <div><h3>所有個人資料只留在本機</h3><p>偏好設定保存在 localStorage；收藏、筆記、詞庫、最近閱讀／收聽記錄、閱讀與播放進度和每日選擇保存在目前瀏覽器的 IndexedDB。Leafbound 不設帳戶同步、分析 SDK 或遠端資料庫，也不以 Cookie 保存狀態；IndexedDB 不可用時才回退到完整 localStorage。SoundCloud 與線上語音只在你明確操作後讀取，可能按各自政策處理網路請求，但不會收到上述個人狀態。清除瀏覽器資料前，建議先匯出版本化備份。</p></div>
       </section>
 
       <footer class="about-footer">
@@ -2643,12 +3021,9 @@ function renderLanguageSettingsGroup() {
 function renderSettingsPanel() {
   const preferences = appStore.getState().preferences;
   const typography = getClassicalTypography(preferences);
-  const storageRemembered = (() => {
-    try {
-      return localStorage.getItem(STORAGE_KEY) !== null;
-    } catch {
-      return false;
-    }
+  const persistenceMode = appStore.getPersistenceMode();
+  const storageRemembered = persistenceMode !== "localStorage" || (() => {
+    try { return localStorage.getItem(STORAGE_KEY) !== null; } catch { return false; }
   })();
 
   return `
@@ -2665,7 +3040,7 @@ function renderSettingsPanel() {
         <span class="settings-local-mark" aria-hidden="true">本</span>
         <div>
           <strong>${storageRemembered ? "所有設定只由這部瀏覽器記住" : "瀏覽器封鎖了持久儲存"}</strong>
-          <p>設定與收藏、筆記、詞庫、歷史和進度一樣，只寫入本機 localStorage；Leafbound 本身不使用 Cookie，也不會上傳到 Leafbound 或第三方資料庫。</p>
+          <p>偏好保存在 localStorage；收藏、筆記、詞庫、歷史和進度保存在本機 IndexedDB。Leafbound 不使用 Cookie，也不會上傳到 Leafbound 或第三方資料庫。</p>
         </div>
         <small>${storageRemembered ? "LOCAL · ONLY" : "SESSION · ONLY"}</small>
       </div>
@@ -2695,6 +3070,28 @@ function renderSettingsPanel() {
                 <button class="${typography.leading === option.value ? "is-active" : ""}" type="button" data-classical-leading="${option.value}" aria-pressed="${typography.leading === option.value}">${option.label}</button>`).join("")}
             </div>
           </div>
+          <div class="settings-control-row">
+            <div><strong>預設閱讀模式</strong><small>原文、逐段對照或只讀今譯</small></div>
+            <div class="settings-segmented" role="group" aria-label="古典預設閱讀模式">
+              ${classicalReadingModes.map((option) => `
+                <button class="${typography.readingMode === option.id ? "is-active" : ""}" type="button" data-classical-reading-mode="${option.id}" aria-pressed="${typography.readingMode === option.id}">${option.label}</button>`).join("")}
+            </div>
+          </div>
+          ${[
+            { id: "size", label: "粵拼字號", detail: "獨立於原文字級", value: typography.jyutpingSize },
+            { id: "color", label: "粵拼顏色", detail: "玉色、朱色或墨色", value: typography.jyutpingColor },
+            { id: "opacity", label: "粵拼濃淡", detail: "降低或提高視覺份量", value: typography.jyutpingOpacity },
+            { id: "gap", label: "粵拼上下距", detail: "控制讀音與原文留白", value: typography.jyutpingGap }
+          ].map((group) => `
+            <div class="settings-control-row">
+              <div><strong>${group.label}</strong><small>${group.detail}</small></div>
+              <div class="settings-segmented" role="group" aria-label="${group.label}">
+                ${classicalJyutpingOptions[group.id].map((option) => `
+                  <button class="${group.value === option.value ? "is-active" : ""}" type="button"
+                    data-classical-jyutping-setting="${group.id}" data-classical-jyutping-value="${option.value}"
+                    aria-pressed="${group.value === option.value}">${option.label}</button>`).join("")}
+              </div>
+            </div>`).join("")}
           ${renderSettingsSwitch("showJyutping", "顯示古典粵拼", "詩、詞、曲與古文預設顯示首個候選讀音", preferences.showJyutping !== false)}
         </section>
 
@@ -2848,8 +3245,12 @@ function renderLibrary() {
           ${renderLibraryUtilityMenu(activePanel)}
           <div class="privacy-note">
             <span>${icon("bookmark")}</span>
-            <p><strong>內容只屬於這部裝置。</strong> 收藏、筆記、詞庫、歷史、進度與設定全部保存在瀏覽器本機，不使用 Cookie、帳戶同步或遠端資料庫。</p>
-            <button class="quiet-button" type="button" data-export-data>匯出備份</button>
+            <p><strong>內容只屬於這部裝置。</strong> 偏好保存在 localStorage，收藏、筆記、詞庫、歷史與進度保存在 IndexedDB；不使用 Cookie、帳戶同步或遠端資料庫。</p>
+            <div class="local-backup-actions">
+              <button class="quiet-button" type="button" data-export-data>匯出備份</button>
+              <label class="quiet-button" for="leafbound-import-file">匯入備份</label>
+              <input id="leafbound-import-file" class="sr-only" type="file" accept="application/json,.json" data-import-data>
+            </div>
           </div>
         </section>`}
     </section>`;
@@ -2974,7 +3375,9 @@ function renderImmersive() {
   const classicalJyutpingVisible = state.preferences.showJyutping
     && (hasCuratedJyutping || cantoneseLexiconState.status === "ready");
   return `
-    <section class="immersive-reader classical-font-${typography.font} ${poem.kind === "古文" ? "is-prose" : ""} ${classicalJyutpingVisible ? "has-jyutping" : ""}"
+    <section class="immersive-reader classical-font-${typography.font} ${poem.kind === "古文" ? "is-prose" : ""} ${classicalJyutpingVisible ? "has-jyutping" : ""}
+      jyutping-size-${typography.jyutpingSize} jyutping-color-${typography.jyutpingColor}
+      jyutping-opacity-${typography.jyutpingOpacity} jyutping-gap-${typography.jyutpingGap}"
       style="--classical-scale:${typography.scale}; --classical-leading:${typography.leading}" role="dialog" aria-modal="true" aria-labelledby="immersive-title">
       <button class="immersive-close" type="button" data-close-immersive aria-label="離開沉浸閱讀">${icon("close")}<span>離開沉浸</span></button>
       <div class="immersive-title"><p>${escapeHtml(poem.poet)} · ${escapeHtml(poem.dynasty)}</p><h2 id="immersive-title">${escapeHtml(poem.title)}</h2></div>
@@ -3011,6 +3414,7 @@ function render() {
   app.innerHTML = renderShell(route);
   document.body.classList.toggle("modal-open", Boolean(ui.searchOpen || ui.selectedTerm || ui.immersivePoemId));
   afterRender(route);
+  lastRenderedRoute = route;
 }
 
 function keepActiveEnglishTokenVisible() {
@@ -3042,6 +3446,14 @@ function afterRender(route) {
     });
   }
 
+  if (collectionScrollRestorePage === route.page && isCollectionListRoute(route)) {
+    const targetY = collectionSession[route.page]?.scrollY || 0;
+    collectionScrollRestorePage = null;
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => window.scrollTo({ top: targetY, behavior: "instant" }));
+    });
+  }
+
   const scroll = document.querySelector("[data-reader-scroll]");
   if (scroll) {
     const articleId = scroll.dataset.readerScroll;
@@ -3070,10 +3482,15 @@ function afterRender(route) {
   }
 
   if (route.page === "poetry" && route.id) {
-    setupPoetryProgressTracking();
     const poem = findPoem(route.id);
-    if (!poem.translation && !getClassicalTranslation(poem) && !classicalTranslationLoadStates.has(poem.id)) {
-      requestClassicalTranslation(poem);
+    const contentPending = poem.contentShard && !poem.contentLoaded;
+    if (contentPending) {
+      if (!poemContentLoadStates.has(poem.id)) requestPoemContent(poem);
+    } else {
+      setupPoetryProgressTracking();
+      if (!poem.translation && !getClassicalTranslation(poem) && !classicalTranslationLoadStates.has(poem.id)) {
+        requestClassicalTranslation(poem);
+      }
     }
   }
 
@@ -3495,8 +3912,9 @@ function handleAbRepeat() {
   render();
 }
 
-function exportData() {
-  const payload = JSON.stringify({ exportedAt: new Date().toISOString(), app: "Leafbound", data: appStore.getState() }, null, 2);
+async function exportData() {
+  await appStore.flush();
+  const payload = JSON.stringify(appStore.createBackup(), null, 2);
   const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }));
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -3506,6 +3924,20 @@ function exportData() {
   anchor.remove();
   URL.revokeObjectURL(url);
   announce("備份已匯出");
+}
+
+async function importData(file) {
+  if (!file) return;
+  try {
+    const payload = await file.text();
+    const approved = window.confirm("匯入會以備份內容取代這部裝置目前的收藏、筆記、詞庫與進度。要繼續嗎？");
+    if (!approved) return;
+    appStore.restore(payload);
+    await appStore.flush();
+    announce("備份已匯入，書房內容已恢復");
+  } catch (error) {
+    announce(error?.message || "備份無法匯入");
+  }
 }
 
 app.addEventListener("click", (event) => {
@@ -3531,6 +3963,14 @@ app.addEventListener("click", (event) => {
   if (retryClassicalTranslation) {
     const poem = findPoem(retryClassicalTranslation.dataset.retryClassicalTranslation);
     requestClassicalTranslation(poem, true);
+    render();
+    return;
+  }
+
+  const retryPoemContent = event.target.closest("[data-retry-poem-content]");
+  if (retryPoemContent) {
+    const poem = findPoem(retryPoemContent.dataset.retryPoemContent);
+    requestPoemContent(poem, true);
     render();
     return;
   }
@@ -3644,10 +4084,16 @@ app.addEventListener("click", (event) => {
   }
   if (event.target.closest("[data-classical-typography-reset]")) {
     ui.focusTarget = "[data-classical-typography-reset]";
+    const defaults = createDefaultPreferences();
     appStore.update((state) => {
-      state.preferences.classicalFont = "song";
-      state.preferences.classicalFontScale = 1;
-      state.preferences.classicalLineHeight = 1;
+      state.preferences.classicalFont = defaults.classicalFont;
+      state.preferences.classicalFontScale = defaults.classicalFontScale;
+      state.preferences.classicalLineHeight = defaults.classicalLineHeight;
+      state.preferences.classicalReadingMode = defaults.classicalReadingMode;
+      state.preferences.classicalJyutpingSize = defaults.classicalJyutpingSize;
+      state.preferences.classicalJyutpingColor = defaults.classicalJyutpingColor;
+      state.preferences.classicalJyutpingOpacity = defaults.classicalJyutpingOpacity;
+      state.preferences.classicalJyutpingGap = defaults.classicalJyutpingGap;
       return state;
     });
     announce("已還原閱讀排版");
@@ -3692,6 +4138,48 @@ app.addEventListener("click", (event) => {
       state.preferences.classicalLineHeight = nextLeading;
       return state;
     });
+    return;
+  }
+
+  const classicalReadingMode = event.target.closest("[data-classical-reading-mode]");
+  if (classicalReadingMode && classicalReadingModes.some((option) => option.id === classicalReadingMode.dataset.classicalReadingMode)) {
+    const nextMode = classicalReadingMode.dataset.classicalReadingMode;
+    ui.classicalFocusIndex = null;
+    ui.focusTarget = `[data-classical-reading-mode="${nextMode}"]`;
+    appStore.update((state) => {
+      state.preferences.classicalReadingMode = nextMode;
+      return state;
+    });
+    announce(`已切換為${classicalReadingModes.find((option) => option.id === nextMode)?.label || "原文"}模式`);
+    return;
+  }
+
+  const classicalJyutpingSetting = event.target.closest("[data-classical-jyutping-setting]");
+  if (classicalJyutpingSetting) {
+    const setting = classicalJyutpingSetting.dataset.classicalJyutpingSetting;
+    const value = classicalJyutpingSetting.dataset.classicalJyutpingValue;
+    if (!classicalJyutpingOptions[setting]?.some((option) => option.value === value)) return;
+    const preferenceKey = {
+      size: "classicalJyutpingSize",
+      color: "classicalJyutpingColor",
+      opacity: "classicalJyutpingOpacity",
+      gap: "classicalJyutpingGap"
+    }[setting];
+    ui.focusTarget = `[data-classical-jyutping-setting="${setting}"][data-classical-jyutping-value="${value}"]`;
+    appStore.update((state) => {
+      state.preferences[preferenceKey] = value;
+      return state;
+    });
+    return;
+  }
+
+  const classicalReadingUnit = event.target.closest("[data-classical-reading-unit]");
+  if (classicalReadingUnit && !event.target.closest("button, a, input, textarea, select, summary")) {
+    const unitIndex = Number(classicalReadingUnit.dataset.classicalReadingUnit);
+    if (!Number.isInteger(unitIndex)) return;
+    ui.classicalFocusIndex = ui.classicalFocusIndex === unitIndex ? null : unitIndex;
+    ui.focusTarget = `[data-classical-reading-unit="${unitIndex}"]`;
+    render();
     return;
   }
 
@@ -3742,6 +4230,9 @@ app.addEventListener("click", (event) => {
     ui.sourceFilter = sourceFilter.dataset.sourceFilter;
     if (sourceFilter.hasAttribute("data-cantonese-level")) ui.cantoneseLevel = sourceFilter.dataset.cantoneseLevel;
     if (!["全部", "hbl"].includes(ui.sourceFilter)) ui.cantoneseLevel = "全部";
+    ui.cantoneseLimit = COLLECTION_BATCH_SIZE;
+    ui.focusTarget = `[data-source-filter="${CSS.escape(ui.sourceFilter)}"]`;
+    persistCollectionRoute({ page: "cantonese", id: null });
     render();
     return;
   }
@@ -3750,6 +4241,17 @@ app.addEventListener("click", (event) => {
   if (cantoneseLevel) {
     ui.cantoneseLevel = cantoneseLevel.dataset.cantoneseLevel;
     if (ui.cantoneseLevel !== "全部") ui.sourceFilter = "hbl";
+    ui.cantoneseLimit = COLLECTION_BATCH_SIZE;
+    ui.focusTarget = `[data-cantonese-level="${CSS.escape(ui.cantoneseLevel)}"]`;
+    persistCollectionRoute({ page: "cantonese", id: null });
+    render();
+    return;
+  }
+  if (event.target.closest("[data-load-more-cantonese]")) {
+    const firstNewIndex = ui.cantoneseLimit;
+    ui.cantoneseLimit += COLLECTION_BATCH_SIZE;
+    ui.focusTarget = `[data-cantonese-row-index="${firstNewIndex}"] .episode-main`;
+    persistCollectionRoute({ page: "cantonese", id: null });
     render();
     return;
   }
@@ -3758,12 +4260,26 @@ app.addEventListener("click", (event) => {
   if (englishSource) {
     ui.englishSourceFilter = englishSource.dataset.englishSource;
     if (englishSource.hasAttribute("data-english-category")) ui.englishCategory = englishSource.dataset.englishCategory;
+    ui.englishLimit = COLLECTION_BATCH_SIZE;
+    ui.focusTarget = `[data-english-source="${CSS.escape(ui.englishSourceFilter)}"]`;
+    persistCollectionRoute({ page: "english", id: null });
     render();
     return;
   }
   const englishCategory = event.target.closest("[data-english-category]");
   if (englishCategory) {
     ui.englishCategory = englishCategory.dataset.englishCategory;
+    ui.englishLimit = COLLECTION_BATCH_SIZE;
+    ui.focusTarget = `[data-english-category="${CSS.escape(ui.englishCategory)}"]`;
+    persistCollectionRoute({ page: "english", id: null });
+    render();
+    return;
+  }
+  if (event.target.closest("[data-load-more-english]")) {
+    const firstNewIndex = ui.englishLimit;
+    ui.englishLimit += COLLECTION_BATCH_SIZE;
+    ui.focusTarget = `[data-english-row-index="${firstNewIndex}"] .article-main`;
+    persistCollectionRoute({ page: "english", id: null });
     render();
     return;
   }
@@ -4033,6 +4549,17 @@ app.addEventListener("pointerup", (event) => {
 
 document.addEventListener("keydown", (event) => {
   const isTyping = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName);
+  const focusedClassicalUnit = document.activeElement?.closest?.("[data-classical-reading-unit]");
+  if (focusedClassicalUnit && (event.key === "Enter" || event.key === " ")) {
+    event.preventDefault();
+    const unitIndex = Number(focusedClassicalUnit.dataset.classicalReadingUnit);
+    if (Number.isInteger(unitIndex)) {
+      ui.classicalFocusIndex = ui.classicalFocusIndex === unitIndex ? null : unitIndex;
+      ui.focusTarget = `[data-classical-reading-unit="${unitIndex}"]`;
+      render();
+    }
+    return;
+  }
   if (event.key === "/" && !isTyping) {
     event.preventDefault();
     ui.searchOpen = true;
@@ -4062,18 +4589,37 @@ document.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("hashchange", () => {
+  persistCollectionRoute(lastRenderedRoute);
   const route = parseRoute();
   if (player.isPlaying && (route.page !== "cantonese" || route.id !== player.episodeId)) stopPlayback(false);
   ui.selectedEnglishItem = null;
   ui.selectedText = null;
   ui.notePanel = null;
   ui.classicalTypographyOpen = false;
+  ui.classicalFocusIndex = null;
   if (route.page !== "library") ui.libraryPanel = null;
+  collectionScrollRestorePage = isCollectionListRoute(route) ? route.page : null;
   window.scrollTo({ top: 0, behavior: "instant" });
   render();
 });
 
-window.addEventListener("beforeunload", persistPlayerProgress);
+app.addEventListener("change", (event) => {
+  if (!event.target.matches("[data-import-data]")) return;
+  const [file] = event.target.files || [];
+  importData(file).finally(() => {
+    event.target.value = "";
+  });
+});
+
+window.addEventListener("scroll", () => {
+  if (!isCollectionListRoute(parseRoute())) return;
+  window.clearTimeout(collectionScrollPersistTimer);
+  collectionScrollPersistTimer = window.setTimeout(() => persistCollectionRoute(parseRoute()), 120);
+}, { passive: true });
+window.addEventListener("beforeunload", () => {
+  persistCollectionRoute(parseRoute());
+  persistPlayerProgress();
+});
 window.addEventListener("focus", () => {
   refreshDailyContentIfNeeded();
   scheduleDailyRefresh();

@@ -2,6 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { getDailyIndex, getLocalDayKey, getTodayPoem, pickDailyItem, poems, poetryKinds } from "../src/data.js";
+import { openPoems } from "../src/open-poems.js";
+
+const fullOpenPoemById = new Map(openPoems.map((poem) => [poem.id, poem]));
 
 test("daily selections follow the local calendar and rotate after midnight", () => {
   const morning = new Date(2026, 7, 20, 0, 5);
@@ -44,11 +47,12 @@ test("daily shelves do not repeat a presented item before the pool is exhausted"
 
 test("each poem has a featured quote composed from its own lines", () => {
   poems.forEach((poem) => {
+    const readablePoem = fullOpenPoemById.get(poem.id) || poem;
     assert.ok(poem.featuredQuote, `${poem.title} is missing a featured quote`);
     poem.featuredQuote.split(/[，。！？；]/u).filter(Boolean).forEach((quoteLine) => {
       const excerpt = quoteLine.replace(/…+$/u, "");
       assert.ok(
-        poem.lines.some((line) => line.text.includes(excerpt)),
+        readablePoem.lines.some((line) => line.text.includes(excerpt)),
         `${poem.title} quote excerpt is not present in the work: ${excerpt}`
       );
     });
@@ -103,31 +107,31 @@ test("expanded classical shelf includes complete canonical open collections", ()
     文字蒙求: 41
   });
 
-  const shijing = poems.find((poem) => poem.collection === "詩經" && poem.title === "關雎");
+  const shijing = openPoems.find((poem) => poem.collection === "詩經" && poem.title === "關雎");
   assert.equal(shijing.dynasty, "先秦");
   assert.ok(shijing.lines[0].text.includes("關關雎鳩"));
 
-  const chuci = poems.find((poem) => poem.collection === "楚辭" && poem.title === "離騷");
+  const chuci = openPoems.find((poem) => poem.collection === "楚辭" && poem.title === "離騷");
   assert.equal(chuci.form, "楚辭");
   assert.ok(chuci.lines.length > 100);
 
-  const fourBooks = poems.find((poem) => poem.collection === "四書" && poem.title === "論語 · 學而篇");
+  const fourBooks = openPoems.find((poem) => poem.collection === "四書" && poem.title === "論語 · 學而篇");
   assert.equal(fourBooks.kind, "古文");
   assert.equal(fourBooks.originalSource, "《論語》");
   assert.ok(fourBooks.lines[0].text.includes("學而時習之"));
 
-  const yuanqu = poems.find((poem) => poem.collection === "元曲");
+  const yuanqu = openPoems.find((poem) => poem.collection === "元曲");
   assert.equal(yuanqu.kind, "曲");
   assert.equal(yuanqu.dynasty, "元");
 });
 
 test("Song ci are traditional Chinese and ancient prose preserves its paragraph source", () => {
-  const songCi = poems.find((poem) => poem.title === "湘春夜月");
+  const songCi = openPoems.find((poem) => poem.title === "湘春夜月");
   assert.equal(songCi.kind, "詞");
   assert.equal(songCi.poet, "黃孝邁");
   assert.ok(songCi.lines.some((line) => line.text.includes("黃昏")));
 
-  const guwen = poems.find((poem) => poem.title === "鄭伯克段於鄢");
+  const guwen = openPoems.find((poem) => poem.title === "鄭伯克段於鄢");
   assert.equal(guwen.kind, "古文");
   assert.equal(guwen.poet, "左丘明");
   assert.equal(guwen.dynasty, "先秦");

@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Leafbound · 古典今譯校樣台</title>
+  <style>
+    :root {
+      --mist: #e9efec;
+      --paper: #fbfcfa;
+      --paper-deep: #f2f5f1;
+      --ink: #17211f;
+      --muted: #687773;
+      --hairline: #cbd6d1;
+      --jade: #2f655b;
+      --jade-deep: #204a43;
+      --plum: #853e59;
+      --plum-soft: #f1e5e9;
+      --ochre: #9b682d;
+      --ochre-soft: #f3e9d9;
+      --shadow: 0 22px 70px rgba(35, 61, 55, .11);
+      --serif: "Iowan Old Style", "Songti SC", "STSong", "Noto Serif CJK TC", "PMingLiU", serif;
+      --sans: "Segoe UI", "Microsoft JhengHei", "PingFang TC", sans-serif;
+      --mono: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--mist); color: var(--ink); scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--sans);
+      background:
+        linear-gradient(90deg, transparent 0 49.92%, rgba(47, 101, 91, .035) 50%, transparent 50.08%),
+        linear-gradient(var(--mist), #edf2ef 55%, #e6ece9);
+    }
+    button, input, select, textarea { font: inherit; }
+    button, a, select { -webkit-tap-highlight-color: transparent; }
+    a { color: inherit; }
+    :focus-visible { outline: 3px solid rgba(133, 62, 89, .34); outline-offset: 3px; }
+    .masthead {
+      position: relative;
+      overflow: hidden;
+      border-bottom: 1px solid var(--hairline);
+      background: rgba(251, 252, 250, .76);
+    }
+    .masthead::after {
+      content: "校";
+      position: absolute;
+      right: 5vw;
+      top: -4rem;
+      color: rgba(133, 62, 89, .055);
+      font: 18rem/1 var(--serif);
+      pointer-events: none;
+    }
+    .masthead-inner {
+      width: min(1480px, calc(100% - 48px));
+      margin: auto;
+      padding: 36px 0 46px;
+      position: relative;
+      z-index: 1;
+    }
+    .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 52px; }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 48px;
+      height: 54px;
+      color: white;
+      background: var(--plum);
+      font: 25px/1 var(--serif);
+      clip-path: polygon(0 5%, 88% 0, 100% 90%, 15% 100%);
+    }
+    .brand-word { font: 700 23px/1 var(--serif); letter-spacing: .04em; }
+    .eyebrow {
+      margin: 0 0 16px;
+      color: var(--jade);
+      font: 700 12px/1 var(--mono);
+      letter-spacing: .22em;
+      text-transform: uppercase;
+    }
+    h1 {
+      max-width: 980px;
+      margin: 0;
+      font: 500 clamp(42px, 7vw, 94px)/.98 var(--serif);
+      letter-spacing: -.045em;
+    }
+    .lede {
+      max-width: 740px;
+      margin: 28px 0 0;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.8;
+    }
+    .truth-note {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 18px;
+      max-width: 880px;
+      margin-top: 32px;
+      padding: 18px 20px;
+      border: 1px solid #d9c0ca;
+      border-left: 4px solid var(--plum);
+      background: rgba(255, 255, 255, .66);
+    }
+    .truth-note strong { font-family: var(--serif); font-size: 22px; color: var(--plum); }
+    .truth-note p { margin: 0; line-height: 1.65; color: #4d5c58; }
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      width: min(1480px, calc(100% - 48px));
+      margin: -1px auto 0;
+      border: 1px solid var(--hairline);
+      border-top: 0;
+      background: var(--paper);
+    }
+    .metric { min-height: 132px; padding: 24px 26px; border-right: 1px solid var(--hairline); }
+    .metric:last-child { border-right: 0; }
+    .metric-label { color: var(--muted); font-size: 12px; letter-spacing: .12em; }
+    .metric-value { display: block; margin-top: 12px; font: 500 44px/1 var(--serif); }
+    .metric-detail { display: block; margin-top: 10px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .metric.danger .metric-value { color: var(--plum); }
+    .metric.warn .metric-value { color: var(--ochre); }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(250px, 330px) minmax(0, 1fr);
+      gap: 38px;
+      width: min(1480px, calc(100% - 48px));
+      margin: 42px auto 100px;
+    }
+    .rail {
+      align-self: start;
+      position: sticky;
+      top: 22px;
+      padding: 26px;
+      border: 1px solid var(--hairline);
+      background: rgba(251, 252, 250, .87);
+      box-shadow: 0 15px 45px rgba(35, 61, 55, .07);
+    }
+    .rail h2 { margin: 0 0 8px; font: 500 30px/1.2 var(--serif); }
+    .rail-intro { margin: 0 0 24px; color: var(--muted); font-size: 13px; line-height: 1.65; }
+    .field { display: grid; gap: 8px; margin-top: 20px; }
+    .field label, .filter-label {
+      color: var(--jade);
+      font: 700 11px/1 var(--mono);
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    input[type="search"], select {
+      width: 100%;
+      min-height: 45px;
+      padding: 10px 12px;
+      border: 1px solid var(--hairline);
+      border-radius: 0;
+      color: var(--ink);
+      background: var(--paper);
+    }
+    .filter-set { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+    .filter-button {
+      min-height: 36px;
+      padding: 7px 11px;
+      border: 1px solid var(--hairline);
+      color: #53625e;
+      background: transparent;
+      cursor: pointer;
+    }
+    .filter-button[aria-pressed="true"] { color: white; border-color: var(--jade-deep); background: var(--jade-deep); }
+    .rail-actions { display: grid; gap: 9px; margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--hairline); }
+    .action {
+      min-height: 43px;
+      border: 1px solid var(--jade);
+      color: var(--jade-deep);
+      background: transparent;
+      cursor: pointer;
+    }
+    .action.primary { color: white; background: var(--jade-deep); }
+    .storage-note { margin: 14px 0 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+    .results { min-width: 0; }
+    .results-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 0 0 18px;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .results-head h2 { margin: 0; font: 500 34px/1.1 var(--serif); }
+    .result-count { color: var(--muted); font: 12px/1.5 var(--mono); text-align: right; }
+    .review-thread { position: relative; padding: 28px 0 0 34px; }
+    .review-thread::before {
+      content: "";
+      position: absolute;
+      left: 8px;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: var(--plum);
+      opacity: .55;
+    }
+    .review-card {
+      position: relative;
+      margin: 0 0 24px;
+      border: 1px solid var(--hairline);
+      border-top: 3px solid var(--jade);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+    .review-card::before {
+      content: "";
+      position: absolute;
+      left: -31px;
+      top: 29px;
+      width: 11px;
+      height: 11px;
+      border: 3px solid var(--mist);
+      border-radius: 50%;
+      background: var(--plum);
+      box-shadow: 0 0 0 1px var(--plum);
+    }
+    .review-card.priority { border-top-color: var(--plum); }
+    .card-main { padding: 26px 28px 20px; }
+    .card-meta { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+    .stamp {
+      display: inline-flex;
+      align-items: center;
+      min-height: 27px;
+      padding: 4px 8px;
+      border: 1px solid var(--hairline);
+      color: var(--muted);
+      font: 11px/1.2 var(--mono);
+      letter-spacing: .04em;
+    }
+    .stamp.machine { color: var(--plum); border-color: #cba9b6; background: var(--plum-soft); }
+    .stamp.warning { color: #774b1f; border-color: #d7b98f; background: var(--ochre-soft); }
+    .stamp.known { color: white; border-color: var(--plum); background: var(--plum); }
+    .card-heading { display: flex; justify-content: space-between; gap: 24px; }
+    .card-index { color: var(--muted); font: 12px/1 var(--mono); }
+    .card-title { margin: 8px 0 0; font: 500 clamp(27px, 3vw, 42px)/1.15 var(--serif); }
+    .byline { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+    .counts {
+      flex: 0 0 auto;
+      display: grid;
+      grid-template-columns: repeat(2, 72px);
+      border: 1px solid var(--hairline);
+    }
+    .count-cell { padding: 11px 9px; text-align: center; }
+    .count-cell + .count-cell { border-left: 1px solid var(--hairline); }
+    .count-number { display: block; font: 500 23px/1 var(--serif); }
+    .count-label { display: block; margin-top: 5px; color: var(--muted); font-size: 10px; }
+    .issue-list { display: grid; gap: 7px; margin: 19px 0 0; }
+    .issue {
+      padding: 10px 12px;
+      border-left: 3px solid var(--ochre);
+      color: #6f4c26;
+      background: var(--ochre-soft);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .issue.known { border-left-color: var(--plum); color: #6d3047; background: var(--plum-soft); }
+    .card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-top: 22px; }
+    .open-proof, .open-app {
+      min-height: 40px;
+      padding: 9px 13px;
+      border: 1px solid var(--hairline);
+      color: var(--jade-deep);
+      background: var(--paper);
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .open-proof { border-color: var(--jade); background: var(--paper-deep); }
+    .triage { display: flex; flex-wrap: wrap; gap: 5px; margin-left: auto; padding-left: 10px; }
+    .triage-button {
+      min-height: 34px;
+      padding: 6px 9px;
+      border: 1px solid var(--hairline);
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+    }
+    .triage-button.active { color: white; border-color: var(--plum); background: var(--plum); }
+    .proof { display: none; border-top: 1px solid var(--hairline); background: #f7f9f6; }
+    .proof.open { display: block; }
+    .proof-head {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 1px solid var(--hairline);
+      color: var(--jade);
+      font: 700 11px/1 var(--mono);
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    .proof-head span { padding: 15px 22px; }
+    .proof-head span + span { border-left: 1px solid var(--hairline); }
+    .pair { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #dbe3df; }
+    .pair:last-child { border-bottom: 0; }
+    .pair > div { position: relative; min-width: 0; padding: 18px 22px 18px 54px; }
+    .pair > div + div { border-left: 1px solid var(--hairline); }
+    .pair-index { position: absolute; left: 20px; top: 23px; color: #98a59f; font: 10px/1 var(--mono); }
+    .source-copy { font: 20px/1.75 var(--serif); }
+    .translation-copy { color: #40504c; font-size: 15px; line-height: 1.85; }
+    .missing { color: #9a7461; font-style: italic; }
+    mark { padding: 0 .12em; color: inherit; background: #efccd7; }
+    .note-box { padding: 20px 22px; border-top: 1px solid var(--hairline); }
+    .note-box label { display: block; margin-bottom: 8px; color: var(--jade); font: 700 11px/1 var(--mono); letter-spacing: .12em; }
+    .note-box textarea {
+      width: 100%;
+      min-height: 88px;
+      resize: vertical;
+      padding: 12px;
+      border: 1px solid var(--hairline);
+      color: var(--ink);
+      background: white;
+      line-height: 1.6;
+    }
+    .pagination { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 30px; }
+    .page-button { min-width: 110px; min-height: 42px; border: 1px solid var(--jade); color: var(--jade-deep); background: transparent; cursor: pointer; }
+    .page-button:disabled { opacity: .35; cursor: default; }
+    .page-label { color: var(--muted); font: 12px/1 var(--mono); }
+    .empty { padding: 60px 24px; border: 1px solid var(--hairline); background: var(--paper); text-align: center; }
+    .empty strong { display: block; font: 500 28px/1.2 var(--serif); }
+    .empty span { display: block; margin-top: 10px; color: var(--muted); }
+    .toast {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      z-index: 10;
+      max-width: min(360px, calc(100vw - 44px));
+      padding: 13px 16px;
+      color: white;
+      background: var(--jade-deep);
+      box-shadow: 0 10px 40px rgba(20, 40, 35, .25);
+      transform: translateY(18px);
+      opacity: 0;
+      pointer-events: none;
+      transition: .18s ease;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    @media (max-width: 1000px) {
+      .metric-grid { grid-template-columns: repeat(3, 1fr); }
+      .metric:nth-child(3) { border-right: 0; }
+      .metric:nth-child(n+4) { border-top: 1px solid var(--hairline); }
+      .layout { grid-template-columns: 1fr; }
+      .rail { position: static; }
+    }
+    @media (max-width: 680px) {
+      .masthead-inner, .metric-grid, .layout { width: min(100% - 28px, 1480px); }
+      .masthead-inner { padding-top: 22px; }
+      .brand { margin-bottom: 38px; }
+      h1 { font-size: clamp(40px, 14vw, 62px); }
+      .lede { font-size: 16px; }
+      .truth-note { grid-template-columns: 1fr; gap: 8px; }
+      .metric-grid { grid-template-columns: repeat(2, 1fr); }
+      .metric { min-height: 112px; padding: 18px; border-top: 1px solid var(--hairline); }
+      .metric:nth-child(2n) { border-right: 0; }
+      .metric:nth-child(3) { border-right: 1px solid var(--hairline); }
+      .metric:last-child { grid-column: 1 / -1; border-right: 0; }
+      .layout { margin-top: 26px; gap: 24px; }
+      .rail { padding: 20px; }
+      .results-head { align-items: flex-start; }
+      .review-thread { padding-left: 19px; }
+      .review-thread::before { left: 3px; }
+      .review-card::before { left: -22px; }
+      .card-main { padding: 20px 18px 17px; }
+      .card-heading { display: block; }
+      .counts { width: 100%; margin-top: 16px; grid-template-columns: 1fr 1fr; }
+      .triage { width: 100%; margin: 7px 0 0; padding: 8px 0 0; border-top: 1px solid var(--hairline); }
+      .triage-button { flex: 1 1 42%; }
+      .proof-head { display: none; }
+      .pair { display: block; padding: 15px 0; }
+      .pair > div { padding: 10px 18px 10px 48px; }
+      .pair > div + div { border-left: 0; }
+      .pair > div::before { display: block; margin-bottom: 6px; color: var(--jade); font: 700 10px/1 var(--mono); letter-spacing: .12em; }
+      .pair .source-copy::before { content: "原文"; }
+      .pair .translation-copy::before { content: "機器今譯"; }
+      .pair-index { left: 18px; top: 16px; }
+      .pagination { flex-wrap: wrap; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .toast { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div class="brand"><span class="brand-mark">拾</span><span class="brand-word">Leafbound</span></div>
+      <p class="eyebrow">Classical translation proof desk · local review</p>
+      <h1>一百份初譯，<br>等待人的判斷。</h1>
+      <p class="lede">這裡不是成品陳列，而是一張校樣桌。100 篇已完成首輪抽查並標記為初步可用；仍可逐篇對照原文與機器今譯，繼續處理結構警告與內容精校。</p>
+      <div class="truth-note">
+        <strong>先說清楚</strong>
+        <p>全部 100 篇的正式狀態是「初步可用 · 待人工精校」，不是「人工已校」；生產成品仍為 0。沒有結構警告只代表段落數量能對上，不代表詞義、典故或語氣已完全正確。</p>
+      </div>
+    </div>
+  </header>
+
+  <section class="metric-grid" aria-label="審查摘要">
+    <div class="metric"><span class="metric-label">本批草稿</span><strong class="metric-value" id="metric-total"></strong><span class="metric-detail">詩、詞、曲、古文各 25 篇</span></div>
+    <div class="metric"><span class="metric-label">初步可用</span><strong class="metric-value" id="metric-usable"></strong><span class="metric-detail">仍保留機器初譯與待精校邊界</span></div>
+    <div class="metric warn"><span class="metric-label">結構警告</span><strong class="metric-value" id="metric-warning"></strong><span class="metric-detail">原文行數與今譯段數不一致</span></div>
+    <div class="metric"><span class="metric-label">結構可對齊</span><strong class="metric-value" id="metric-clear"></strong><span class="metric-detail">仍須逐句核對含義與術語</span></div>
+    <div class="metric"><span class="metric-label">已校正問題</span><strong class="metric-value" id="metric-resolved"></strong><span class="metric-detail">孟冬、羆與錢鎛三處已修正</span></div>
+  </section>
+
+  <main class="layout">
+    <aside class="rail" aria-label="篩選與審查工具">
+      <h2>朱批邊欄</h2>
+      <p class="rail-intro">先看「優先複核」最有效。搜尋、篩選、筆記與標記全部在本機完成。</p>
+      <div class="field">
+        <label for="search">搜尋篇名、作者或編號</label>
+        <input id="search" type="search" autocomplete="off" placeholder="例如：孟冬十月">
+      </div>
+      <div class="field">
+        <span class="filter-label">審查範圍</span>
+        <div class="filter-set" id="scope-filters">
+          <button class="filter-button" type="button" data-scope="all" aria-pressed="true">全部 100</button>
+          <button class="filter-button" type="button" data-scope="priority" aria-pressed="false">優先複核</button>
+          <button class="filter-button" type="button" data-scope="warning" aria-pressed="false">結構警告</button>
+          <button class="filter-button" type="button" data-scope="resolved" aria-pressed="false">已修正稿</button>
+          <button class="filter-button" type="button" data-scope="clear" aria-pressed="false">無結構警告</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="filter-label">文類</span>
+        <div class="filter-set" id="kind-filters">
+          <button class="filter-button" type="button" data-kind="all" aria-pressed="true">全部</button>
+          <button class="filter-button" type="button" data-kind="詩" aria-pressed="false">詩</button>
+          <button class="filter-button" type="button" data-kind="詞" aria-pressed="false">詞</button>
+          <button class="filter-button" type="button" data-kind="曲" aria-pressed="false">曲</button>
+          <button class="filter-button" type="button" data-kind="古文" aria-pressed="false">古文</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="triage-filter">我的審查標記</label>
+        <select id="triage-filter">
+          <option value="all">全部標記</option>
+          <option value="unseen">未看</option>
+          <option value="review">待細校</option>
+          <option value="fix">需修正</option>
+          <option value="usable">初步可用</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="sort">排序</label>
+        <select id="sort">
+          <option value="priority">問題優先</option>
+          <option value="kind">按文類</option>
+          <option value="title">按篇名</option>
+        </select>
+      </div>
+      <div class="rail-actions">
+        <button class="action primary" id="export" type="button">匯出我的審查記錄</button>
+        <button class="action" id="show-resolved" type="button">查看已修正的曹操詩稿</button>
+      </div>
+      <p class="storage-note">儲存位置：此瀏覽器的 localStorage。匯出 JSON 後可自行備份；不會上傳到伺服器。</p>
+    </aside>
+
+    <section class="results">
+      <div class="results-head">
+        <h2>校樣清單</h2>
+        <div class="result-count" id="result-count" aria-live="polite"></div>
+      </div>
+      <div class="review-thread" id="review-thread"></div>
+      <nav class="pagination" aria-label="分頁">
+        <button class="page-button" id="previous-page" type="button">上一頁</button>
+        <span class="page-label" id="page-label"></span>
+        <button class="page-button" id="next-page" type="button">下一頁</button>
+      </nav>
+    </section>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script id="review-data" type="application/json">__REVIEW_DATA__</script>
+  <script id="review-summary" type="application/json">__REVIEW_SUMMARY__</script>
+  <script>
+    (function () {
+      "use strict";
+      var records = JSON.parse(document.getElementById("review-data").textContent);
+      var summary = JSON.parse(document.getElementById("review-summary").textContent);
+      var storageKey = "leafbound.classical-translation-review.v1";
+      var pageSize = 20;
+      var page = 1;
+      var state = { query: "", scope: "all", kind: "all", triage: "all", sort: "priority" };
+      var decisions = loadDecisions();
+      var thread = document.getElementById("review-thread");
+      var resultCount = document.getElementById("result-count");
+      var pageLabel = document.getElementById("page-label");
+      var toastTimer;
+
+      function escapeHtml(value) {
+        return String(value == null ? "" : value)
+          .replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+      }
+
+      function loadDecisions() {
+        try {
+          var parsed = JSON.parse(localStorage.getItem(storageKey) || "{}");
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (error) {
+          return {};
+        }
+      }
+
+      function persistDecisions(message) {
+        localStorage.setItem(storageKey, JSON.stringify(decisions));
+        if (message) showToast(message);
+      }
+
+      function showToast(message) {
+        var toast = document.getElementById("toast");
+        toast.textContent = message;
+        toast.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () { toast.classList.remove("show"); }, 1800);
+      }
+
+      function triageFor(id) {
+        return decisions[id] && decisions[id].status ? decisions[id].status : "unseen";
+      }
+
+      function filteredRecords() {
+        var query = state.query.trim().toLocaleLowerCase("zh-Hant");
+        var filtered = records.filter(function (record) {
+          var haystack = [record.title, record.author, record.dynasty, record.id].join(" ").toLocaleLowerCase("zh-Hant");
+          if (query && !haystack.includes(query)) return false;
+          if (state.kind !== "all" && record.kind !== state.kind) return false;
+          if (state.triage !== "all" && triageFor(record.id) !== state.triage) return false;
+          if (state.scope === "priority" && !record.priority) return false;
+          if (state.scope === "warning" && !record.warnings.length) return false;
+          if (state.scope === "resolved" && !record.resolvedIssues.length) return false;
+          if (state.scope === "clear" && record.warnings.length) return false;
+          return true;
+        });
+        filtered.sort(function (left, right) {
+          if (state.sort === "priority") {
+            if (left.priority !== right.priority) return left.priority ? -1 : 1;
+            if (left.derivedIssues.length !== right.derivedIssues.length) return right.derivedIssues.length - left.derivedIssues.length;
+          }
+          if (state.sort === "kind") {
+            var kindOrder = { "詩": 0, "詞": 1, "曲": 2, "古文": 3 };
+            var kindDifference = kindOrder[left.kind] - kindOrder[right.kind];
+            if (kindDifference) return kindDifference;
+          }
+          return left.title.localeCompare(right.title, "zh-Hant");
+        });
+        return filtered;
+      }
+
+      function issueHtml(record) {
+        var issues = [];
+        record.warnings.forEach(function (warning) {
+          var detail = warning === "paragraph-count-mismatch"
+            ? "段落數不一致：原文 " + record.sourceLineCount + " 行，今譯 " + record.translationParagraphCount + " 段。"
+            : warning;
+          issues.push('<div class="issue"><strong>結構警告</strong> · ' + escapeHtml(detail) + "</div>");
+        });
+        record.derivedIssues.forEach(function (issue) {
+          issues.push('<div class="issue known"><strong>' + escapeHtml(issue.label) + "</strong> · " + escapeHtml(issue.detail) + "</div>");
+        });
+        record.resolvedIssues.forEach(function (issue) {
+          issues.push('<div class="issue known"><strong>' + escapeHtml(issue.label) + "</strong> · " + escapeHtml(issue.detail) + "</div>");
+        });
+        return issues.length ? '<div class="issue-list">' + issues.join("") + "</div>" : "";
+      }
+
+      function highlightKnown(value, record) {
+        var text = escapeHtml(value);
+        if (!record.derivedIssues.length && !record.resolvedIssues.length) return text;
+        return text
+          .replaceAll("孟冬", "<mark>孟冬</mark>")
+          .replaceAll("初冬", "<mark>初冬</mark>")
+          .replaceAll("熊羆", "<mark>熊羆</mark>")
+          .replaceAll("棕熊", "<mark>棕熊</mark>")
+          .replaceAll("錢鎛", "<mark>錢鎛</mark>")
+          .replaceAll("農具", "<mark>農具</mark>")
+          .replaceAll("錢幣", "<mark>錢幣</mark>");
+      }
+
+      function proofHtml(record) {
+        var length = Math.max(record.sourceLines.length, record.translationParagraphs.length);
+        var pairs = [];
+        for (var index = 0; index < length; index += 1) {
+          var source = record.sourceLines[index];
+          var translation = record.translationParagraphs[index];
+          pairs.push(
+            '<div class="pair">' +
+              '<div class="source-copy"><span class="pair-index">' + String(index + 1).padStart(2, "0") + "</span>" +
+                (source ? highlightKnown(source, record) : '<span class="missing">此處沒有對應原文行</span>') +
+              "</div>" +
+              '<div class="translation-copy">' +
+                (translation ? highlightKnown(translation, record) : '<span class="missing">缺少對應今譯</span>') +
+              "</div>" +
+            "</div>"
+          );
+        }
+        var note = decisions[record.id] && decisions[record.id].note ? decisions[record.id].note : "";
+        return '<div class="proof-head"><span>原文 · ' + record.sourceLineCount + " 行</span><span>機器今譯 · " + record.translationParagraphCount + " 段</span></div>" +
+          pairs.join("") +
+          '<div class="note-box"><label for="note-' + escapeHtml(record.id) + '">我的校訂筆記 · 僅存本機</label>' +
+          '<textarea id="note-' + escapeHtml(record.id) + '" data-note-id="' + escapeHtml(record.id) + '" placeholder="記錄錯字、詞義、典故或需要重譯的句子……">' +
+          escapeHtml(note) + "</textarea></div>";
+      }
+
+      function triageButtons(record) {
+        var current = triageFor(record.id);
+        var options = [["unseen", "未看"], ["review", "待細校"], ["fix", "需修正"], ["usable", "初步可用"]];
+        return '<div class="triage" aria-label="本機審查標記">' + options.map(function (option) {
+          return '<button type="button" class="triage-button' + (current === option[0] ? " active" : "") +
+            '" data-triage-id="' + escapeHtml(record.id) + '" data-triage-value="' + option[0] + '">' + option[1] + "</button>";
+        }).join("") + "</div>";
+      }
+
+      function cardHtml(record, visibleIndex) {
+        var warningStamps = record.warnings.map(function () {
+          return '<span class="stamp warning">段落不匹配</span>';
+        }).join("");
+        var knownStamps = record.derivedIssues.map(function () {
+          return '<span class="stamp known">已知誤譯</span>';
+        }).join("");
+        var resolvedStamps = record.resolvedIssues.map(function () {
+          return '<span class="stamp known">已修正</span>';
+        }).join("");
+        var reviewStamp = record.editorialTriage === "initially-usable"
+          ? '<span class="stamp machine">初步可用 · 待人工精校</span>'
+          : '<span class="stamp machine">機器草稿 · 未人工校</span>';
+        return '<article class="review-card' + (record.priority ? " priority" : "") + '" data-record-id="' + escapeHtml(record.id) + '">' +
+          '<div class="card-main">' +
+            '<div class="card-meta">' +
+              reviewStamp +
+              '<span class="stamp">' + escapeHtml(record.kind) + " · " + escapeHtml(record.form || record.collection) + "</span>" +
+              warningStamps + knownStamps + resolvedStamps +
+            "</div>" +
+            '<div class="card-heading">' +
+              "<div>" +
+                '<span class="card-index">' + String(visibleIndex + 1).padStart(3, "0") + " · " + escapeHtml(record.id) + "</span>" +
+                '<h3 class="card-title">' + escapeHtml(record.title) + "</h3>" +
+                '<p class="byline">' + escapeHtml([record.author, record.dynasty, record.collection].filter(Boolean).join(" · ")) + "</p>" +
+              "</div>" +
+              '<div class="counts" aria-label="段落數"><div class="count-cell"><strong class="count-number">' + record.sourceLineCount +
+                '</strong><span class="count-label">原文行</span></div><div class="count-cell"><strong class="count-number">' +
+                record.translationParagraphCount + '</strong><span class="count-label">今譯段</span></div></div>' +
+            "</div>" +
+            issueHtml(record) +
+            '<div class="card-actions">' +
+              '<button class="open-proof" type="button" data-proof-id="' + escapeHtml(record.id) + '" aria-expanded="false">展開逐段對照</button>' +
+              '<a class="open-app" href="../#poetry/' + encodeURIComponent(record.id) + '" target="_blank" rel="noopener">在 Leafbound 打開 ↗</a>' +
+              triageButtons(record) +
+            "</div>" +
+          "</div>" +
+          '<div class="proof" id="proof-' + escapeHtml(record.id) + '">' + proofHtml(record) + "</div>" +
+        "</article>";
+      }
+
+      function render() {
+        var filtered = filteredRecords();
+        var pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+        page = Math.min(page, pageCount);
+        var start = (page - 1) * pageSize;
+        var visible = filtered.slice(start, start + pageSize);
+        thread.innerHTML = visible.length
+          ? visible.map(function (record, index) { return cardHtml(record, start + index); }).join("")
+          : '<div class="empty"><strong>沒有符合條件的稿件</strong><span>換一個篩選條件，或清除搜尋文字。</span></div>';
+        resultCount.textContent = "找到 " + filtered.length + " 篇 · 顯示 " +
+          (filtered.length ? start + 1 : 0) + "–" + Math.min(start + pageSize, filtered.length) +
+          " · 本機已標記 " + Object.keys(decisions).filter(function (id) { return triageFor(id) !== "unseen"; }).length + " 篇";
+        pageLabel.textContent = "第 " + page + " / " + pageCount + " 頁";
+        document.getElementById("previous-page").disabled = page <= 1;
+        document.getElementById("next-page").disabled = page >= pageCount;
+        bindRenderedControls();
+      }
+
+      function bindRenderedControls() {
+        thread.querySelectorAll("[data-proof-id]").forEach(function (button) {
+          button.addEventListener("click", function () {
+            var proof = document.getElementById("proof-" + button.dataset.proofId);
+            var isOpen = proof.classList.toggle("open");
+            button.setAttribute("aria-expanded", String(isOpen));
+            button.textContent = isOpen ? "收起逐段對照" : "展開逐段對照";
+          });
+        });
+        thread.querySelectorAll("[data-triage-id]").forEach(function (button) {
+          button.addEventListener("click", function () {
+            var id = button.dataset.triageId;
+            decisions[id] = decisions[id] || {};
+            decisions[id].status = button.dataset.triageValue;
+            decisions[id].updatedAt = new Date().toISOString();
+            persistDecisions("已保存本機審查標記");
+            render();
+          });
+        });
+        thread.querySelectorAll("[data-note-id]").forEach(function (textarea) {
+          textarea.addEventListener("change", function () {
+            var id = textarea.dataset.noteId;
+            decisions[id] = decisions[id] || {};
+            decisions[id].note = textarea.value.trim();
+            decisions[id].updatedAt = new Date().toISOString();
+            persistDecisions("校訂筆記已保存於本機");
+          });
+        });
+      }
+
+      function setPressed(container, attribute, value) {
+        container.querySelectorAll("button").forEach(function (button) {
+          button.setAttribute("aria-pressed", String(button.dataset[attribute] === value));
+        });
+      }
+
+      document.getElementById("metric-total").textContent = summary.total;
+      document.getElementById("metric-usable").textContent = summary.initiallyUsable;
+      document.getElementById("metric-warning").textContent = summary.structuralWarnings;
+      document.getElementById("metric-clear").textContent = summary.structurallyClear;
+      document.getElementById("metric-resolved").textContent = summary.resolvedIssues;
+
+      document.getElementById("search").addEventListener("input", function (event) {
+        state.query = event.target.value;
+        page = 1;
+        render();
+      });
+      document.getElementById("scope-filters").addEventListener("click", function (event) {
+        if (!event.target.dataset.scope) return;
+        state.scope = event.target.dataset.scope;
+        setPressed(event.currentTarget, "scope", state.scope);
+        page = 1;
+        render();
+      });
+      document.getElementById("kind-filters").addEventListener("click", function (event) {
+        if (!event.target.dataset.kind) return;
+        state.kind = event.target.dataset.kind;
+        setPressed(event.currentTarget, "kind", state.kind);
+        page = 1;
+        render();
+      });
+      document.getElementById("triage-filter").addEventListener("change", function (event) {
+        state.triage = event.target.value;
+        page = 1;
+        render();
+      });
+      document.getElementById("sort").addEventListener("change", function (event) {
+        state.sort = event.target.value;
+        page = 1;
+        render();
+      });
+      document.getElementById("previous-page").addEventListener("click", function () {
+        if (page > 1) {
+          page -= 1;
+          render();
+          document.querySelector(".results").scrollIntoView();
+        }
+      });
+      document.getElementById("next-page").addEventListener("click", function () {
+        page += 1;
+        render();
+        document.querySelector(".results").scrollIntoView();
+      });
+      document.getElementById("show-resolved").addEventListener("click", function () {
+        state.scope = "resolved";
+        state.kind = "all";
+        state.query = "";
+        document.getElementById("search").value = "";
+        setPressed(document.getElementById("scope-filters"), "scope", "resolved");
+        setPressed(document.getElementById("kind-filters"), "kind", "all");
+        page = 1;
+        render();
+        document.querySelector(".results").scrollIntoView();
+      });
+      document.getElementById("export").addEventListener("click", function () {
+        var payload = {
+          schemaVersion: 1,
+          exportedAt: new Date().toISOString(),
+          note: "Local review marks only; production translation status is unchanged.",
+          sourceBatch: { total: summary.total, machineDrafts: summary.statusCounts["machine-draft"] || 0 },
+          decisions: decisions
+        };
+        var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        var url = URL.createObjectURL(blob);
+        var anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = "leafbound-classical-translation-review.json";
+        anchor.click();
+        URL.revokeObjectURL(url);
+        showToast("審查記錄已匯出");
+      });
+      render();
+    }());
+  </script>
+</body>
+</html>

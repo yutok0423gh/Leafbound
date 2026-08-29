@@ -121,6 +121,18 @@ The decoded text is stored as UTF-8 in the generated local corpus. The package i
 
 The app copies the five sample MP3 files and corresponding tagged transcripts distributed by the official repository. It converts Big5-HKSCS text to UTF-8, retains the corpus Jyutping, and adds editorial titles plus approximate sentence timings. Those changes are identified in the in-app source record. The remaining full corpus is not bundled.
 
+## SpiCE: Speech in Cantonese and English
+
+- Dataset: https://doi.org/10.5683/SP2/MJOXP3
+- Documentation: https://spice-corpus.readthedocs.io/
+- Imported material: 12 participant-aligned Cantonese interview excerpts from anonymized participants VF19A, VF19B, VF20A, VF21A, VF23B, VF26A, VF32A, VM19A, VM20B, VM21A, VM22A, and VM24A. One 132-second excerpt includes locally extracted participant-channel audio; the other 11 include TextGrid-derived participant transcripts and an official dataset reference only
+- Dataset version: V1 (2021)
+- License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+- License: https://creativecommons.org/licenses/by/4.0/
+- Required credit: Khia A. Johnson (2021), “SpiCE: Speech in Cantonese and English,” Scholars Portal Dataverse, V1, doi:10.5683/SP2/MJOXP3
+
+SpiCE records the participant on the left channel and the interviewer on the right; the released TextGrid aligns the participant tier. For VF19A, Leafbound extracts only the selected interval through HTTP byte ranges rather than downloading or redistributing the 19.5GB corpus, then keeps only the left participant channel and downsamples it from 44.1kHz stereo to 22.05kHz mono PCM. For the other 11 participants, the build-time importer stores only a selected TextGrid-derived participant transcript; their full research recordings are not copied into Leafbound and the interface links to the official dataset instead. The app removes word-segmentation spaces and annotation markers, lightly joins adjacent fragments, marks inaudible tokens, and retains each anonymous participant code plus the source interval. It clearly labels every item as a participant-only excerpt and never invents or reconstructs interviewer questions. Normal reading uses the local generated transcript; only following the explicit source link contacts the third-party dataset site.
+
 ## 冚唪唥粵文讀本 / Hambaanglaang Cantonese Graded Readers
 
 - Source catalog: https://hambaanglaang.hk/all-levels/

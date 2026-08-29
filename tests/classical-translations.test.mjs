@@ -182,7 +182,9 @@ test("classical translation loader distinguishes unavailable catalogs from retry
   assert.equal(loaded.source.model, "offline-test-model");
   assert.equal(loaded.source.modelRevision, "fixture-1");
   assert.equal(loaded.source.promptVersion, "test-v1");
-  assert.equal(loaded.source.status, "AI 今譯 · 未經人工校訂");
+  assert.equal(loaded.source.status, "機器草稿");
+  assert.equal(loaded.source.reviewStatus, "machine-draft");
+  assert.equal(loaded.source.productionReady, false);
   assert.equal(loaded.sourceHash, successJob.sourceHash);
   assert.strictEqual(getClassicalTranslation(successJob.id), loaded);
 
@@ -201,6 +203,8 @@ test("classical translation loader distinguishes unavailable catalogs from retry
   assert.equal(retried.kind, retryJob.kind);
   assert.equal(retried.source.label, "Test batch B");
   assert.equal(retried.source.model, "offline-test-model");
-  assert.equal(retried.source.status, "AI 今譯 · 未經人工校訂");
+  assert.equal(retried.source.status, "機器草稿");
+  assert.equal(retried.source.reviewStatus, "machine-draft");
+  assert.equal(retried.source.productionReady, false);
   assert.equal(retryAttempts, 2, "failed shard requests must not stay cached");
 });

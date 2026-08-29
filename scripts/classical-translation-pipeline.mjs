@@ -14,21 +14,55 @@ import {
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import OpenCC from "opencc-js";
-import { poems } from "../src/data.js";
+import { poems as catalogPoems } from "../src/data.js";
+import { openPoems } from "../src/open-poems.js";
 import { getClassicalTranslation } from "../src/classical-translations.js";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const defaultPlanPath = resolve(projectRoot, ".tmp-data", "classical-translations", "plan.jsonl");
 const defaultDataRoot = resolve(projectRoot, "data", "classical-translations");
+const openPoemIds = new Set(openPoems.map((poem) => poem.id));
+const poems = Object.freeze([
+  ...catalogPoems.filter((poem) => !openPoemIds.has(poem.id)),
+  ...openPoems
+]);
 
 export const CLASSICAL_KINDS = Object.freeze(["詩", "詞", "曲", "古文"]);
 export const SOURCE_HASH_VERSION = 1;
 export const SHARD_PREFIX_LENGTH = 2;
 export const MACHINE_DRAFT_QUALITY = "machine-draft-unreviewed";
+export const TRANSLATION_REVIEW_STATUSES = Object.freeze({
+  MACHINE_DRAFT: "machine-draft",
+  PENDING_REVIEW: "pending-review",
+  REVIEWED: "reviewed",
+  REJECTED: "rejected"
+});
+export const CLASSICAL_EDITORIAL_TRIAGE = Object.freeze({
+  INITIALLY_USABLE: "initially-usable"
+});
+
+const reviewStatusValues = new Set(Object.values(TRANSLATION_REVIEW_STATUSES));
+const editorialTriageValues = new Set(Object.values(CLASSICAL_EDITORIAL_TRIAGE));
+const legacyReviewStatusAliases = new Map([
+  ["machine_draft", TRANSLATION_REVIEW_STATUSES.MACHINE_DRAFT],
+  ["pending_review", TRANSLATION_REVIEW_STATUSES.PENDING_REVIEW]
+]);
+const reviewStatusLabels = Object.freeze({
+  [TRANSLATION_REVIEW_STATUSES.MACHINE_DRAFT]: "機器草稿",
+  [TRANSLATION_REVIEW_STATUSES.PENDING_REVIEW]: "待人工校訂",
+  [TRANSLATION_REVIEW_STATUSES.REVIEWED]: "人工已校",
+  [TRANSLATION_REVIEW_STATUSES.REJECTED]: "已退回"
+});
+const productionBlockingWarnings = new Set([
+  "paragraph-count-mismatch",
+  "critique-rejected",
+  "critique-unavailable",
+  "dictionary-unavailable"
+]);
 
 const allowedKinds = new Set(CLASSICAL_KINDS);
 const englishLabelPattern = /(?:\b(?:translation|english|modern chinese|notes?|analysis|summary)\s*[:：]|英文(?:翻譯|翻译|譯文|译文|釋義|释义)?\s*[:：])/iu;
-const refusalPattern = /(?:\b(?:as an ai|i (?:cannot|can't|am unable|won't))\b|(?:抱歉|對不起|对不起|不能|無法|无法).{0,18}(?:翻譯|翻译|提供|完成|協助|协助))/iu;
+const refusalPattern = /(?:\b(?:as an ai|i (?:cannot|can't|am unable|won't))\b|(?:抱歉|對不起|对不起).{0,24}(?:翻譯|翻译|提供|完成|協助|协助)|(?:我|本模型|本助手|助手|AI).{0,12}(?:不能|無法|无法).{0,18}(?:翻譯|翻译|提供|完成|協助|协助))/iu;
 const ratioLimits = Object.freeze({
   詩: Object.freeze([0.35, 4]),
   詞: Object.freeze([0.35, 4]),
@@ -40,6 +74,25 @@ const sourceCopyMinimumLength = 16;
 const sourceCopyShingleLength = 4;
 const sourceCopyShingleThreshold = 0.82;
 const clauseBoundaryPattern = /[。！？!?；;]+/gu;
+
+export function normalizeTranslationReviewStatus(value) {
+  const normalized = normalizedField(value);
+  if (legacyReviewStatusAliases.has(normalized)) return legacyReviewStatusAliases.get(normalized);
+  return reviewStatusValues.has(normalized) ? normalized : null;
+}
+
+export function normalizeClassicalEditorialTriage(value) {
+  const normalized = normalizedField(value);
+  return editorialTriageValues.has(normalized) ? normalized : null;
+}
+
+export function isProductionReadyTranslation(record) {
+  const status = normalizeTranslationReviewStatus(record?.metadata?.status ?? record?.status);
+  const warnings = record?.metadata?.warnings ?? record?.warnings ?? [];
+  return status === TRANSLATION_REVIEW_STATUSES.REVIEWED
+    && Array.isArray(warnings)
+    && warnings.every((warning) => !productionBlockingWarnings.has(normalizedField(warning)));
+}
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
@@ -260,22 +313,165 @@ function recordError(record, code, message) {
   };
 }
 
+function normalizedStringArray(values = []) {
+  return Object.freeze(values.map((value) => normalizedField(value)).filter(Boolean));
+}
+
+function normalizedGenerationParameters(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  return Object.freeze({
+    temperature: Number(value.temperature),
+    maxTokens: Number(value.maxTokens),
+    disableThinking: Boolean(value.disableThinking)
+  });
+}
+
+function normalizedGlossaryMetadata(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  return Object.freeze({
+    source: normalizedField(value.source),
+    version: normalizedField(value.version),
+    sourceSha256: normalizedField(value.sourceSha256),
+    upstreamSourceSha256: normalizedField(value.upstreamSourceSha256),
+    selectionSha256: normalizedField(value.selectionSha256),
+    terms: normalizedStringArray(value.terms)
+  });
+}
+
+function normalizedCritiqueMetadata(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  return Object.freeze({
+    verdict: normalizedField(value.verdict),
+    issues: normalizedStringArray(value.issues),
+    model: normalizedField(value.model),
+    modelRevision: normalizedField(value.modelRevision),
+    promptSha256: normalizedField(value.promptSha256),
+    completedAt: normalizedField(value.completedAt)
+  });
+}
+
+function normalizedReviewMetadata(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  return Object.freeze({
+    reviewer: normalizedField(value.reviewer),
+    reviewedAt: normalizedField(value.reviewedAt),
+    note: normalizedField(value.note)
+  });
+}
+
 function draftMetadata(record) {
+  const status = normalizeTranslationReviewStatus(record.status);
+  const editorialTriage = normalizeClassicalEditorialTriage(record.editorialTriage);
+  const warnings = normalizedStringArray(record.warnings);
+  const productionReady = isProductionReadyTranslation({ status, warnings });
   const metadata = {
-    quality: MACHINE_DRAFT_QUALITY,
-    status: "machine_draft",
+    quality: productionReady ? "human-reviewed" : MACHINE_DRAFT_QUALITY,
+    status,
     sourceLabel: normalizedField(record.sourceLabel) || "Leafbound 今譯草稿",
-    displayStatus: "機器今譯 · 未經人工校訂",
+    displayStatus: reviewStatusLabels[status],
+    productionReady,
     model: normalizedField(record.model),
     modelRevision: normalizedField(record.modelRevision),
     promptVersion: normalizedField(record.promptVersion),
-    warnings: Object.freeze(record.warnings.map((warning) => normalizedField(warning)))
+    warnings
   };
-  for (const field of ["generatedAt"]) {
+  for (const field of ["generatedAt", "promptSha256", "critiquePromptSha256"]) {
     const value = normalizedField(record[field]);
     if (value) metadata[field] = value;
   }
+  if (Number.isSafeInteger(record.pipelineVersion)) metadata.pipelineVersion = record.pipelineVersion;
+  if (editorialTriage) metadata.editorialTriage = editorialTriage;
+  const generationParameters = normalizedGenerationParameters(record.generationParameters);
+  const glossary = normalizedGlossaryMetadata(record.glossary);
+  const critique = normalizedCritiqueMetadata(record.critique);
+  const review = normalizedReviewMetadata(record.review);
+  if (generationParameters) metadata.generationParameters = generationParameters;
+  if (glossary) metadata.glossary = glossary;
+  if (critique) metadata.critique = critique;
+  if (review) metadata.review = review;
   return metadata;
+}
+
+function validSha256(value) {
+  return typeof value === "string" && /^[0-9a-f]{64}$/u.test(value);
+}
+
+function validIsoTimestamp(value) {
+  return typeof value === "string"
+    && value.trim().length > 0
+    && Number.isFinite(Date.parse(value));
+}
+
+function validStringArray(value) {
+  return Array.isArray(value) && value.every((item) => typeof item === "string" && item.trim());
+}
+
+function validateOptionalProvenance(record) {
+  if (record.pipelineVersion !== undefined
+    && (!Number.isSafeInteger(record.pipelineVersion) || record.pipelineVersion < 2)) {
+    return "pipelineVersion must be an integer of 2 or greater when provided.";
+  }
+  for (const field of ["promptSha256", "critiquePromptSha256"]) {
+    if (record[field] !== undefined && !validSha256(record[field])) {
+      return `${field} must be a lowercase SHA-256 digest when provided.`;
+    }
+  }
+  if (record.generationParameters !== undefined) {
+    const parameters = record.generationParameters;
+    if (!parameters || typeof parameters !== "object" || Array.isArray(parameters)
+      || !Number.isFinite(parameters.temperature)
+      || !Number.isSafeInteger(parameters.maxTokens)
+      || typeof parameters.disableThinking !== "boolean") {
+      return "generationParameters must contain temperature, integer maxTokens, and boolean disableThinking.";
+    }
+  }
+  if (record.glossary !== undefined) {
+    const glossary = record.glossary;
+    if (!glossary || typeof glossary !== "object" || Array.isArray(glossary)
+      || typeof glossary.source !== "string" || !glossary.source.trim()
+      || typeof glossary.version !== "string" || !glossary.version.trim()
+      || !validSha256(glossary.sourceSha256)
+      || (glossary.upstreamSourceSha256 !== undefined && glossary.upstreamSourceSha256 !== "" && !validSha256(glossary.upstreamSourceSha256))
+      || (glossary.selectionSha256 !== undefined && !validSha256(glossary.selectionSha256))
+      || !validStringArray(glossary.terms)) {
+      return "glossary must identify its source, version, sourceSha256, and matched terms.";
+    }
+  }
+  if (record.critique !== undefined) {
+    const critique = record.critique;
+    if (!critique || typeof critique !== "object" || Array.isArray(critique)
+      || !["pass", "revised", "reject"].includes(critique.verdict)
+      || !validStringArray(critique.issues)
+      || typeof critique.model !== "string" || !critique.model.trim()
+      || typeof critique.modelRevision !== "string" || !critique.modelRevision.trim()
+      || !validSha256(critique.promptSha256)
+      || !validIsoTimestamp(critique.completedAt)) {
+      return "critique must contain a verdict, issues, model provenance, promptSha256, and completedAt.";
+    }
+  }
+  if (record.review !== undefined) {
+    const review = record.review;
+    if (!review || typeof review !== "object" || Array.isArray(review)
+      || typeof review.reviewer !== "string" || !review.reviewer.trim()
+      || !validIsoTimestamp(review.reviewedAt)
+      || (review.note !== undefined && typeof review.note !== "string")) {
+      return "review must contain reviewer and reviewedAt; note is optional.";
+    }
+  }
+  if (record.pipelineVersion >= 2) {
+    if (!validSha256(record.promptSha256)
+      || !validSha256(record.critiquePromptSha256)
+      || !record.generationParameters
+      || !record.glossary
+      || !validSha256(record.glossary.selectionSha256)
+      || !record.critique) {
+      return "pipelineVersion 2 records require both prompt hashes, generation parameters, a versioned glossary selection, and second-pass critique metadata.";
+    }
+    if (record.critique.promptSha256 !== record.critiquePromptSha256) {
+      return "critique.promptSha256 must match critiquePromptSha256.";
+    }
+  }
+  return null;
 }
 
 export function validateDraftRecords(records, plan, { initialErrors = [] } = {}) {
@@ -316,8 +512,30 @@ export function validateDraftRecords(records, plan, { initialErrors = [] } = {})
       errors.push(recordError(record, "invalid-paragraphs", "paragraphs must be a non-empty array of non-empty strings."));
       continue;
     }
-    if (record.status !== "machine_draft") {
-      errors.push(recordError(record, "invalid-status", "status must be exactly machine_draft."));
+    const reviewStatus = normalizeTranslationReviewStatus(record.status);
+    if (!reviewStatus) {
+      errors.push(recordError(
+        record,
+        "invalid-status",
+        `status must be one of ${[...reviewStatusValues].join(", ")}; legacy machine_draft remains readable.`
+      ));
+      continue;
+    }
+    const editorialTriage = normalizeClassicalEditorialTriage(record.editorialTriage);
+    if (record.editorialTriage !== undefined && !editorialTriage) {
+      errors.push(recordError(
+        record,
+        "invalid-editorial-triage",
+        "editorialTriage must be one of " + [...editorialTriageValues].join(", ") + " when provided."
+      ));
+      continue;
+    }
+    if (editorialTriage && reviewStatus !== TRANSLATION_REVIEW_STATUSES.PENDING_REVIEW) {
+      errors.push(recordError(
+        record,
+        "invalid-editorial-triage-status",
+        "An initially usable draft must remain pending-review until full human review is complete."
+      ));
       continue;
     }
     if (["model", "modelRevision", "promptVersion"].some((field) => typeof record[field] !== "string" || !record[field].trim())) {
@@ -328,12 +546,55 @@ export function validateDraftRecords(records, plan, { initialErrors = [] } = {})
       errors.push(recordError(record, "invalid-warnings", "warnings must be an array of non-empty strings; use [] when there are none."));
       continue;
     }
+    const provenanceError = validateOptionalProvenance(record);
+    if (provenanceError) {
+      errors.push(recordError(record, "invalid-generation-provenance", provenanceError));
+      continue;
+    }
+    if (reviewStatus === TRANSLATION_REVIEW_STATUSES.REVIEWED && !record.review) {
+      errors.push(recordError(record, "missing-human-review", "reviewed translations must identify the reviewer and review time."));
+      continue;
+    }
+    if (reviewStatus === TRANSLATION_REVIEW_STATUSES.PENDING_REVIEW
+      && record.critique
+      && record.critique.verdict === "reject") {
+      errors.push(recordError(record, "invalid-review-transition", "A critique-rejected draft cannot be pending review."));
+      continue;
+    }
+    if (reviewStatus === TRANSLATION_REVIEW_STATUSES.REJECTED
+      && record.critique?.verdict !== "reject"
+      && !record.review) {
+      errors.push(recordError(record, "missing-rejection-evidence", "Rejected translations need a rejecting critique or human review."));
+      continue;
+    }
     if (record.sourceLabel !== undefined && (typeof record.sourceLabel !== "string" || !record.sourceLabel.trim() || record.sourceLabel.length > 120)) {
       errors.push(recordError(record, "invalid-source-label", "sourceLabel must be a non-empty string no longer than 120 characters."));
       continue;
     }
 
     const paragraphs = cleanParagraphs(record.paragraphs);
+    const warningCodes = new Set(record.warnings.map((warning) => normalizedField(warning)));
+    const paragraphCountMismatch = paragraphs.length !== job.lines.length;
+    if (record.pipelineVersion >= 2
+      && paragraphCountMismatch
+      && !warningCodes.has("paragraph-count-mismatch")) {
+      errors.push(recordError(
+        record,
+        "missing-paragraph-count-warning",
+        `Translation has ${paragraphs.length} paragraph(s) for ${job.lines.length} source line(s); the mismatch must be explicit.`
+      ));
+      continue;
+    }
+    if (reviewStatus === TRANSLATION_REVIEW_STATUSES.REVIEWED
+      && (paragraphCountMismatch
+        || [...warningCodes].some((warning) => productionBlockingWarnings.has(warning)))) {
+      errors.push(recordError(
+        record,
+        "reviewed-with-blockers",
+        "A reviewed translation cannot retain production-blocking warnings."
+      ));
+      continue;
+    }
     const joined = paragraphs.join("\n");
     if (englishLabelPattern.test(joined)) {
       errors.push(recordError(record, "english-label", "Translation contains an English/translation label."));
@@ -395,7 +656,7 @@ export function validateDraftRecords(records, plan, { initialErrors = [] } = {})
 
   const translations = new Map();
   const duplicateIds = new Set();
-  for (const record of accepted) {
+  for (const record of accepted.filter((record) => record.metadata.status !== TRANSLATION_REVIEW_STATUSES.REJECTED)) {
     const signature = normalizedField(record.paragraphs.join(""))
       .replace(/[\p{P}\p{S}\p{Z}\s]/gu, "");
     if (signature.length < 8) continue;
@@ -410,13 +671,21 @@ export function validateDraftRecords(records, plan, { initialErrors = [] } = {})
   }
 
   const validRecords = accepted.filter((record) => !duplicateIds.has(record.id));
+  const publishableRecords = validRecords.filter((record) => (
+    record.metadata.status !== TRANSLATION_REVIEW_STATUSES.REJECTED
+  ));
+  const productionReadyRecords = publishableRecords.filter(isProductionReadyTranslation);
   return Object.freeze({
     valid: errors.length === 0,
     inputCount: records.length,
     acceptedCount: validRecords.length,
     rejectedCount: records.length - validRecords.length,
+    publishableCount: publishableRecords.length,
+    productionReadyCount: productionReadyRecords.length,
     errors: Object.freeze(errors),
-    records: Object.freeze(validRecords)
+    records: Object.freeze(validRecords),
+    publishableRecords: Object.freeze(publishableRecords),
+    productionReadyRecords: Object.freeze(productionReadyRecords)
   });
 }
 
@@ -443,6 +712,14 @@ function parseBuiltRecord(value, location) {
     promptVersion: metadata.promptVersion,
     warnings: metadata.warnings,
     generatedAt: metadata.generatedAt,
+    pipelineVersion: metadata.pipelineVersion,
+    promptSha256: metadata.promptSha256,
+    critiquePromptSha256: metadata.critiquePromptSha256,
+    generationParameters: metadata.generationParameters,
+    glossary: metadata.glossary,
+    critique: metadata.critique,
+    review: metadata.review,
+    editorialTriage: metadata.editorialTriage,
     _location: location
   };
 }
@@ -496,10 +773,20 @@ function buildInMemoryArtifacts(records, plan) {
 
   const jobsById = new Map(plan.jobs.map((job) => [job.id, job]));
   const generatedByKind = Object.fromEntries(CLASSICAL_KINDS.map((kind) => [kind, 0]));
+  const statusCounts = Object.fromEntries([...reviewStatusValues].map((status) => [status, 0]));
+  const editorialTriageCounts = Object.fromEntries([...editorialTriageValues].map((status) => [status, 0]));
   for (const record of records) {
     const kind = jobsById.get(record.id)?.kind;
     if (kind) generatedByKind[kind] += 1;
+    if (record.metadata.status in statusCounts) statusCounts[record.metadata.status] += 1;
+    if (record.metadata.editorialTriage in editorialTriageCounts) {
+      editorialTriageCounts[record.metadata.editorialTriage] += 1;
+    }
   }
+  const productionReadyGeneratedCount = records.filter(isProductionReadyTranslation).length;
+  const blockedGeneratedCount = records.filter((record) => (
+    record.metadata.warnings.some((warning) => productionBlockingWarnings.has(warning))
+  )).length;
   const targetTotal = poems.filter((poem) => allowedKinds.has(poem.kind)).length;
   const builtInCount = targetTotal - plan.missingCount;
   const manifest = {
@@ -508,7 +795,14 @@ function buildInMemoryArtifacts(records, plan) {
     shardStrategy: { algorithm: "sha256-id-prefix", prefixLength: SHARD_PREFIX_LENGTH },
     quality: {
       id: MACHINE_DRAFT_QUALITY,
-      label: "機器今譯 · 未經人工校訂"
+      label: "機器今譯 · 未經人工校訂",
+      reviewRequired: true,
+      statusDefinitions: reviewStatusLabels,
+      editorialTriageDefinitions: {
+        [CLASSICAL_EDITORIAL_TRIAGE.INITIALLY_USABLE]: "初步可用 · 仍待人工精校"
+      },
+      productionReadyStatus: TRANSLATION_REVIEW_STATUSES.REVIEWED,
+      blockingWarnings: [...productionBlockingWarnings].sort((left, right) => left.localeCompare(right, "en"))
     },
     coverage: {
       targetCount: targetTotal,
@@ -516,6 +810,12 @@ function buildInMemoryArtifacts(records, plan) {
       generatedCount: records.length,
       coveredCount: builtInCount + records.length,
       remainingCount: Math.max(0, plan.missingCount - records.length),
+      productionReadyGeneratedCount,
+      productionReadyCoveredCount: builtInCount + productionReadyGeneratedCount,
+      productionReadyRemainingCount: Math.max(0, plan.missingCount - productionReadyGeneratedCount),
+      blockedGeneratedCount,
+      statusCounts,
+      editorialTriageCounts,
       generatedByKind
     },
     recordsSha256: sha256(records.map((record) => `${record.id}:${record.sourceHash}:${sha256(record.paragraphs.join("\n"))}`).join("\n")),
@@ -598,28 +898,37 @@ export async function buildTranslationArtifacts({
     modelRevision: record.metadata.modelRevision,
     promptVersion: record.metadata.promptVersion,
     warnings: record.metadata.warnings,
-    generatedAt: record.metadata.generatedAt
+    generatedAt: record.metadata.generatedAt,
+    pipelineVersion: record.metadata.pipelineVersion,
+    promptSha256: record.metadata.promptSha256,
+    critiquePromptSha256: record.metadata.critiquePromptSha256,
+    generationParameters: record.metadata.generationParameters,
+    glossary: record.metadata.glossary,
+    critique: record.metadata.critique,
+    review: record.metadata.review,
+    editorialTriage: record.metadata.editorialTriage
   })), plan);
   if (!combinedValidation.valid) {
     return Object.freeze({ ok: false, stage: "combined", validation: combinedValidation });
   }
-  if (requireComplete && combinedValidation.records.length !== plan.missingCount) {
+  if (requireComplete && combinedValidation.publishableRecords.length !== plan.missingCount) {
     return Object.freeze({
       ok: false,
       stage: "coverage",
       validation: combinedValidation,
-      message: `Complete coverage requires ${plan.missingCount} records; received ${combinedValidation.records.length}.`
+      message: `Complete coverage requires ${plan.missingCount} publishable records; received ${combinedValidation.publishableRecords.length}.`
     });
   }
 
-  const artifacts = buildInMemoryArtifacts(combinedValidation.records, plan);
+  const artifacts = buildInMemoryArtifacts(combinedValidation.publishableRecords, plan);
   if (!dryRun) await replaceGeneratedArtifacts(resolve(dataRoot), artifacts);
   return Object.freeze({
     ok: true,
     dryRun,
     existingCount: existingValidation.acceptedCount,
     incomingCount: incomingValidation.acceptedCount,
-    recordCount: combinedValidation.acceptedCount,
+    recordCount: combinedValidation.publishableCount,
+    productionReadyCount: combinedValidation.productionReadyCount,
     remainingCount: artifacts.manifest.coverage.remainingCount,
     totalBytes: artifacts.totalBytes,
     manifest: artifacts.manifest

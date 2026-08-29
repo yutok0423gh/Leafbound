@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "batch": "qwen35-batch-v2",
+  "decision": "initially-usable",
+  "formalStatus": "pending-review",
+  "productionReady": false,
+  "decidedAt": "2026-08-29T14:00:00.000Z",
+  "reviewer": "Leafbound owner",
+  "recordCount": 100,
+  "note": "初步抽查通过；机器初译仍待逐篇人工精校，结构警告继续保留。",
+  "corrections": [
+    {
+      "id": "open-caocao-c6f2e325b4f071ea6066",
+      "changes": [
+        {
+          "from": "十月已是深冬。",
+          "to": "農曆十月，已進入初冬。"
+        },
+        {
+          "from": "熊與豹都在洞穴中棲息。",
+          "to": "熊與棕熊都在洞穴中棲息。"
+        },
+        {
+          "from": "錢幣與度量衡暫時停置不用，",
+          "to": "錢、鎛等農具暫時停放不用，"
+        }
+      ]
+    }
+  ]
+}

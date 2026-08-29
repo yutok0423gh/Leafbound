@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import OpenCC from "opencc-js";
 import { segmentCantonesePronunciation } from "../src/cantonese-lexicon.js";
+import { writeOpenPoetryDelivery } from "./build-open-poetry-delivery.mjs";
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const cacheDir = join(projectRoot, ".tmp-data");
@@ -1075,6 +1076,7 @@ mkdirSync(outputDataDir, { recursive: true });
 writeFileSync(join(outputDataDir, "words-hk-wordslist.json"), JSON.stringify(cantonesePayload), "utf8");
 writeFileSync(join(outputDataDir, "open-data-manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 writeFileSync(join(sourceDir, "open-poems.js"), serializeOpenPoemsModule(openPoems), "utf8");
+writeOpenPoetryDelivery(openPoems, projectRoot);
 
 console.log(JSON.stringify({
   cantoneseEntries: Object.keys(cantoneseEntries).length,

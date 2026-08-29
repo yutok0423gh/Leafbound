@@ -70,12 +70,12 @@ jobs:
       - name: Commit verified content changes
         shell: bash
         run: |
-          if git diff --quiet -- src/open-english.js src/open-english-dictionary.js src/open-english-dictionary-meta.js src/open-cantonese.js assets/audio/cantonese; then
+          if git diff --quiet -- src/open-english.js src/open-english-dictionary.js src/open-english-dictionary-meta.js src/open-cantonese.js src/cantonese-interviews.js assets/audio/cantonese; then
             echo "No verified content changes to commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/open-english.js src/open-english-dictionary.js src/open-english-dictionary-meta.js src/open-cantonese.js assets/audio/cantonese
+          git add src/open-english.js src/open-english-dictionary.js src/open-english-dictionary-meta.js src/open-cantonese.js src/cantonese-interviews.js assets/audio/cantonese
           git commit -m "content: refresh ${{ steps.target.outputs.target }} shelf"
           git push

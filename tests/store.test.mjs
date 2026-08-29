@@ -8,11 +8,13 @@ import {
   SEEN_PROGRESS_THRESHOLD,
   STORAGE_KEY,
   contentProgressStatus,
+  createBackupPayload,
   createDefaultState,
   createStore,
   formatTime,
   getContentProgress,
   loadState,
+  parseBackupPayload,
   progressPercent,
   readLegacyPreferencesCookie,
   setContentProgressInState,
@@ -198,7 +200,7 @@ test("the store migrates legacy cookie preferences once, clears them, and stays 
   assert.equal(JSON.parse(storage.getItem(STORAGE_KEY)).preferences.playbackSpeed, 1.5);
 });
 
-test("all personal fields persist together under the local browser storage key", () => {
+test("all personal fields persist together when IndexedDB is unavailable", () => {
   const writes = [];
   const storage = memoryStorage();
   const originalSetItem = storage.setItem.bind(storage);
@@ -235,6 +237,144 @@ test("all personal fields persist together under the local browser storage key",
   ]) assert.ok(Object.hasOwn(persisted, field), `${field} should remain in localStorage`);
 });
 
+test("a complete localStorage state migrates to IndexedDB before localStorage is compacted", async () => {
+  const storage = memoryStorage({
+    [STORAGE_KEY]: JSON.stringify({
+      favorites: ["poem:mountain-autumn"],
+      notes: { "poem:mountain-autumn": "保留這則筆記" },
+      preferences: { englishDark: true }
+    })
+  });
+  let persisted = null;
+  const personalPersistence = {
+    async read() {
+      return null;
+    },
+    async write(state) {
+      persisted = structuredClone(state);
+    }
+  };
+  const store = createStore(storage, { read: () => null, clear: () => true }, personalPersistence);
+
+  await store.ready;
+  assert.equal(store.getPersistenceMode(), "indexeddb");
+  assert.deepEqual(persisted.favorites, ["poem:mountain-autumn"]);
+  assert.equal(persisted.notes["poem:mountain-autumn"], "保留這則筆記");
+  const localEnvelope = JSON.parse(storage.getItem(STORAGE_KEY));
+  assert.equal(localEnvelope.preferences.englishDark, true);
+  assert.equal(localEnvelope.persistence.backend, "indexeddb");
+  assert.equal(Object.hasOwn(localEnvelope, "favorites"), false);
+
+  store.update((state) => toggleFavoriteInState(state, "poem:spring-dawn"));
+  await store.flush();
+  assert.ok(persisted.favorites.includes("poem:spring-dawn"));
+});
+
+test("an IndexedDB state hydrates asynchronously while local preferences win", async () => {
+  const storage = memoryStorage({
+    [STORAGE_KEY]: JSON.stringify({
+      version: 2,
+      preferences: { englishDark: true, playbackSpeed: 1.2 },
+      persistence: { backend: "indexeddb" }
+    })
+  });
+  const personalPersistence = {
+    async read() {
+      return {
+        favorites: ["article:quiet-noticing"],
+        notes: { "article:quiet-noticing": "IndexedDB note" },
+        preferences: { englishDark: false, playbackSpeed: 0.75 }
+      };
+    },
+    async write() {}
+  };
+  const store = createStore(storage, { read: () => null, clear: () => true }, personalPersistence);
+  let notifications = 0;
+  store.subscribe(() => { notifications += 1; });
+
+  await store.ready;
+  assert.deepEqual(store.getState().favorites, ["article:quiet-noticing"]);
+  assert.equal(store.getState().notes["article:quiet-noticing"], "IndexedDB note");
+  assert.equal(store.getState().preferences.englishDark, true);
+  assert.equal(store.getState().preferences.playbackSpeed, 1.2);
+  assert.equal(notifications, 1);
+});
+
+test("interactions during IndexedDB hydration merge without overwriting older personal data", async () => {
+  const storage = memoryStorage({
+    [STORAGE_KEY]: JSON.stringify({
+      version: 2,
+      preferences: { englishDark: true },
+      persistence: { backend: "indexeddb" }
+    })
+  });
+  let releaseRead;
+  const readGate = new Promise((resolve) => { releaseRead = resolve; });
+  let persistedAfterHydration;
+  const personalPersistence = {
+    async read() {
+      await readGate;
+      return {
+        favorites: ["poem:older"],
+        savedItems: [{ id: "english:older", text: "older" }],
+        notes: { "poem:older": "older note" }
+      };
+    },
+    async write(state) {
+      persistedAfterHydration = structuredClone(state);
+    }
+  };
+  const store = createStore(storage, { read: () => null, clear: () => true }, personalPersistence);
+  store.update((state) => {
+    const withFavorite = toggleFavoriteInState(state, "poem:new");
+    withFavorite.notes["poem:new"] = "new note";
+    return upsertSavedItemInState(withFavorite, { id: "english:new", text: "new" });
+  });
+  releaseRead();
+  await store.ready;
+
+  assert.deepEqual(new Set(store.getState().favorites), new Set(["poem:older", "poem:new"]));
+  assert.equal(store.getState().notes["poem:older"], "older note");
+  assert.equal(store.getState().notes["poem:new"], "new note");
+  assert.deepEqual(
+    new Set(store.getState().savedItems.map((item) => item.id)),
+    new Set(["english:older", "english:new"])
+  );
+  assert.deepEqual(persistedAfterHydration.favorites, store.getState().favorites);
+});
+
+test("IndexedDB failures retain the complete localStorage fallback", async () => {
+  const storage = memoryStorage();
+  const personalPersistence = {
+    async read() {
+      throw new Error("private mode denied IndexedDB");
+    },
+    async write() {
+      throw new Error("unreachable");
+    }
+  };
+  const store = createStore(storage, { read: () => null, clear: () => true }, personalPersistence);
+  store.update((state) => toggleFavoriteInState(state, "poem:spring-dawn"));
+  await store.ready;
+
+  assert.equal(store.getPersistenceMode(), "localStorage");
+  assert.ok(JSON.parse(storage.getItem(STORAGE_KEY)).favorites.includes("poem:spring-dawn"));
+});
+
+test("versioned backups restore current, original, and raw local formats", () => {
+  const original = toggleFavoriteInState(createDefaultState(), "poem:spring-dawn");
+  const current = createBackupPayload(original, "2026-08-29T00:00:00.000Z");
+  assert.equal(current.formatVersion, 2);
+  assert.equal(current.data.version, 2);
+  assert.deepEqual(parseBackupPayload(JSON.stringify(current)).favorites, ["poem:spring-dawn"]);
+  assert.deepEqual(parseBackupPayload({ app: "Leafbound", data: original }).favorites, ["poem:spring-dawn"]);
+  assert.deepEqual(parseBackupPayload(original).favorites, ["poem:spring-dawn"]);
+  assert.throws(
+    () => parseBackupPayload({ ...current, formatVersion: 999 }),
+    /較新的 Leafbound/
+  );
+});
+
 test("classical typography preferences migrate and persist", () => {
   const legacyStorage = memoryStorage({
     [STORAGE_KEY]: JSON.stringify({ preferences: { showJyutping: false } })
@@ -243,12 +383,22 @@ test("classical typography preferences migrate and persist", () => {
   assert.equal(migrated.preferences.classicalFont, "song");
   assert.equal(migrated.preferences.classicalFontScale, 1);
   assert.equal(migrated.preferences.classicalLineHeight, 1);
+  assert.equal(migrated.preferences.classicalReadingMode, "parallel");
+  assert.equal(migrated.preferences.classicalJyutpingSize, "medium");
+  assert.equal(migrated.preferences.classicalJyutpingColor, "jade");
+  assert.equal(migrated.preferences.classicalJyutpingOpacity, "standard");
+  assert.equal(migrated.preferences.classicalJyutpingGap, "standard");
 
   const store = createStore(memoryStorage());
   store.update((state) => {
     state.preferences.classicalFont = "kai";
     state.preferences.classicalFontScale = 1.16;
     state.preferences.classicalLineHeight = 1.16;
+    state.preferences.classicalReadingMode = "translation";
+    state.preferences.classicalJyutpingSize = "large";
+    state.preferences.classicalJyutpingColor = "plum";
+    state.preferences.classicalJyutpingOpacity = "strong";
+    state.preferences.classicalJyutpingGap = "wide";
     return state;
   });
   assert.deepEqual(
@@ -258,6 +408,16 @@ test("classical typography preferences migrate and persist", () => {
       leading: store.getState().preferences.classicalLineHeight
     },
     { font: "kai", scale: 1.16, leading: 1.16 }
+  );
+  assert.deepEqual(
+    {
+      mode: store.getState().preferences.classicalReadingMode,
+      size: store.getState().preferences.classicalJyutpingSize,
+      color: store.getState().preferences.classicalJyutpingColor,
+      opacity: store.getState().preferences.classicalJyutpingOpacity,
+      gap: store.getState().preferences.classicalJyutpingGap
+    },
+    { mode: "translation", size: "large", color: "plum", opacity: "strong", gap: "wide" }
   );
 });
 

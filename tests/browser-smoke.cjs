@@ -20,13 +20,97 @@ const browserCandidates = [
 const executablePath = browserCandidates.find((candidate) => fs.existsSync(candidate));
 fs.mkdirSync(artifactDir, { recursive: true });
 
+async function readPersonalState(page) {
+  await page.waitForTimeout(40);
+  return page.evaluate(async () => {
+    const local = JSON.parse(localStorage.getItem("leafbound.personal-library.v1") || "null");
+    const database = await new Promise((resolve, reject) => {
+      const request = indexedDB.open("leafbound-personal-v1", 1);
+      request.addEventListener("success", () => resolve(request.result), { once: true });
+      request.addEventListener("error", () => reject(request.error), { once: true });
+    });
+    const record = await new Promise((resolve, reject) => {
+      const transaction = database.transaction("personal-state", "readonly");
+      const request = transaction.objectStore("personal-state").get("current");
+      request.addEventListener("success", () => resolve(request.result || {}), { once: true });
+      request.addEventListener("error", () => reject(request.error), { once: true });
+    });
+    database.close();
+    return { ...record, preferences: local?.preferences || record.preferences || {} };
+  });
+}
+
+async function markDailySelectionsSeen(page, selection) {
+  await page.evaluate(async (values) => {
+    const database = await new Promise((resolve, reject) => {
+      const request = indexedDB.open("leafbound-personal-v1", 1);
+      request.addEventListener("success", () => resolve(request.result), { once: true });
+      request.addEventListener("error", () => reject(request.error), { once: true });
+    });
+    const transaction = database.transaction("personal-state", "readwrite");
+    const store = transaction.objectStore("personal-state");
+    const state = await new Promise((resolve, reject) => {
+      const request = store.get("current");
+      request.addEventListener("success", () => resolve(request.result || {}), { once: true });
+      request.addEventListener("error", () => reject(request.error), { once: true });
+    });
+    state.contentActivity ||= {};
+    for (const [kind, id] of Object.entries(values)) {
+      state.contentActivity[`${kind}:${id}`] = {
+        maxProgress: 50,
+        status: "seen",
+        seenAt: "2026-08-21T00:00:00.000Z",
+        updatedAt: "2026-08-21T00:00:00.000Z"
+      };
+    }
+    store.put(state, "current");
+    await new Promise((resolve, reject) => {
+      transaction.addEventListener("complete", resolve, { once: true });
+      transaction.addEventListener("error", () => reject(transaction.error), { once: true });
+      transaction.addEventListener("abort", () => reject(transaction.error), { once: true });
+    });
+    database.close();
+  }, selection);
+}
+
+async function revealAll(page, selector) {
+  while (await page.locator(selector).count()) {
+    await page.locator(selector).click();
+  }
+}
+
+async function auditClassicalRuby(page, tokenSelector) {
+  return page.locator(".poem-reading-column").evaluate((node, selector) => {
+    const parallelSources = [...node.querySelectorAll(".classical-reading-source")];
+    const sourceRoots = parallelSources.length
+      ? parallelSources
+      : [...node.querySelectorAll(".full-poem, .prose-work")];
+    const sourceText = sourceRoots.map((root) => root.textContent || "").join("");
+    const rubies = [...node.querySelectorAll(selector)];
+    return {
+      han: (sourceText.match(/\p{Script=Han}/gu) || []).length,
+      rubies: rubies.length,
+      allSingleHan: rubies.every((ruby) => /^\p{Script=Han}$/u.test(ruby.querySelector("span")?.textContent || "")),
+      allAnnotated: rubies.every((ruby) => Boolean(ruby.querySelector("rt")?.textContent.trim())),
+      allAnnotatedAbove: rubies.every((ruby) => {
+        const base = ruby.querySelector("span")?.getBoundingClientRect();
+        const annotation = ruby.querySelector("rt")?.getBoundingClientRect();
+        return Boolean(base && annotation && annotation.top + annotation.height / 2 < base.top + base.height / 2);
+      }),
+      legacyTracks: node.querySelectorAll(".verse-jyutping, .prose-jyutping").length
+    };
+  }, tokenSelector);
+}
+
 const responsiveRoutes = [
   "#today",
   "#poetry",
   "#poetry/mountain-autumn",
+  "#poetry/open-guwen-87c7a29cd59b3c40239e",
   "#language",
   "#cantonese",
   "#cantonese/city-rain",
+  "#cantonese/spice-vf19b-written-code-switching",
   "#english",
   "#english/quiet-noticing",
   "#library"
@@ -79,6 +163,8 @@ async function auditViewport(browser, spec) {
           ".settings-stepper button",
           ".settings-switch",
           ".mode-switch button",
+          ".classical-reading-tabs button",
+          ".classical-reading-unit",
           ".voice-edge-link",
           ".voice-settings-link",
           ".voice-refresh-button",
@@ -139,20 +225,7 @@ async function auditReadingStatus(browser) {
     article: node.querySelector("[data-daily-article]")?.dataset.dailyArticle,
     episode: node.querySelector("[data-daily-episode]")?.dataset.dailyEpisode
   }));
-  await page.evaluate((selection) => {
-    const key = "leafbound.personal-library.v1";
-    const state = JSON.parse(localStorage.getItem(key));
-    state.contentActivity ||= {};
-    for (const [kind, id] of Object.entries(selection)) {
-      state.contentActivity[`${kind}:${id}`] = {
-        maxProgress: 50,
-        status: "seen",
-        seenAt: "2026-08-21T00:00:00.000Z",
-        updatedAt: "2026-08-21T00:00:00.000Z"
-      };
-    }
-    localStorage.setItem(key, JSON.stringify(state));
-  }, before);
+  await markDailySelectionsSeen(page, before);
   await page.reload({ waitUntil: "networkidle" });
   const after = await page.locator(".today-view").evaluate((node) => ({
     poem: node.querySelector("[data-daily-poem]")?.dataset.dailyPoem,
@@ -167,10 +240,7 @@ async function auditReadingStatus(browser) {
     node.dispatchEvent(new Event("scroll", { bubbles: true }));
   });
   await page.waitForTimeout(250);
-  const article = await page.evaluate(() => {
-    const state = JSON.parse(localStorage.getItem("leafbound.personal-library.v1"));
-    return state.contentActivity["article:quiet-noticing"];
-  });
+  const article = (await readPersonalState(page)).contentActivity["article:quiet-noticing"];
   const articlePressed = await page.locator('[data-content-status-key="article:quiet-noticing"]').getAttribute("aria-pressed");
   await page.goto(`${baseUrl}/#english`, { waitUntil: "networkidle" });
   const articleRow = page.locator(".article-row", { has: page.locator('[data-route-id="quiet-noticing"]') });
@@ -181,26 +251,19 @@ async function auditReadingStatus(browser) {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`${baseUrl}/#english/quiet-noticing`, { waitUntil: "networkidle" });
   await page.locator('[data-content-status-key="article:quiet-noticing"]').click();
-  const articleReset = await page.evaluate(() => {
-    const state = JSON.parse(localStorage.getItem("leafbound.personal-library.v1"));
-    return (state.contentActivity["article:quiet-noticing"]?.maxProgress || 0) < 50 && state.readingProgress["quiet-noticing"] === 0;
-  });
+  const articleResetState = await readPersonalState(page);
+  const articleReset = (articleResetState.contentActivity["article:quiet-noticing"]?.maxProgress || 0) < 50
+    && articleResetState.readingProgress["quiet-noticing"] === 0;
 
   const proseId = "open-guwen-f6f950bb029e161d839c";
   await page.goto(`${baseUrl}/#poetry/${proseId}`, { waitUntil: "networkidle" });
   await page.waitForSelector('[data-lexicon-status="ready"]');
   await page.evaluate(() => window.scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * 0.72));
   await page.waitForTimeout(250);
-  const poem = await page.evaluate((id) => {
-    const state = JSON.parse(localStorage.getItem("leafbound.personal-library.v1"));
-    return state.contentActivity[`poem:${id}`];
-  }, proseId);
+  const poem = (await readPersonalState(page)).contentActivity[`poem:${proseId}`];
   const poemPressed = await page.locator(`[data-content-status-key="poem:${proseId}"]`).getAttribute("aria-pressed");
   await page.locator(`[data-content-status-key="poem:${proseId}"]`).click();
-  const poemReset = await page.evaluate((id) => {
-    const state = JSON.parse(localStorage.getItem("leafbound.personal-library.v1"));
-    return (state.contentActivity[`poem:${id}`]?.maxProgress || 0) < 50;
-  }, proseId);
+  const poemReset = ((await readPersonalState(page)).contentActivity[`poem:${proseId}`]?.maxProgress || 0) < 50;
 
   const episodeId = "hkcancor-m";
   await page.goto(`${baseUrl}/#cantonese/${episodeId}`, { waitUntil: "networkidle" });
@@ -209,16 +272,12 @@ async function auditReadingStatus(browser) {
     node.dispatchEvent(new Event("input", { bubbles: true }));
   });
   await page.waitForTimeout(100);
-  const episode = await page.evaluate(() => {
-    const state = JSON.parse(localStorage.getItem("leafbound.personal-library.v1"));
-    return state.contentActivity["episode:hkcancor-m"];
-  });
+  const episode = (await readPersonalState(page)).contentActivity["episode:hkcancor-m"];
   const episodePressed = await page.locator(`[data-content-status-key="episode:${episodeId}"]`).getAttribute("aria-pressed");
   await page.locator(`[data-content-status-key="episode:${episodeId}"]`).click();
-  const episodeReset = await page.evaluate(() => {
-    const state = JSON.parse(localStorage.getItem("leafbound.personal-library.v1"));
-    return (state.contentActivity["episode:hkcancor-m"]?.maxProgress || 0) < 50 && state.playbackProgress["hkcancor-m"] === 0;
-  });
+  const episodeResetState = await readPersonalState(page);
+  const episodeReset = (episodeResetState.contentActivity["episode:hkcancor-m"]?.maxProgress || 0) < 50
+    && episodeResetState.playbackProgress["hkcancor-m"] === 0;
 
   await context.close();
   return {
@@ -258,10 +317,7 @@ async function auditReadingStatus(browser) {
     article: node.querySelector("[data-daily-article]")?.dataset.dailyArticle,
     episode: node.querySelector("[data-daily-episode]")?.dataset.dailyEpisode
   }));
-  result.todayDailyStored = await page.evaluate((dayKey) => {
-    const state = JSON.parse(localStorage.getItem("leafbound.personal-library.v1"));
-    return state.dailySelections?.[dayKey] || null;
-  }, result.todayDaily.key);
+  result.todayDailyStored = (await readPersonalState(page)).dailySelections?.[result.todayDaily.key] || null;
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForFunction(() => {
     const rubies = [...document.querySelectorAll(".daily-poem .daily-quote-jyutping-token")];
@@ -326,6 +382,7 @@ async function auditReadingStatus(browser) {
   result.guwenSource = await page.locator(".poem-source-card").textContent();
   result.guwenJyutpingToggle = await page.locator("[data-toggle-jyutping]").count();
   result.guwenJyutpingTokens = await page.locator(".prose-jyutping-token rt").count();
+  result.guwenRubyAudit = await auditClassicalRuby(page, ".prose-jyutping-token");
   result.guwenRareJyutping = await page.locator('[data-dictionary-term="寤"] rt').first().textContent();
   await page.locator('[data-dictionary-term="寤"]').first().click();
   result.guwenRareSource = await page.locator(".word-sheet-source").textContent();
@@ -350,14 +407,12 @@ async function auditReadingStatus(browser) {
     lineHeight: Number.parseFloat(getComputedStyle(node).lineHeight),
     usesKaiClass: Boolean(node.closest(".classical-font-kai"))
   }));
-  result.guwenTypographySaved = await page.evaluate(() => {
-    const state = JSON.parse(localStorage.getItem("leafbound.personal-library.v1"));
-    return {
-      font: state.preferences.classicalFont,
-      scale: state.preferences.classicalFontScale,
-      leading: state.preferences.classicalLineHeight
-    };
-  });
+  const guwenTypographyState = await readPersonalState(page);
+  result.guwenTypographySaved = {
+    font: guwenTypographyState.preferences.classicalFont,
+    scale: guwenTypographyState.preferences.classicalFontScale,
+    leading: guwenTypographyState.preferences.classicalLineHeight
+  };
   await page.screenshot({ path: path.join(artifactDir, "guwen-typography-desktop.png"), fullPage: true });
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForSelector('[data-lexicon-status="ready"]');
@@ -414,20 +469,7 @@ async function auditReadingStatus(browser) {
   await page.locator(".poem-row-main").first().click();
   await page.locator(".poem-thread-trigger").click();
   await page.screenshot({ path: path.join(artifactDir, "poem-reader-desktop.png"), fullPage: true });
-  result.poemRubyAudit = await page.locator(".full-poem").evaluate((node) => {
-    const han = (node.textContent.match(/\p{Script=Han}/gu) || []).length;
-    const rubies = [...node.querySelectorAll(".verse-jyutping-token")];
-    return {
-      han,
-      rubies: rubies.length,
-      allAnnotatedAbove: rubies.every((ruby) => {
-        const base = ruby.querySelector("span")?.getBoundingClientRect();
-        const annotation = ruby.querySelector("rt")?.getBoundingClientRect();
-        return Boolean(base && annotation && annotation.top + annotation.height / 2 < base.top + base.height / 2);
-      }),
-      legacyTracks: node.querySelectorAll(".verse-jyutping").length
-    };
-  });
+  result.poemRubyAudit = await auditClassicalRuby(page, ".verse-jyutping-token");
   const jyutpingBefore = await page.locator(".verse-jyutping-token rt").count();
   await page.locator("[data-toggle-jyutping]").click();
   result.jyutpingToggle = [jyutpingBefore, await page.locator(".verse-jyutping-token rt").count()];
@@ -450,14 +492,12 @@ async function auditReadingStatus(browser) {
   await page.waitForSelector('[data-lexicon-status="ready"]');
   result.openPoemSource = await page.locator(".poem-source-card").textContent();
   result.openPoemDetails = await page.locator(".reader-detail").count();
+  result.openPoemTranslationStatus = await page.locator("[data-translation-review-status]").getAttribute("data-translation-review-status");
+  result.openPoemOriginalModeSelected = await page.locator('[data-classical-reading-mode="original"]').getAttribute("aria-selected");
   result.openPoemDictionaryTerms = await page.locator(".poem-term-button").count();
   result.openPoemAutoJyutpingLines = await page.locator('[data-verse-jyutping="auto"]').count();
   result.openPoemFirstJyutping = (await page.locator('[data-verse-jyutping="auto"]').first().locator("rt").allTextContents()).join(" ");
-  result.openPoemRubyAudit = await page.locator(".full-poem").evaluate((node) => ({
-    han: (node.textContent.match(/\p{Script=Han}/gu) || []).length,
-    rubies: node.querySelectorAll(".verse-jyutping-token").length,
-    legacyTracks: node.querySelectorAll(".verse-jyutping").length
-  }));
+  result.openPoemRubyAudit = await auditClassicalRuby(page, ".verse-jyutping-token");
   result.openPoemJyutpingCoverage = await page.locator(".pronunciation-note strong").textContent();
   await page.screenshot({ path: path.join(artifactDir, "poem-open-corpus-desktop.png"), fullPage: true });
   await page.getByRole("button", { name: "隱藏粵拼" }).click();
@@ -483,26 +523,62 @@ async function auditReadingStatus(browser) {
   await page.locator(".sheet-close").click();
   await page.goto(`${baseUrl}/#poetry/open-yuanqu-94a25e7d597cece17e04`, { waitUntil: "networkidle" });
   await page.waitForSelector(".verse-jyutping-token rt");
-  result.yuanquRubyAudit = await page.locator(".full-poem").evaluate((node) => ({
-    han: (node.textContent.match(/\p{Script=Han}/gu) || []).length,
-    rubies: node.querySelectorAll(".verse-jyutping-token").length,
-    legacyTracks: node.querySelectorAll(".verse-jyutping").length
-  }));
+  result.yuanquRubyAudit = await auditClassicalRuby(page, ".verse-jyutping-token");
   result.yuanquOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   await page.screenshot({ path: path.join(artifactDir, "yuanqu-inline-jyutping-desktop.png"), fullPage: true });
   await page.goto(`${baseUrl}/#poetry/open-yuanqu-9493c1fa7adc30eea82a`, { waitUntil: "networkidle" });
-  await page.waitForSelector('.reader-detail.is-translation[open]');
-  result.requestedYuanquTranslationSummary = await page.locator(".reader-detail.is-translation summary").textContent();
-  result.requestedYuanquTranslationParagraphs = await page.locator(".reader-detail.is-translation .reader-detail-body > p").count();
-  result.requestedYuanquTranslationText = await page.locator(".reader-detail.is-translation .reader-detail-body").textContent();
+  await page.waitForSelector('[data-translation-review-status="reviewed"]');
+  await page.waitForSelector(".classical-reading-translation");
+  result.requestedYuanquTranslationStatus = await page.locator("[data-translation-review-status]").getAttribute("data-translation-review-status");
+  result.requestedYuanquTranslationReview = await page.locator("[data-translation-review-status]").textContent();
+  result.requestedYuanquTranslationUnits = await page.locator(".classical-reading-unit").count();
+  result.requestedYuanquTranslationAlignment = await page.locator(".classical-reading-unit").first().getAttribute("data-classical-alignment");
+  result.requestedYuanquTranslationParagraphs = await page.locator(".classical-reading-translation > p:not(.classical-reading-alignment-note)").count();
+  result.requestedYuanquTranslationText = await page.locator(".classical-reading-translation").textContent();
+  result.requestedYuanquLegacyTranslationPanels = await page.locator(".reader-detail.is-translation").count();
   result.requestedYuanquTranslationOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   await page.screenshot({ path: path.join(artifactDir, "yuanqu-modern-translation-desktop.png"), fullPage: true });
+  await page.goto(`${baseUrl}/#poetry/open-yuanqu-00055d04559d354ff34c`, { waitUntil: "networkidle" });
+  await page.waitForSelector('[data-translation-review-status="pending-review"]', { timeout: 5000 });
+  await page.waitForSelector(".classical-reading-translation");
+  result.generatedYuanquTranslationStatus = await page.locator("[data-translation-review-status]").getAttribute("data-translation-review-status");
+  result.generatedYuanquTranslationReview = await page.locator("[data-translation-review-status]").textContent();
+  result.generatedYuanquTranslationParagraphs = await page.locator(".classical-reading-translation > p:not(.classical-reading-alignment-note)").count();
+  result.generatedYuanquTranslationAlignmentNotes = await page.locator(".classical-reading-alignment-note").count();
+  result.generatedYuanquLegacyTranslationPanels = await page.locator(".reader-detail.is-translation").count();
+  result.generatedYuanquTranslationOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  await page.screenshot({ path: path.join(artifactDir, "yuanqu-ai-translation-desktop.png"), fullPage: true });
   await page.goto(`${baseUrl}/#poetry/open-guwen-87c7a29cd59b3c40239e`, { waitUntil: "networkidle" });
-  await page.waitForSelector('.reader-detail.is-translation[open]');
-  result.guwenTranslationSummary = await page.locator(".reader-detail.is-translation summary").textContent();
-  result.guwenTranslationParagraphs = await page.locator(".reader-detail.is-translation .reader-detail-body > p").count();
-  result.guwenTranslationText = await page.locator(".reader-detail.is-translation .reader-detail-body").textContent();
-  result.guwenTranslationSource = await page.locator(".reader-detail-source").textContent();
+  await page.waitForSelector('[data-translation-review-status="reviewed"]');
+  await page.waitForSelector(".classical-reading-translation");
+  result.guwenTranslationStatus = await page.locator("[data-translation-review-status]").getAttribute("data-translation-review-status");
+  result.guwenTranslationReview = await page.locator("[data-translation-review-status]").textContent();
+  result.guwenTranslationUnits = await page.locator(".classical-reading-unit").count();
+  result.guwenTranslationParagraphs = await page.locator(".classical-reading-translation > p:not(.classical-reading-alignment-note)").count();
+  result.guwenTranslationAlignmentNotes = await page.locator(".classical-reading-alignment-note").count();
+  result.guwenTranslationText = await page.locator(".classical-reading-flow").textContent();
+  result.guwenLegacyTranslationPanels = await page.locator(".reader-detail.is-translation").count();
+  const firstReadingUnit = page.locator("[data-classical-reading-unit]").first();
+  await firstReadingUnit.focus();
+  await firstReadingUnit.press("Enter");
+  result.guwenFocusedReadingUnits = await page.locator("[data-classical-reading-unit].is-focused").count();
+  result.guwenMutedReadingUnits = await page.locator("[data-classical-reading-unit].is-muted").count();
+  await firstReadingUnit.press("Enter");
+  result.guwenClearedReadingFocus = await page.locator("[data-classical-reading-unit].is-focused, [data-classical-reading-unit].is-muted").count();
+  await page.locator('[data-classical-reading-mode="translation"]').click();
+  await page.waitForSelector(".classical-translation-only");
+  result.guwenTranslationModeParagraphs = await page.locator(".classical-translation-only > p").count();
+  result.guwenTranslationModeSourceBodies = await page.locator(".classical-translation-only .prose-work, .classical-translation-only .full-poem").count();
+  result.guwenStoredReadingMode = (await readPersonalState(page)).preferences.classicalReadingMode;
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForSelector('[data-classical-reading-mode="translation"][aria-selected="true"]');
+  result.guwenReadingModePersisted = await page.locator('[data-classical-reading-mode="translation"]').getAttribute("aria-selected");
+  await page.locator('[data-classical-reading-mode="original"]').click();
+  result.guwenOriginalModeSourceBodies = await page.locator(".prose-work, .full-poem").count();
+  result.guwenOriginalModeTranslations = await page.locator(".classical-reading-translation, .classical-translation-only").count();
+  await page.locator('[data-classical-reading-mode="parallel"]').click();
+  await page.waitForSelector(".classical-reading-unit");
+  result.guwenParallelModeSelected = await page.locator('[data-classical-reading-mode="parallel"]').getAttribute("aria-selected");
   result.guwenTranslationOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   await page.screenshot({ path: path.join(artifactDir, "guwen-modern-translation-desktop.png"), fullPage: true });
 
@@ -514,20 +590,34 @@ async function auditReadingStatus(browser) {
   result.cantoneseLevelLabels = await page.locator(".cantonese-level-ladder strong").allTextContents();
   result.cantoneseLevelRanges = await page.locator(".cantonese-level-ladder span").allTextContents();
   result.cantoneseLevelNote = await page.locator(".cantonese-level-note").textContent();
+  result.cantoneseInitialRows = await page.locator(".episode-row").count();
+  result.cantoneseLoadMoreControl = await page.locator("[data-load-more-cantonese]").count();
+  await page.screenshot({ path: path.join(artifactDir, "cantonese-index-desktop.png"), fullPage: true });
+  await page.locator("[data-load-more-cantonese]").click();
+  result.cantoneseExpandedRows = await page.locator(".episode-row").count();
+  result.cantoneseSessionLimit = await page.evaluate(() => JSON.parse(sessionStorage.getItem("leafbound.collection-view.v1")).routes.cantonese.limit);
+  await revealAll(page, "[data-load-more-cantonese]");
   result.cantoneseLearningMarks = await page.locator(".episode-row.is-hbl .episode-art b").evaluateAll((nodes) => [...new Set(nodes.map((node) => node.textContent))]);
   result.cantoneseSourceLevelRows = await page.locator(".episode-row.is-hbl .episode-copy small", { hasText: "原站 HBL L" }).count();
   result.cantoneseShelfText = await page.locator(".cantonese-source-shelf").textContent();
   result.episodes = await page.locator(".episode-row").count();
-  await page.screenshot({ path: path.join(artifactDir, "cantonese-index-desktop.png"), fullPage: true });
   await page.locator('[data-cantonese-level="start"]').click();
+  await revealAll(page, "[data-load-more-cantonese]");
   result.cantoneseStartEpisodes = await page.locator(".episode-row").count();
   await page.locator('[data-cantonese-level="daily"]').click();
+  await revealAll(page, "[data-load-more-cantonese]");
   result.cantoneseDailyEpisodes = await page.locator(".episode-row").count();
   await page.locator('[data-cantonese-level="advance"]').click();
+  await revealAll(page, "[data-load-more-cantonese]");
   result.cantoneseAdvanceEpisodes = await page.locator(".episode-row").count();
   await page.locator('[data-cantonese-level="全部"]').click();
   await page.locator('[data-source-filter="全部"]').click();
-  await page.locator(".episode-main").first().click();
+  await page.goto(`${baseUrl}/#cantonese/hkcancor-d1`, { waitUntil: "networkidle" });
+  result.cantoneseInterviewScope = await page.locator(".transcript-scope-note").textContent();
+  result.cantoneseInterviewRoles = await page.locator(".transcript-speaker small").allTextContents();
+  result.cantoneseInterviewSpeakers = await page.locator(".transcript-speaker strong").allTextContents();
+  result.cantoneseInterviewQuestionMarks = await page.locator(".is-speaker-question .transcript-speaker > span", { hasText: "問" }).count();
+  result.cantoneseInterviewAnswerMarks = await page.locator(".is-speaker-answer .transcript-speaker > span", { hasText: "答" }).count();
   await page.waitForFunction(() => document.querySelector("[data-cantonese-voice-status]")?.dataset.cantoneseVoiceStatus !== "checking", undefined, { timeout: 3500 });
   result.cantoneseVoiceStatus = await page.locator("[data-cantonese-voice-status]").first().getAttribute("data-cantonese-voice-status");
   result.cantoneseAudioKind = await page.locator("[data-cantonese-audio-kind]").getAttribute("data-cantonese-audio-kind");
@@ -559,6 +649,16 @@ async function auditReadingStatus(browser) {
   result.dynamicTermSourceLink = await page.locator(".word-sheet-source a").count();
   await page.screenshot({ path: path.join(artifactDir, "cantonese-word-sheet-desktop.png"), fullPage: true });
   await page.getByRole("button", { name: "加入粵語詞庫" }).click();
+  await page.goto(`${baseUrl}/#cantonese/spice-vf19b-written-code-switching`, { waitUntil: "networkidle" });
+  result.spiceInterviewScope = await page.locator(".transcript-scope-note").textContent();
+  result.spiceInterviewRoles = await page.locator(".transcript-speaker small").allTextContents();
+  result.spiceInterviewSpeakers = await page.locator(".transcript-speaker strong").allTextContents();
+  result.spiceSourceReferenceCount = await page.locator(".source-recording-reference").count();
+  result.spiceSourceReferenceText = await page.locator(".source-recording-reference").textContent();
+  result.spiceSourceReferenceLink = await page.locator(".source-recording-reference a").getAttribute("href");
+  result.spiceAudioKind = await page.locator("[data-cantonese-audio-kind]").getAttribute("data-cantonese-audio-kind");
+  result.spiceInterviewOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  await page.screenshot({ path: path.join(artifactDir, "cantonese-spice-interview-desktop.png"), fullPage: true });
   await page.goto(`${baseUrl}/#cantonese/hbl-flowers-of-one-garden`, { waitUntil: "networkidle" });
   await page.waitForSelector('[data-segment-jyutping="auto"]');
   result.hblJyutpingLines = await page.locator('[data-segment-jyutping="auto"]').count();
@@ -592,6 +692,18 @@ async function auditReadingStatus(browser) {
   await page.screenshot({ path: path.join(artifactDir, "language-hub-desktop.png"), fullPage: true });
   await page.getByRole("button", { name: "Open English", exact: true }).click();
   result.englishMethodNoteCount = await page.locator(".english-method-note").count();
+  result.englishInitialRows = await page.locator(".article-row").count();
+  result.englishLoadMoreControl = await page.locator("[data-load-more-english]").count();
+  await page.locator("[data-load-more-english]").click();
+  result.englishExpandedRows = await page.locator(".article-row").count();
+  await page.evaluate(() => window.scrollTo(0, 900));
+  await page.waitForTimeout(250);
+  result.englishScrollBeforeReload = await page.evaluate(() => window.scrollY);
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(100);
+  result.englishRowsAfterReload = await page.locator(".article-row").count();
+  result.englishScrollAfterReload = await page.evaluate(() => window.scrollY);
+  result.englishSessionView = await page.evaluate(() => JSON.parse(sessionStorage.getItem("leafbound.collection-view.v1")).routes.english);
   result.englishSources = await page.locator("[data-english-source]:not(.english-source-reset)").count();
   result.englishNewsDesks = await page.locator(".english-news-desk").count();
   result.englishNewsDeskNames = (await page.locator(".english-news-desk strong").allTextContents()).join("|");
@@ -599,6 +711,7 @@ async function auditReadingStatus(browser) {
   result.englishNewsBoundary = await page.locator(".english-news-disclaimer").textContent();
   result.englishIndexHanText = await page.locator(".app-shell").evaluate((node) => (node.innerText.match(/[\u3400-\u9fff]/gu) || []).join(""));
   result.englishCategories = await page.locator("[data-english-category]").count();
+  await revealAll(page, "[data-load-more-english]");
   result.englishImportedRows = await page.locator('.article-row.is-internal:not([data-english-source-row="local"])').count();
   result.englishExternalRows = await page.locator(".article-row.is-external").count();
   result.englishExternalTargets = await page.locator('.article-row.is-external a[target="_blank"]').count();
@@ -727,11 +840,9 @@ async function auditReadingStatus(browser) {
   await page.locator('[data-english-leading="2"]').click();
   await page.locator('[data-speed="1.5"]').click();
   result.preferenceCookie = await page.evaluate(() => document.cookie.includes("leafbound_preferences_v1="));
-  result.personalStateFields = await page.evaluate(() => {
-    const state = JSON.parse(localStorage.getItem("leafbound.personal-library.v1"));
-    return ["favorites", "savedItems", "notes", "readingProgress", "playbackProgress", "contentActivity", "dailySelections", "history", "preferences"]
-      .filter((key) => Object.hasOwn(state, key));
-  });
+  const persistedPersonalState = await readPersonalState(page);
+  result.personalStateFields = ["favorites", "savedItems", "notes", "readingProgress", "playbackProgress", "contentActivity", "dailySelections", "history", "preferences"]
+    .filter((key) => Object.hasOwn(persistedPersonalState, key));
   await page.screenshot({ path: path.join(artifactDir, "library-settings-desktop.png"), fullPage: true });
   await page.reload({ waitUntil: "networkidle" });
   await page.locator('[data-library-panel="settings"]').click();
@@ -770,6 +881,7 @@ async function auditReadingStatus(browser) {
   await mobile.locator(".poem-row").filter({ hasText: "《鄭伯克段於鄢》" }).first().locator(".poem-row-main").click();
   await mobile.waitForSelector(".prose-jyutping-token rt");
   result.mobileGuwenJyutpingTokens = await mobile.locator(".prose-jyutping-token rt").count();
+  result.mobileGuwenRubyAudit = await auditClassicalRuby(mobile, ".prose-jyutping-token");
   await mobile.getByRole("button", { name: "打開閱讀排版" }).click();
   result.mobileGuwenTypographyVisible = await mobile.locator("#classical-typography-panel").isVisible();
   result.mobileGuwenTypographyPanelOverflow = await mobile.locator("#classical-typography-panel").evaluate((node) => node.scrollWidth - node.clientWidth);
@@ -784,6 +896,12 @@ async function auditReadingStatus(browser) {
   result.mobileHblRubyTokens = await mobile.locator('[data-transcript-ruby="auto"] rt').count();
   result.mobileHblJyutpingOverflow = await mobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   await mobile.screenshot({ path: path.join(artifactDir, "cantonese-hbl-jyutping-mobile.png"), fullPage: true });
+  await mobile.goto(`${baseUrl}/#cantonese/hkcancor-d1`, { waitUntil: "networkidle" });
+  await mobile.waitForSelector(".transcript-speaker");
+  result.mobileCantoneseInterviewOverflow = await mobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  result.mobileCantoneseInterviewRoles = await mobile.locator(".transcript-speaker small").allTextContents();
+  result.mobileCantoneseInterviewScope = await mobile.locator(".transcript-scope-note").textContent();
+  await mobile.screenshot({ path: path.join(artifactDir, "cantonese-interview-mobile.png"), fullPage: true });
   await mobile.goto(`${baseUrl}/#cantonese`, { waitUntil: "networkidle" });
   await mobile.waitForFunction(() => document.querySelector("[data-cantonese-voice-status]")?.dataset.cantoneseVoiceStatus !== "checking", undefined, { timeout: 3500 });
   await mobile.screenshot({ path: path.join(artifactDir, "cantonese-feed-mobile.png"), fullPage: true });
@@ -792,10 +910,7 @@ async function auditReadingStatus(browser) {
   result.mobileCantoneseLevelNote = await mobile.locator(".cantonese-level-note").textContent();
   await mobile.goto(`${baseUrl}/#poetry/mountain-autumn`, { waitUntil: "networkidle" });
   await mobile.waitForSelector(".verse-jyutping-token rt");
-  result.mobilePoemRubyAudit = await mobile.locator(".full-poem").evaluate((node) => ({
-    han: (node.textContent.match(/\p{Script=Han}/gu) || []).length,
-    rubies: node.querySelectorAll(".verse-jyutping-token").length
-  }));
+  result.mobilePoemRubyAudit = await auditClassicalRuby(mobile, ".verse-jyutping-token");
   await mobile.locator(".poem-thread-mobile").click();
   await mobile.screenshot({ path: path.join(artifactDir, "poem-reader-mobile.png") });
   result.mobilePoemOverflow = await mobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -810,20 +925,24 @@ async function auditReadingStatus(browser) {
   await mobile.locator(".sheet-close").click();
   await mobile.goto(`${baseUrl}/#poetry/open-yuanqu-94a25e7d597cece17e04`, { waitUntil: "networkidle" });
   await mobile.waitForSelector(".verse-jyutping-token rt");
-  result.mobileYuanquRubyAudit = await mobile.locator(".full-poem").evaluate((node) => ({
-    han: (node.textContent.match(/\p{Script=Han}/gu) || []).length,
-    rubies: node.querySelectorAll(".verse-jyutping-token").length
-  }));
+  result.mobileYuanquRubyAudit = await auditClassicalRuby(mobile, ".verse-jyutping-token");
   result.mobileYuanquOverflow = await mobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   await mobile.screenshot({ path: path.join(artifactDir, "yuanqu-inline-jyutping-mobile.png"), fullPage: true });
   await mobile.goto(`${baseUrl}/#poetry/open-yuanqu-9493c1fa7adc30eea82a`, { waitUntil: "networkidle" });
-  await mobile.waitForSelector('.reader-detail.is-translation[open]');
-  result.mobileRequestedYuanquTranslationParagraphs = await mobile.locator(".reader-detail.is-translation .reader-detail-body > p").count();
+  await mobile.waitForSelector('[data-translation-review-status="reviewed"]');
+  await mobile.waitForSelector(".classical-reading-translation");
+  result.mobileRequestedYuanquTranslationParagraphs = await mobile.locator(".classical-reading-translation > p:not(.classical-reading-alignment-note)").count();
+  result.mobileRequestedYuanquTranslationStatus = await mobile.locator("[data-translation-review-status]").getAttribute("data-translation-review-status");
+  result.mobileRequestedYuanquLegacyTranslationPanels = await mobile.locator(".reader-detail.is-translation").count();
   result.mobileRequestedYuanquTranslationOverflow = await mobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   await mobile.screenshot({ path: path.join(artifactDir, "yuanqu-modern-translation-mobile.png"), fullPage: true });
   await mobile.goto(`${baseUrl}/#poetry/open-guwen-87c7a29cd59b3c40239e`, { waitUntil: "networkidle" });
-  await mobile.waitForSelector('.reader-detail.is-translation[open]');
-  result.mobileGuwenTranslationParagraphs = await mobile.locator(".reader-detail.is-translation .reader-detail-body > p").count();
+  await mobile.waitForSelector('[data-translation-review-status="reviewed"]');
+  await mobile.waitForSelector(".classical-reading-translation");
+  result.mobileGuwenTranslationParagraphs = await mobile.locator(".classical-reading-translation > p:not(.classical-reading-alignment-note)").count();
+  result.mobileGuwenTranslationStatus = await mobile.locator("[data-translation-review-status]").getAttribute("data-translation-review-status");
+  result.mobileGuwenLegacyTranslationPanels = await mobile.locator(".reader-detail.is-translation").count();
+  result.mobileGuwenInlineReaderOverflow = await mobile.locator(".classical-reading-flow").evaluate((node) => node.scrollWidth - node.clientWidth);
   result.mobileGuwenTranslationOverflow = await mobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   await mobile.screenshot({ path: path.join(artifactDir, "guwen-modern-translation-mobile.png"), fullPage: true });
   await mobile.goto(`${baseUrl}/#english/quiet-noticing`, { waitUntil: "networkidle" });
@@ -923,6 +1042,11 @@ async function auditReadingStatus(browser) {
     || !result.guwenSource.includes("《左傳》")
     || result.guwenJyutpingToggle !== 1
     || result.guwenJyutpingTokens < 100
+    || result.guwenRubyAudit.rubies !== result.guwenRubyAudit.han
+    || !result.guwenRubyAudit.allSingleHan
+    || !result.guwenRubyAudit.allAnnotated
+    || !result.guwenRubyAudit.allAnnotatedAbove
+    || result.guwenRubyAudit.legacyTracks !== 0
     || !result.guwenRareJyutping
     || !result.guwenRareSource.includes("Rime Cantonese")
     || result.guwenTypographyToggle !== 1
@@ -961,6 +1085,8 @@ async function auditReadingStatus(browser) {
     || result.savedPoetryLine !== "true"
     || result.savedPoetryQuotes !== 1
     || result.poemRubyAudit.rubies !== result.poemRubyAudit.han
+    || !result.poemRubyAudit.allSingleHan
+    || !result.poemRubyAudit.allAnnotated
     || !result.poemRubyAudit.allAnnotatedAbove
     || result.poemRubyAudit.legacyTracks !== 0
     || result.jyutpingToggle[0] < 1
@@ -969,10 +1095,15 @@ async function auditReadingStatus(browser) {
     || result.openPoemSearchCount !== 1
     || !result.openPoemSource.includes("唐詩三百首")
     || result.openPoemDetails !== 0
+    || result.openPoemTranslationStatus !== "missing"
+    || result.openPoemOriginalModeSelected !== "true"
     || result.openPoemDictionaryTerms < 1
     || result.openPoemAutoJyutpingLines < 1
     || !result.openPoemFirstJyutping
     || result.openPoemRubyAudit.rubies !== result.openPoemRubyAudit.han
+    || !result.openPoemRubyAudit.allSingleHan
+    || !result.openPoemRubyAudit.allAnnotated
+    || !result.openPoemRubyAudit.allAnnotatedAbove
     || result.openPoemRubyAudit.legacyTracks !== 0
     || !result.openPoemJyutpingCoverage.includes("全文粵拼")
     || result.openPoemJyutpingHidden !== 0
@@ -989,35 +1120,80 @@ async function auditReadingStatus(browser) {
     || !result.moeDefinitionSource.includes("內容未改寫")
     || result.moeDefinitionEnglishRows !== 0
     || result.yuanquRubyAudit.rubies !== result.yuanquRubyAudit.han
+    || !result.yuanquRubyAudit.allSingleHan
+    || !result.yuanquRubyAudit.allAnnotated
+    || !result.yuanquRubyAudit.allAnnotatedAbove
     || result.yuanquRubyAudit.legacyTracks !== 0
     || result.yuanquOverflow !== 0
-    || !result.requestedYuanquTranslationSummary.includes("今譯")
-    || !result.requestedYuanquTranslationSummary.includes("編輯稿")
+    || result.requestedYuanquTranslationStatus !== "reviewed"
+    || !result.requestedYuanquTranslationReview.includes("人工已校")
+    || result.requestedYuanquTranslationUnits !== 1
+    || result.requestedYuanquTranslationAlignment !== "whole-work"
     || result.requestedYuanquTranslationParagraphs !== 1
     || !result.requestedYuanquTranslationText.includes("哪裏懂得兒女婚聘、締結秦晉之好")
+    || result.requestedYuanquLegacyTranslationPanels !== 0
     || result.requestedYuanquTranslationOverflow !== 0
-    || !result.guwenTranslationSummary.includes("今譯")
-    || !result.guwenTranslationSummary.includes("編輯稿")
+      || result.generatedYuanquTranslationStatus !== "pending-review"
+      || !result.generatedYuanquTranslationReview.includes("初步可用")
+    || result.generatedYuanquTranslationParagraphs < 10
+    || result.generatedYuanquTranslationAlignmentNotes < 1
+    || result.generatedYuanquLegacyTranslationPanels !== 0
+    || result.generatedYuanquTranslationOverflow !== 0
+    || result.guwenTranslationStatus !== "reviewed"
+    || !result.guwenTranslationReview.includes("人工已校")
+    || result.guwenTranslationUnits !== 3
     || result.guwenTranslationParagraphs !== 4
+    || result.guwenTranslationAlignmentNotes !== 3
     || !result.guwenTranslationText.includes("大軍逼近許都")
-    || !result.guwenTranslationSource.includes("Leafbound 今譯")
+    || result.guwenLegacyTranslationPanels !== 0
+    || result.guwenFocusedReadingUnits !== 1
+    || result.guwenMutedReadingUnits !== 2
+    || result.guwenClearedReadingFocus !== 0
+    || result.guwenTranslationModeParagraphs !== 4
+    || result.guwenTranslationModeSourceBodies !== 0
+    || result.guwenStoredReadingMode !== "translation"
+    || result.guwenReadingModePersisted !== "true"
+    || result.guwenOriginalModeSourceBodies < 1
+    || result.guwenOriginalModeTranslations !== 0
+    || result.guwenParallelModeSelected !== "true"
     || result.guwenTranslationOverflow !== 0
     || result.cantoneseLexiconNoticeCount !== 0
-    || result.cantoneseSources !== 3
+    || result.cantoneseSources !== 4
     || result.cantoneseLevels !== 4
     || result.cantoneseLevelLabels.join("|") !== "全部|起步|日常|進階"
     || result.cantoneseLevelRanges.join("|") !== "全部故事|路徑 01|路徑 02|路徑 03"
     || !result.cantoneseLevelNote.includes("詞頻與用法")
     || !result.cantoneseLevelNote.includes("不等同 CEFR")
+    || result.cantoneseInitialRows !== 24
+    || result.cantoneseLoadMoreControl !== 1
+    || result.cantoneseExpandedRows !== 48
+    || result.cantoneseSessionLimit !== 48
     || result.cantoneseLearningMarks.join("|") !== "起|常|進"
     || result.cantoneseSourceLevelRows !== 149
     || result.cantoneseStartEpisodes !== 44
     || result.cantoneseDailyEpisodes !== 48
     || result.cantoneseAdvanceEpisodes !== 57
     || !result.cantoneseShelfText.includes("208")
+    || !result.cantoneseShelfText.includes("口述訪談")
     || result.episodes < 150
+    || !result.cantoneseInterviewScope.includes("雙方文稿")
+    || !result.cantoneseInterviewRoles.includes("提問者")
+    || !result.cantoneseInterviewRoles.includes("受訪者")
+    || !result.cantoneseInterviewSpeakers.includes("H")
+    || !result.cantoneseInterviewSpeakers.includes("L")
+    || result.cantoneseInterviewQuestionMarks < 1
+    || result.cantoneseInterviewAnswerMarks < 1
     || result.dynamicTranscriptTerms < 1
     || result.dynamicTermSourceLink < 1
+    || !result.spiceInterviewScope.includes("單方對齊稿")
+    || result.spiceInterviewRoles.length < 1
+    || result.spiceInterviewRoles.some((role) => role !== "受訪者")
+    || !result.spiceInterviewSpeakers.every((speaker) => speaker === "VF19B")
+    || result.spiceSourceReferenceCount !== 1
+    || !result.spiceSourceReferenceText.includes("官方原聲保留在 SpiCE")
+    || result.spiceSourceReferenceLink !== "https://doi.org/10.5683/SP2/MJOXP3"
+    || result.spiceAudioKind !== "source-reference"
+    || result.spiceInterviewOverflow !== 0
     || result.hblJyutpingLines < 2
     || !/\d/.test(result.hblFirstJyutping)
     || result.hblRubyTokens < 20
@@ -1035,19 +1211,41 @@ async function auditReadingStatus(browser) {
     || result.mobileHblJyutpingLines < 2
     || result.mobileHblRubyTokens < 20
     || result.mobileHblJyutpingOverflow !== 0
+    || result.mobileCantoneseInterviewOverflow !== 0
+    || !result.mobileCantoneseInterviewRoles.includes("提問者")
+    || !result.mobileCantoneseInterviewRoles.includes("受訪者")
+    || !result.mobileCantoneseInterviewScope.includes("雙方文稿")
     || result.mobilePoemOverflow !== 0
     || result.mobilePoemRubyAudit.rubies !== result.mobilePoemRubyAudit.han
+    || !result.mobilePoemRubyAudit.allSingleHan
+    || !result.mobilePoemRubyAudit.allAnnotated
+    || !result.mobilePoemRubyAudit.allAnnotatedAbove
+    || result.mobilePoemRubyAudit.legacyTracks !== 0
     || result.mobileMoeDefinitionOverflow !== 0
     || result.mobileMoeDefinitionSheetOverflow !== 0
     || result.mobileMoeDefinitionEnglishRows !== 0
     || result.mobileYuanquRubyAudit.rubies !== result.mobileYuanquRubyAudit.han
+    || !result.mobileYuanquRubyAudit.allSingleHan
+    || !result.mobileYuanquRubyAudit.allAnnotated
+    || !result.mobileYuanquRubyAudit.allAnnotatedAbove
+    || result.mobileYuanquRubyAudit.legacyTracks !== 0
     || result.mobileYuanquOverflow !== 0
     || result.mobileRequestedYuanquTranslationParagraphs !== 1
+    || result.mobileRequestedYuanquTranslationStatus !== "reviewed"
+    || result.mobileRequestedYuanquLegacyTranslationPanels !== 0
     || result.mobileRequestedYuanquTranslationOverflow !== 0
     || result.mobileGuwenTranslationParagraphs !== 4
+    || result.mobileGuwenTranslationStatus !== "reviewed"
+    || result.mobileGuwenLegacyTranslationPanels !== 0
+    || result.mobileGuwenInlineReaderOverflow !== 0
     || result.mobileGuwenTranslationOverflow !== 0
     || result.mobileGuwenOverflow !== 0
     || result.mobileGuwenJyutpingTokens < 100
+    || result.mobileGuwenRubyAudit.rubies !== result.mobileGuwenRubyAudit.han
+    || !result.mobileGuwenRubyAudit.allSingleHan
+    || !result.mobileGuwenRubyAudit.allAnnotated
+    || !result.mobileGuwenRubyAudit.allAnnotatedAbove
+    || result.mobileGuwenRubyAudit.legacyTracks !== 0
     || !result.mobileGuwenTypographyVisible
     || result.mobileGuwenTypographyPanelOverflow !== 0
     || result.mobileGuwenTypographyOverflow !== 0
@@ -1063,6 +1261,15 @@ async function auditReadingStatus(browser) {
     || !result.mobileEnglishLookupVisible
     || result.englishSources !== 5
     || result.englishNewsDesks !== 7
+    || result.englishInitialRows !== 24
+    || result.englishLoadMoreControl !== 1
+    || result.englishExpandedRows !== 48
+    || result.englishRowsAfterReload !== 48
+    || result.englishScrollBeforeReload < 800
+    || result.englishScrollAfterReload < 800
+    || result.englishSessionView.limit !== 48
+    || result.englishSessionView.sourceFilter !== "全部"
+    || result.englishSessionView.category !== "全部"
     || !["AP", "Reuters", "Guardian", "CNN", "RFI", "Economist", "Open Newswire"].every((source) => result.englishNewsDeskNames.split("|").includes(source))
     || result.englishNewsDeskTargets !== 7
     || !result.englishNewsBoundary.includes("never copies unlicensed full text")
@@ -1137,12 +1344,14 @@ async function auditReadingStatus(browser) {
     || !result.aboutSourceText.includes("7 個官方訂閱源")
     || !result.aboutSourceText.includes("Standard Ebooks")
     || !result.aboutSourceText.includes("HKCanCor")
+    || !result.aboutSourceText.includes("SpiCE")
+    || !result.aboutSourceText.includes("AI 分片")
     || !/匯入 \d+ 篇有正文、署名與原聲入口的故事/.test(result.aboutSourceText)
     || !result.aboutSourceText.includes("208 篇")
     || !result.aboutSourceText.includes("Chinese Open Wordnet")
     || !result.aboutSourceText.includes("FreeDict")
     || !/\d{1,3}(?:,\d{3})* 個詞形/.test(result.aboutSourceText)
-    || result.aboutSourceLinks !== 22
+    || result.aboutSourceLinks !== 23
     || !result.settingsVisible
     || result.settingsGroups !== 5
     || !result.settingsLanguageGroup
