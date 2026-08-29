@@ -5526,7 +5526,7 @@ summary {
   line-height: 1.9;
 }
 
-.settings-cookie-note {
+.settings-local-note {
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr) auto;
   gap: 17px;
@@ -5537,11 +5537,11 @@ summary {
   background: rgb(251 252 250 / 68%);
 }
 
-.settings-cookie-note.is-local-only {
+.settings-local-note.is-session-only {
   border-left-color: var(--gold);
 }
 
-.settings-cookie-mark {
+.settings-local-mark {
   display: grid;
   width: 38px;
   height: 38px;
@@ -5552,26 +5552,26 @@ summary {
   font-size: 16px;
 }
 
-.settings-cookie-note > div {
+.settings-local-note > div {
   display: grid;
   gap: 4px;
 }
 
-.settings-cookie-note strong {
+.settings-local-note strong {
   color: var(--ink);
   font-family: var(--serif);
   font-size: 15px;
   font-weight: 600;
 }
 
-.settings-cookie-note p {
+.settings-local-note p {
   margin: 0;
   color: var(--muted);
   font-size: 10px;
   line-height: 1.7;
 }
 
-.settings-cookie-note > small {
+.settings-local-note > small {
   color: var(--jade);
   font-family: var(--mono);
   font-size: 8px;
@@ -8218,13 +8218,13 @@ body:has(.article-reader.is-dark) .nav-item.is-active {
     gap: 17px;
   }
 
-  .settings-cookie-note {
+  .settings-local-note {
     grid-template-columns: 38px minmax(0, 1fr);
     gap: 13px;
     padding: 18px 16px;
   }
 
-  .settings-cookie-note > small {
+  .settings-local-note > small {
     grid-column: 2;
   }
 

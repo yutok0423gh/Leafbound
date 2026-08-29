@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import {
   COMPLETE_PROGRESS_THRESHOLD,
   LEGACY_STORAGE_KEYS,
-  PREFERENCES_COOKIE_KEY,
+  LEGACY_PREFERENCES_COOKIE_KEY,
   SEEN_PROGRESS_THRESHOLD,
   STORAGE_KEY,
   contentProgressStatus,
@@ -14,8 +14,7 @@ import {
   getContentProgress,
   loadState,
   progressPercent,
-  readPreferencesCookie,
-  serializePreferencesCookie,
+  readLegacyPreferencesCookie,
   setContentProgressInState,
   setContentSeenInState,
   setProgressInState,
@@ -147,35 +146,35 @@ test("legacy Shiyip storage migrates to Leafbound without losing data", () => {
   assert.ok(storage.getItem(legacyKey));
 });
 
-test("reading preferences round-trip through the dedicated cookie", () => {
-  const cookie = serializePreferencesCookie({
+test("legacy cookie preferences remain readable for one-time local migration", () => {
+  const cookie = `${LEGACY_PREFERENCES_COOKIE_KEY}=${encodeURIComponent(JSON.stringify({
     englishDark: true,
     classicalFont: "kai",
     playbackSpeed: 1.2
-  }, { path: "/Leafbound/", secure: true });
+  }))}`;
 
-  assert.match(cookie, new RegExp(`^${PREFERENCES_COOKIE_KEY}=`));
-  assert.match(cookie, /Path=\/Leafbound\//);
-  assert.match(cookie, /SameSite=Lax/);
-  assert.match(cookie, /Secure/);
-  const restored = readPreferencesCookie(cookie);
+  assert.match(cookie, new RegExp(`^${LEGACY_PREFERENCES_COOKIE_KEY}=`));
+  const restored = readLegacyPreferencesCookie(cookie);
   assert.equal(restored.englishDark, true);
   assert.equal(restored.classicalFont, "kai");
   assert.equal(restored.playbackSpeed, 1.2);
   assert.equal(restored.showJyutping, true);
 });
 
-test("the store restores and updates cookie-backed preferences only", () => {
+test("the store migrates legacy cookie preferences once, clears them, and stays local", () => {
   let remembered = { englishDark: true, showJyutping: false };
-  const writes = [];
-  const preferencesCookie = {
+  let clears = 0;
+  const legacyPreferencesCookie = {
     read() {
       return remembered;
     },
-    write(preferences) {
-      remembered = { ...preferences };
-      writes.push(remembered);
+    clear() {
+      remembered = null;
+      clears += 1;
       return true;
+    },
+    write() {
+      throw new Error("the current store must never write a cookie");
     }
   };
   const storage = memoryStorage({
@@ -184,17 +183,56 @@ test("the store restores and updates cookie-backed preferences only", () => {
       preferences: { englishDark: false, showJyutping: true }
     })
   });
-  const store = createStore(storage, preferencesCookie);
+  const store = createStore(storage, legacyPreferencesCookie);
 
   assert.equal(store.getState().preferences.englishDark, true);
   assert.equal(store.getState().preferences.showJyutping, false);
   assert.deepEqual(store.getState().favorites, ["poem:mountain-autumn"]);
+  assert.equal(clears, 1);
+  assert.equal(remembered, null);
+  assert.equal(JSON.parse(storage.getItem(STORAGE_KEY)).preferences.englishDark, true);
   store.update((state) => {
     state.preferences.playbackSpeed = 1.5;
     return state;
   });
-  assert.equal(writes.at(-1).playbackSpeed, 1.5);
-  assert.equal(Object.hasOwn(writes.at(-1), "favorites"), false);
+  assert.equal(JSON.parse(storage.getItem(STORAGE_KEY)).preferences.playbackSpeed, 1.5);
+});
+
+test("all personal fields persist together under the local browser storage key", () => {
+  const writes = [];
+  const storage = memoryStorage();
+  const originalSetItem = storage.setItem.bind(storage);
+  storage.setItem = (key, value) => {
+    writes.push(key);
+    originalSetItem(key, value);
+  };
+  const store = createStore(storage, { read: () => null, clear: () => true });
+  store.update((state) => {
+    state.favorites = ["poem:mountain-autumn"];
+    state.savedItems = [{ id: "english:example", text: "example" }];
+    state.notes = { "poem:mountain-autumn": "本機筆記" };
+    state.readingProgress = { "quiet-noticing": 72 };
+    state.playbackProgress = { "city-rain": 38 };
+    state.contentActivity = { "article:quiet-noticing": { maxProgress: 72, status: "seen" } };
+    state.dailySelections = { "2026-08-29": { poem: "mountain-autumn" } };
+    state.history = { poems: ["mountain-autumn"], articles: [], episodes: [] };
+    state.preferences.englishDark = true;
+    return state;
+  });
+
+  assert.deepEqual([...new Set(writes)], [STORAGE_KEY]);
+  const persisted = JSON.parse(storage.getItem(STORAGE_KEY));
+  for (const field of [
+    "favorites",
+    "savedItems",
+    "notes",
+    "readingProgress",
+    "playbackProgress",
+    "contentActivity",
+    "dailySelections",
+    "history",
+    "preferences"
+  ]) assert.ok(Object.hasOwn(persisted, field), `${field} should remain in localStorage`);
 });
 
 test("classical typography preferences migrate and persist", () => {

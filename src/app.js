@@ -57,8 +57,8 @@ import {
 } from "./poetry-taxonomy.js";
 import {
   COMPLETE_PROGRESS_THRESHOLD,
-  PREFERENCES_COOKIE_KEY,
   SEEN_PROGRESS_THRESHOLD,
+  STORAGE_KEY,
   appStore,
   contentActivityKey,
   contentProgressStatus,
@@ -2604,7 +2604,7 @@ function renderAboutPanel() {
 
       <section class="about-data-note">
         <span aria-hidden="true">本</span>
-        <div><h3>內容與設定分開保存</h3><p>收藏、筆記、閱讀與播放進度保存在本機儲存空間；只有非敏感閱讀偏好寫入本站 Cookie。清除瀏覽器資料前，建議先使用上方的「匯出備份」。</p></div>
+        <div><h3>所有個人資料只留在本機</h3><p>收藏、筆記、詞庫、最近閱讀／收聽記錄、閱讀與播放進度、每日選擇和設定只寫入目前瀏覽器的 localStorage；Leafbound 不設帳戶同步、分析 SDK 或遠端資料庫，也不以 Cookie 保存狀態。SoundCloud 與線上語音只在你明確操作後讀取，可能按各自政策處理網路請求，但不會收到上述個人狀態。清除瀏覽器資料前，建議先使用上方的「匯出備份」。</p></div>
       </section>
 
       <footer class="about-footer">
@@ -2643,9 +2643,13 @@ function renderLanguageSettingsGroup() {
 function renderSettingsPanel() {
   const preferences = appStore.getState().preferences;
   const typography = getClassicalTypography(preferences);
-  const cookieRemembered = document.cookie
-    .split(";")
-    .some((entry) => entry.trim().startsWith(`${PREFERENCES_COOKIE_KEY}=`));
+  const storageRemembered = (() => {
+    try {
+      return localStorage.getItem(STORAGE_KEY) !== null;
+    } catch {
+      return false;
+    }
+  })();
 
   return `
     <section class="settings-panel" id="library-settings-panel" tabindex="-1" aria-labelledby="settings-title">
@@ -2657,13 +2661,13 @@ function renderSettingsPanel() {
         <p>改動會立即套用到每一篇正文。這裡只記錄閱讀方式，不記錄你讀過甚麼。</p>
       </header>
 
-      <div class="settings-cookie-note ${cookieRemembered ? "is-remembered" : "is-local-only"}" data-cookie-status="${cookieRemembered ? "remembered" : "blocked"}">
-        <span class="settings-cookie-mark" aria-hidden="true">記</span>
+      <div class="settings-local-note ${storageRemembered ? "is-remembered" : "is-session-only"}" data-storage-status="${storageRemembered ? "remembered" : "session-only"}">
+        <span class="settings-local-mark" aria-hidden="true">本</span>
         <div>
-          <strong>${cookieRemembered ? "這部瀏覽器會記得你的設定" : "Cookie 未能寫入，設定仍保存在本機"}</strong>
-          <p>非敏感閱讀偏好會寫入本站專用 Cookie，最長保留一年；收藏、筆記、進度與正文不會寫入 Cookie。</p>
+          <strong>${storageRemembered ? "所有設定只由這部瀏覽器記住" : "瀏覽器封鎖了持久儲存"}</strong>
+          <p>設定與收藏、筆記、詞庫、歷史和進度一樣，只寫入本機 localStorage；Leafbound 本身不使用 Cookie，也不會上傳到 Leafbound 或第三方資料庫。</p>
         </div>
-        <small>${cookieRemembered ? "COOKIE · ON" : "LOCAL · ONLY"}</small>
+        <small>${storageRemembered ? "LOCAL · ONLY" : "SESSION · ONLY"}</small>
       </div>
 
       <div class="settings-ledger">
@@ -2844,7 +2848,7 @@ function renderLibrary() {
           ${renderLibraryUtilityMenu(activePanel)}
           <div class="privacy-note">
             <span>${icon("bookmark")}</span>
-            <p><strong>內容只屬於這部裝置。</strong> 收藏、筆記和進度保存在瀏覽器本地；只有非敏感閱讀偏好會寫入本站 Cookie。</p>
+            <p><strong>內容只屬於這部裝置。</strong> 收藏、筆記、詞庫、歷史、進度與設定全部保存在瀏覽器本機，不使用 Cookie、帳戶同步或遠端資料庫。</p>
             <button class="quiet-button" type="button" data-export-data>匯出備份</button>
           </div>
         </section>`}

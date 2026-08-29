@@ -722,26 +722,17 @@ async function auditReadingStatus(browser) {
   result.settingsVisible = await page.locator(".settings-panel").isVisible();
   result.settingsGroups = await page.locator(".settings-group").count();
   result.settingsLanguageGroup = await page.locator(".settings-language-group").isVisible();
-  result.settingsCookieStatus = await page.locator(".settings-cookie-note").getAttribute("data-cookie-status");
+  result.settingsStorageStatus = await page.locator(".settings-local-note").getAttribute("data-storage-status");
   await page.locator('[data-setting-toggle="englishDark"]').click();
   await page.locator('[data-english-leading="2"]').click();
   await page.locator('[data-speed="1.5"]').click();
   result.preferenceCookie = await page.evaluate(() => document.cookie.includes("leafbound_preferences_v1="));
-  result.cookieContainsPrivateContent = await page.evaluate(() => {
-    const entry = document.cookie.split(";").map((part) => part.trim()).find((part) => part.startsWith("leafbound_preferences_v1="));
-    if (!entry) return true;
-    const value = JSON.parse(decodeURIComponent(entry.slice(entry.indexOf("=") + 1)));
-    return ["favorites", "savedItems", "notes", "readingProgress", "playbackProgress", "contentActivity", "history"].some((key) => key in value);
+  result.personalStateFields = await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem("leafbound.personal-library.v1"));
+    return ["favorites", "savedItems", "notes", "readingProgress", "playbackProgress", "contentActivity", "dailySelections", "history", "preferences"]
+      .filter((key) => Object.hasOwn(state, key));
   });
   await page.screenshot({ path: path.join(artifactDir, "library-settings-desktop.png"), fullPage: true });
-  await page.evaluate(() => {
-    const key = "leafbound.personal-library.v1";
-    const state = JSON.parse(localStorage.getItem(key));
-    state.preferences.englishDark = false;
-    state.preferences.englishLineHeight = 1.58;
-    state.preferences.playbackSpeed = 1;
-    localStorage.setItem(key, JSON.stringify(state));
-  });
   await page.reload({ waitUntil: "networkidle" });
   await page.locator('[data-library-panel="settings"]').click();
   result.settingsPersisted = {
@@ -1155,9 +1146,9 @@ async function auditReadingStatus(browser) {
     || !result.settingsVisible
     || result.settingsGroups !== 5
     || !result.settingsLanguageGroup
-    || result.settingsCookieStatus !== "remembered"
-    || !result.preferenceCookie
-    || result.cookieContainsPrivateContent
+    || result.settingsStorageStatus !== "remembered"
+    || result.preferenceCookie
+    || result.personalStateFields.length !== 9
     || result.settingsPersisted.englishDark !== "true"
     || result.settingsPersisted.englishLeading !== "true"
     || result.settingsPersisted.playbackSpeed !== "true"

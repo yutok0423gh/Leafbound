@@ -1,7 +1,6 @@
 export const STORAGE_KEY = "leafbound.personal-library.v1";
 export const LEGACY_STORAGE_KEYS = ["shiyip.personal-library.v1"];
-export const PREFERENCES_COOKIE_KEY = "leafbound_preferences_v1";
-export const PREFERENCES_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+export const LEGACY_PREFERENCES_COOKIE_KEY = "leafbound_preferences_v1";
 export const SEEN_PROGRESS_THRESHOLD = 50;
 export const COMPLETE_PROGRESS_THRESHOLD = 90;
 
@@ -84,8 +83,8 @@ export function normalizePreferences(candidate) {
   };
 }
 
-export function readPreferencesCookie(cookieHeader = "") {
-  const prefix = `${PREFERENCES_COOKIE_KEY}=`;
+export function readLegacyPreferencesCookie(cookieHeader = "") {
+  const prefix = `${LEGACY_PREFERENCES_COOKIE_KEY}=`;
   const entry = String(cookieHeader)
     .split(";")
     .map((part) => part.trim())
@@ -106,35 +105,26 @@ function normalizeCookiePath(pathname = "/") {
   return lastSlash >= 0 ? safePath.slice(0, lastSlash + 1) : "/";
 }
 
-export function serializePreferencesCookie(preferences, options = {}) {
-  const path = normalizeCookiePath(options.path || "/");
-  const maxAge = Math.max(0, Math.floor(Number(options.maxAge) || PREFERENCES_COOKIE_MAX_AGE));
-  const value = encodeURIComponent(JSON.stringify(normalizePreferences(preferences)));
-  return [
-    `${PREFERENCES_COOKIE_KEY}=${value}`,
-    `Max-Age=${maxAge}`,
-    `Path=${path}`,
-    "SameSite=Lax",
-    options.secure ? "Secure" : ""
-  ].filter(Boolean).join("; ");
-}
-
-export function createBrowserPreferencesCookie(
+export function createLegacyPreferencesCookieMigration(
   documentRef = globalThis.document,
   locationRef = globalThis.location
 ) {
   if (!documentRef) return null;
   return {
     read() {
-      return readPreferencesCookie(documentRef.cookie);
+      return readLegacyPreferencesCookie(documentRef.cookie);
     },
-    write(preferences) {
+    clear() {
       try {
-        documentRef.cookie = serializePreferencesCookie(preferences, {
-          path: locationRef?.pathname || "/",
-          secure: locationRef?.protocol === "https:"
-        });
-        return readPreferencesCookie(documentRef.cookie) !== null;
+        documentRef.cookie = [
+          `${LEGACY_PREFERENCES_COOKIE_KEY}=`,
+          "Max-Age=0",
+          "Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+          `Path=${normalizeCookiePath(locationRef?.pathname || "/")}`,
+          "SameSite=Lax",
+          locationRef?.protocol === "https:" ? "Secure" : ""
+        ].filter(Boolean).join("; ");
+        return readLegacyPreferencesCookie(documentRef.cookie) === null;
       } catch {
         return false;
       }
@@ -214,7 +204,7 @@ export function loadState(storage) {
   return createDefaultState();
 }
 
-export function persistState(storage, state, preferencesCookie = null) {
+export function persistState(storage, state) {
   if (storage) {
     try {
       storage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -222,7 +212,6 @@ export function persistState(storage, state, preferencesCookie = null) {
       // The app remains usable when storage is unavailable (for example, strict privacy mode).
     }
   }
-  preferencesCookie?.write?.(state.preferences);
 }
 
 export function toggleFavoriteInState(state, key) {
@@ -329,17 +318,20 @@ export function progressPercent(current, total) {
 
 export function createStore(
   storage = globalThis.localStorage,
-  preferencesCookie = createBrowserPreferencesCookie()
+  legacyPreferencesCookie = createLegacyPreferencesCookieMigration()
 ) {
   let state = loadState(storage);
-  const rememberedPreferences = preferencesCookie?.read?.();
+  const rememberedPreferences = legacyPreferencesCookie?.read?.();
   if (rememberedPreferences) {
     state = normalizeState({
       ...state,
       preferences: { ...state.preferences, ...rememberedPreferences }
     });
   }
-  persistState(storage, state, preferencesCookie);
+  persistState(storage, state);
+  // Preferences used to be duplicated into a first-party cookie. Migrate that
+  // value once, then remove the cookie so no Leafbound state is sent in HTTP requests.
+  legacyPreferencesCookie?.clear?.();
   const subscribers = new Set();
 
   return {
@@ -348,7 +340,7 @@ export function createStore(
     },
     replace(nextState, notify = true) {
       state = normalizeState(nextState);
-      persistState(storage, state, preferencesCookie);
+      persistState(storage, state);
       if (notify) subscribers.forEach((subscriber) => subscriber(state));
       return state;
     },
