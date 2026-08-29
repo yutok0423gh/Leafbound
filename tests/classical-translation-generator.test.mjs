@@ -237,6 +237,23 @@ test("draft-only generation checkpoints one-pass machine drafts without claiming
   assert.equal(resumed.generatedCount, 0);
   assert.equal(resumed.skippedCount, 1);
   assert.equal(requestCount, 1, "an exact draft-only checkpoint must resume without another model call");
+
+  const fastConfig = loadGeneratorConfig(fixtureEnvironment({
+    LEAFBOUND_OPENAI_MODEL: "leafbound-fast-model",
+    LEAFBOUND_OPENAI_MODEL_REVISION: "fixture-fast-revision"
+  }));
+  const preserved = await generateTranslationDrafts({
+    plan: fixturePlan(),
+    config: fastConfig,
+    outputPath,
+    resume: true,
+    preserveExisting: true,
+    reviewMode: GENERATION_REVIEW_MODES.DRAFT_ONLY,
+    glossaryCatalog: fixtureGlossaryCatalog(),
+    fetchImpl: async () => assert.fail("cross-model continuation must preserve a matching source checkpoint")
+  });
+  assert.equal(preserved.generatedCount, 0);
+  assert.equal(preserved.skippedCount, 1);
 });
 
 test("429 and 5xx responses retry with backoff while other 4xx responses fail immediately", async () => {

@@ -181,6 +181,7 @@ export function parseGeneratorOptions(argv = []) {
     limit: Number.POSITIVE_INFINITY,
     dryRun: false,
     resume: false,
+    preserveExisting: false,
     reviewMode: GENERATION_REVIEW_MODES.FULL,
     outputPath: DEFAULT_DRAFT_OUTPUT_PATH
   };
@@ -188,6 +189,7 @@ export function parseGeneratorOptions(argv = []) {
     const argument = argv[index];
     if (argument === "--dry-run") options.dryRun = true;
     else if (argument === "--resume") options.resume = true;
+    else if (argument === "--preserve-existing") options.preserveExisting = true;
     else if (argument.startsWith("--kinds=")) options.kinds = argument.slice(8).split(",");
     else if (argument === "--kinds") {
       options.kinds = optionValue(argv, index, argument).split(",");
@@ -610,6 +612,10 @@ function resumeKey(record) {
   ].join("\u0000");
 }
 
+function sourceCheckpointKey(record) {
+  return [record.id, record.sourceHash].join("\u0000");
+}
+
 async function readCheckpointRecords(outputPath) {
   if (!existsSync(outputPath)) return [];
   const records = [];
@@ -748,6 +754,7 @@ export async function generateTranslationDrafts({
   outputPath = DEFAULT_DRAFT_OUTPUT_PATH,
   limit = Number.POSITIVE_INFINITY,
   resume = false,
+  preserveExisting = false,
   reviewMode = GENERATION_REVIEW_MODES.FULL,
   dryRun = false,
   fetchImpl = globalThis.fetch,
@@ -759,6 +766,9 @@ export async function generateTranslationDrafts({
   if (!config) throw new Error("Generator configuration is required.");
   if (!Object.values(GENERATION_REVIEW_MODES).includes(reviewMode)) {
     throw new Error("reviewMode must be full or draft-only.");
+  }
+  if (preserveExisting && !resume) {
+    throw new Error("preserveExisting requires resume so existing checkpoints are not overwritten.");
   }
   const resolvedOutputPath = resolve(outputPath);
   const catalog = glossaryCatalog || await glossaryLoader(config.glossaryPath);
@@ -772,7 +782,9 @@ export async function generateTranslationDrafts({
     })];
   }));
   const previous = resume ? await readCheckpointRecords(resolvedOutputPath) : [];
-  const completedKeys = new Set(previous.filter(isUsableCheckpoint).map(resumeKey));
+  const usablePrevious = previous.filter(isUsableCheckpoint);
+  const completedKeys = new Set(usablePrevious.map(resumeKey));
+  const completedSources = new Set(usablePrevious.map(sourceCheckpointKey));
   const matchingRecord = (job) => {
     const context = contexts.get(job.id);
     return resumeKey({
@@ -789,7 +801,10 @@ export async function generateTranslationDrafts({
     glossary: { selectionSha256: context.glossary.selectionSha256 }
     });
   };
-  const pending = plan.jobs.filter((job) => !completedKeys.has(matchingRecord(job)));
+  const pending = plan.jobs.filter((job) => (
+    !(preserveExisting && completedSources.has(sourceCheckpointKey(job)))
+    && !completedKeys.has(matchingRecord(job))
+  ));
   const requested = pending.slice(0, limit);
   const skippedCount = plan.jobs.length - pending.length;
 
@@ -800,6 +815,7 @@ export async function generateTranslationDrafts({
       outputPath: resolvedOutputPath,
       planMissingCount: plan.missingCount,
       reviewMode,
+      preserveExisting,
       selectedCount: requested.length,
       generatedCount: 0,
       skippedCount,
@@ -873,6 +889,7 @@ export async function generateTranslationDrafts({
     outputPath: resolvedOutputPath,
     planMissingCount: plan.missingCount,
     reviewMode,
+    preserveExisting,
     selectedCount: requested.length,
     generatedCount: generated.length,
     skippedCount,
@@ -894,6 +911,7 @@ function publicReport(result, config) {
     outputPath: result.outputPath,
     planMissingCount: result.planMissingCount,
     reviewMode: result.reviewMode,
+    preserveExisting: result.preserveExisting,
     selectedCount: result.selectedCount,
     generatedCount: result.generatedCount,
     skippedCount: result.skippedCount,
@@ -925,6 +943,7 @@ export async function runGeneratorCli({
     outputPath: options.outputPath,
     limit: options.limit,
     resume: options.resume,
+    preserveExisting: options.preserveExisting,
     reviewMode: options.reviewMode,
     dryRun: options.dryRun,
     fetchImpl,
