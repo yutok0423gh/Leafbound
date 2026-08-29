@@ -13,7 +13,8 @@ import {
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const toHongKongTraditional = OpenCC.Converter({ from: "cn", to: "hk" });
 const defaultGlossaryPath = resolve(projectRoot, "data", "moe-revised-definitions.json");
-const generationPipelineVersion = 2;
+const fullGenerationPipelineVersion = 2;
+const draftOnlyGenerationPipelineVersion = 3;
 const maximumGlossaryEntries = 12;
 const maximumGlossaryCharacters = 6_000;
 const explicitlyAmbiguousSingleCharacters = new Set(["錢", "鎛", "羆"]);
@@ -38,6 +39,11 @@ export const GENERATOR_ENVIRONMENT_KEYS = Object.freeze({
   maxTokens: "LEAFBOUND_OPENAI_MAX_TOKENS",
   disableThinking: "LEAFBOUND_OPENAI_DISABLE_THINKING",
   glossaryPath: "LEAFBOUND_CLASSICAL_GLOSSARY_PATH"
+});
+
+export const GENERATION_REVIEW_MODES = Object.freeze({
+  FULL: "full",
+  DRAFT_ONLY: "draft-only"
 });
 
 const defaultConfig = Object.freeze({
@@ -161,12 +167,21 @@ function parseLimit(value) {
   return limit;
 }
 
+function parseReviewMode(value) {
+  const mode = String(value || "").trim();
+  if (!Object.values(GENERATION_REVIEW_MODES).includes(mode)) {
+    throw new Error("--review-mode must be full or draft-only.");
+  }
+  return mode;
+}
+
 export function parseGeneratorOptions(argv = []) {
   const options = {
     kinds: CLASSICAL_KINDS,
     limit: Number.POSITIVE_INFINITY,
     dryRun: false,
     resume: false,
+    reviewMode: GENERATION_REVIEW_MODES.FULL,
     outputPath: DEFAULT_DRAFT_OUTPUT_PATH
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -180,6 +195,10 @@ export function parseGeneratorOptions(argv = []) {
     } else if (argument.startsWith("--limit=")) options.limit = parseLimit(argument.slice(8));
     else if (argument === "--limit") {
       options.limit = parseLimit(optionValue(argv, index, argument));
+      index += 1;
+    } else if (argument.startsWith("--review-mode=")) options.reviewMode = parseReviewMode(argument.slice(14));
+    else if (argument === "--review-mode") {
+      options.reviewMode = parseReviewMode(optionValue(argv, index, argument));
       index += 1;
     } else if (argument.startsWith("--output=")) options.outputPath = resolve(argument.slice(9));
     else if (argument === "--output") {
@@ -583,6 +602,9 @@ function resumeKey(record) {
     record.modelRevision,
     record.promptVersion,
     record.pipelineVersion,
+    record.generationMode || (record.pipelineVersion === fullGenerationPipelineVersion
+      ? GENERATION_REVIEW_MODES.FULL
+      : ""),
     record.promptSha256,
     record.glossary?.selectionSha256
   ].join("\u0000");
@@ -605,17 +627,25 @@ async function readCheckpointRecords(outputPath) {
 }
 
 function isUsableCheckpoint(record) {
+  const hasUsableParagraphs = Array.isArray(record?.paragraphs)
+    && record.paragraphs.length > 0
+    && record.paragraphs.every((paragraph) => typeof paragraph === "string" && paragraph.trim());
+  if (!hasUsableParagraphs) return false;
+  if (record.generationMode === GENERATION_REVIEW_MODES.DRAFT_ONLY) {
+    return record.status === TRANSLATION_REVIEW_STATUSES.MACHINE_DRAFT
+      && record.pipelineVersion === draftOnlyGenerationPipelineVersion
+      && Array.isArray(record.warnings)
+      && record.warnings.includes("critique-pending")
+      && !record.critique;
+  }
   return [
     TRANSLATION_REVIEW_STATUSES.MACHINE_DRAFT,
     TRANSLATION_REVIEW_STATUSES.PENDING_REVIEW,
     TRANSLATION_REVIEW_STATUSES.REVIEWED
   ].includes(record?.status)
-    && record.pipelineVersion === generationPipelineVersion
+    && record.pipelineVersion === fullGenerationPipelineVersion
     && record.critique
-    && ["pass", "revised"].includes(record.critique.verdict)
-    && Array.isArray(record.paragraphs)
-    && record.paragraphs.length > 0
-    && record.paragraphs.every((paragraph) => typeof paragraph === "string" && paragraph.trim());
+    && ["pass", "revised"].includes(record.critique.verdict);
 }
 
 function draftRecord(job, critique, config, context, now) {
@@ -643,7 +673,7 @@ function draftRecord(job, critique, config, context, now) {
     sourceHash: job.sourceHash,
     warnings,
     generatedAt: completedAt,
-    pipelineVersion: generationPipelineVersion,
+    pipelineVersion: fullGenerationPipelineVersion,
     promptSha256: context.promptSha256,
     critiquePromptSha256: context.critiquePromptSha256,
     generationParameters: {
@@ -670,6 +700,43 @@ function draftRecord(job, critique, config, context, now) {
   };
 }
 
+function draftOnlyRecord(job, paragraphs, config, context, now) {
+  const normalizedParagraphs = paragraphs.map((paragraph) => (
+    toHongKongTraditional(String(paragraph).normalize("NFC")).trim()
+  ));
+  const warnings = ["critique-pending"];
+  if (normalizedParagraphs.length !== job.lines.length) warnings.unshift("paragraph-count-mismatch");
+  return {
+    id: job.id,
+    kind: job.kind,
+    paragraphs: normalizedParagraphs,
+    status: TRANSLATION_REVIEW_STATUSES.MACHINE_DRAFT,
+    sourceLabel: "Leafbound AI 今譯草稿（待二審）",
+    model: config.model,
+    modelRevision: config.modelRevision,
+    promptVersion: config.promptVersion,
+    sourceHash: job.sourceHash,
+    warnings,
+    generatedAt: now().toISOString(),
+    pipelineVersion: draftOnlyGenerationPipelineVersion,
+    generationMode: GENERATION_REVIEW_MODES.DRAFT_ONLY,
+    promptSha256: context.promptSha256,
+    generationParameters: {
+      temperature: config.temperature,
+      maxTokens: config.maxTokens,
+      disableThinking: config.disableThinking
+    },
+    glossary: {
+      source: context.glossary.source,
+      version: context.glossary.version,
+      sourceSha256: context.glossary.sourceSha256,
+      upstreamSourceSha256: context.glossary.upstreamSourceSha256,
+      selectionSha256: context.glossary.selectionSha256,
+      terms: context.glossary.terms
+    }
+  };
+}
+
 function safeFailure(job, error) {
   const message = error instanceof Error ? error.message : "Translation generation failed.";
   return Object.freeze({ id: job.id, message });
@@ -681,6 +748,7 @@ export async function generateTranslationDrafts({
   outputPath = DEFAULT_DRAFT_OUTPUT_PATH,
   limit = Number.POSITIVE_INFINITY,
   resume = false,
+  reviewMode = GENERATION_REVIEW_MODES.FULL,
   dryRun = false,
   fetchImpl = globalThis.fetch,
   sleepImpl = sleep,
@@ -689,6 +757,9 @@ export async function generateTranslationDrafts({
   glossaryLoader = loadClassicalGlossary
 } = {}) {
   if (!config) throw new Error("Generator configuration is required.");
+  if (!Object.values(GENERATION_REVIEW_MODES).includes(reviewMode)) {
+    throw new Error("reviewMode must be full or draft-only.");
+  }
   const resolvedOutputPath = resolve(outputPath);
   const catalog = glossaryCatalog || await glossaryLoader(config.glossaryPath);
   const characterFrequency = characterFrequencyForJobs(plan.jobs);
@@ -710,7 +781,10 @@ export async function generateTranslationDrafts({
     model: config.model,
     modelRevision: config.modelRevision,
     promptVersion: config.promptVersion,
-    pipelineVersion: generationPipelineVersion,
+    pipelineVersion: reviewMode === GENERATION_REVIEW_MODES.DRAFT_ONLY
+      ? draftOnlyGenerationPipelineVersion
+      : fullGenerationPipelineVersion,
+    generationMode: reviewMode,
     promptSha256: context.promptSha256,
     glossary: { selectionSha256: context.glossary.selectionSha256 }
     });
@@ -725,6 +799,7 @@ export async function generateTranslationDrafts({
       dryRun: true,
       outputPath: resolvedOutputPath,
       planMissingCount: plan.missingCount,
+      reviewMode,
       selectedCount: requested.length,
       generatedCount: 0,
       skippedCount,
@@ -759,6 +834,12 @@ export async function generateTranslationDrafts({
           sleepImpl,
           glossary: context.glossary
         });
+        if (reviewMode === GENERATION_REVIEW_MODES.DRAFT_ONLY) {
+          const record = draftOnlyRecord(job, paragraphs, config, context, now);
+          await checkpoint(record);
+          generated.push(record);
+          continue;
+        }
         const critiqueRequest = createCritiqueChatCompletionRequest(job, paragraphs, config, context.glossary);
         const critique = await requestCompletion(
           critiqueRequest,
@@ -791,6 +872,7 @@ export async function generateTranslationDrafts({
     dryRun: false,
     outputPath: resolvedOutputPath,
     planMissingCount: plan.missingCount,
+    reviewMode,
     selectedCount: requested.length,
     generatedCount: generated.length,
     skippedCount,
@@ -811,6 +893,7 @@ function publicReport(result, config) {
     promptVersion: config.promptVersion,
     outputPath: result.outputPath,
     planMissingCount: result.planMissingCount,
+    reviewMode: result.reviewMode,
     selectedCount: result.selectedCount,
     generatedCount: result.generatedCount,
     skippedCount: result.skippedCount,
@@ -842,6 +925,7 @@ export async function runGeneratorCli({
     outputPath: options.outputPath,
     limit: options.limit,
     resume: options.resume,
+    reviewMode: options.reviewMode,
     dryRun: options.dryRun,
     fetchImpl,
     sleepImpl,

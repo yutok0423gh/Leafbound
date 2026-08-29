@@ -5,6 +5,7 @@ import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  GENERATION_REVIEW_MODES,
   generateTranslationDrafts,
   glossaryForJob,
   loadClassicalGlossary,
@@ -196,6 +197,46 @@ test("successful generation posts chat completions and checkpoints pipeline-comp
   assert.deepEqual(record.paragraphs, ["青山仍舊存在。", "流水朝東流去。"]);
   const validation = validateDraftRecords([record], fixturePlan());
   assert.equal(validation.valid, true, JSON.stringify(validation.errors));
+});
+
+test("draft-only generation checkpoints one-pass machine drafts without claiming critique", async () => {
+  const root = await mkdtemp(join(tmpdir(), "leafbound-generator-draft-only-"));
+  const outputPath = join(root, "drafts.jsonl");
+  const config = loadGeneratorConfig(fixtureEnvironment({ LEAFBOUND_OPENAI_DISABLE_THINKING: "true" }));
+  let requestCount = 0;
+  const generate = (resume = false) => generateTranslationDrafts({
+    plan: fixturePlan(),
+    config,
+    outputPath,
+    resume,
+    reviewMode: GENERATION_REVIEW_MODES.DRAFT_ONLY,
+    glossaryCatalog: fixtureGlossaryCatalog(),
+    fetchImpl: async () => {
+      requestCount += 1;
+      return successfulResponse();
+    },
+    now: () => new Date("2026-08-29T01:00:00.000Z")
+  });
+
+  const result = await generate();
+  assert.equal(result.ok, true);
+  assert.equal(result.reviewMode, "draft-only");
+  assert.equal(requestCount, 1);
+  const record = JSON.parse((await readFile(outputPath, "utf8")).trim());
+  assert.equal(record.status, "machine-draft");
+  assert.equal(record.pipelineVersion, 3);
+  assert.equal(record.generationMode, "draft-only");
+  assert.equal(record.critique, undefined);
+  assert.equal(record.critiquePromptSha256, undefined);
+  assert.deepEqual(record.warnings, ["critique-pending"]);
+  const validation = validateDraftRecords([record], fixturePlan());
+  assert.equal(validation.valid, true, JSON.stringify(validation.errors));
+  assert.equal(validation.productionReadyCount, 0);
+
+  const resumed = await generate(true);
+  assert.equal(resumed.generatedCount, 0);
+  assert.equal(resumed.skippedCount, 1);
+  assert.equal(requestCount, 1, "an exact draft-only checkpoint must resume without another model call");
 });
 
 test("429 and 5xx responses retry with backoff while other 4xx responses fail immediately", async () => {

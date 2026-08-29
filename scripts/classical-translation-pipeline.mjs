@@ -56,6 +56,7 @@ const reviewStatusLabels = Object.freeze({
 const productionBlockingWarnings = new Set([
   "paragraph-count-mismatch",
   "critique-rejected",
+  "critique-pending",
   "critique-unavailable",
   "dictionary-unavailable"
 ]);
@@ -380,6 +381,8 @@ function draftMetadata(record) {
     if (value) metadata[field] = value;
   }
   if (Number.isSafeInteger(record.pipelineVersion)) metadata.pipelineVersion = record.pipelineVersion;
+  const generationMode = normalizedField(record.generationMode);
+  if (generationMode) metadata.generationMode = generationMode;
   if (editorialTriage) metadata.editorialTriage = editorialTriage;
   const generationParameters = normalizedGenerationParameters(record.generationParameters);
   const glossary = normalizedGlossaryMetadata(record.glossary);
@@ -408,8 +411,12 @@ function validStringArray(value) {
 
 function validateOptionalProvenance(record) {
   if (record.pipelineVersion !== undefined
-    && (!Number.isSafeInteger(record.pipelineVersion) || record.pipelineVersion < 2)) {
-    return "pipelineVersion must be an integer of 2 or greater when provided.";
+    && (!Number.isSafeInteger(record.pipelineVersion) || ![2, 3].includes(record.pipelineVersion))) {
+    return "pipelineVersion must be 2 or 3 when provided.";
+  }
+  if (record.generationMode !== undefined
+    && !["full", "draft-only"].includes(normalizedField(record.generationMode))) {
+    return "generationMode must be full or draft-only when provided.";
   }
   for (const field of ["promptSha256", "critiquePromptSha256"]) {
     if (record[field] !== undefined && !validSha256(record[field])) {
@@ -458,7 +465,10 @@ function validateOptionalProvenance(record) {
       return "review must contain reviewer and reviewedAt; note is optional.";
     }
   }
-  if (record.pipelineVersion >= 2) {
+  if (record.pipelineVersion === 2) {
+    if (record.generationMode !== undefined && normalizedField(record.generationMode) !== "full") {
+      return "pipelineVersion 2 records may only use full generation mode.";
+    }
     if (!validSha256(record.promptSha256)
       || !validSha256(record.critiquePromptSha256)
       || !record.generationParameters
@@ -469,6 +479,20 @@ function validateOptionalProvenance(record) {
     }
     if (record.critique.promptSha256 !== record.critiquePromptSha256) {
       return "critique.promptSha256 must match critiquePromptSha256.";
+    }
+  }
+  if (record.pipelineVersion === 3) {
+    const warnings = Array.isArray(record.warnings) ? record.warnings.map(normalizedField) : [];
+    if (normalizedField(record.generationMode) !== "draft-only"
+      || normalizeTranslationReviewStatus(record.status) !== TRANSLATION_REVIEW_STATUSES.MACHINE_DRAFT
+      || !validSha256(record.promptSha256)
+      || record.critiquePromptSha256 !== undefined
+      || !record.generationParameters
+      || !record.glossary
+      || !validSha256(record.glossary.selectionSha256)
+      || record.critique !== undefined
+      || !warnings.includes("critique-pending")) {
+      return "pipelineVersion 3 records must be draft-only machine drafts with prompt provenance, glossary selection, and a critique-pending warning, but no critique claim.";
     }
   }
   return null;
@@ -713,6 +737,7 @@ function parseBuiltRecord(value, location) {
     warnings: metadata.warnings,
     generatedAt: metadata.generatedAt,
     pipelineVersion: metadata.pipelineVersion,
+    generationMode: metadata.generationMode,
     promptSha256: metadata.promptSha256,
     critiquePromptSha256: metadata.critiquePromptSha256,
     generationParameters: metadata.generationParameters,
@@ -900,6 +925,7 @@ export async function buildTranslationArtifacts({
     warnings: record.metadata.warnings,
     generatedAt: record.metadata.generatedAt,
     pipelineVersion: record.metadata.pipelineVersion,
+    generationMode: record.metadata.generationMode,
     promptSha256: record.metadata.promptSha256,
     critiquePromptSha256: record.metadata.critiquePromptSha256,
     generationParameters: record.metadata.generationParameters,
