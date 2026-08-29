@@ -1,21 +1,28 @@
 const dictionaryUrl = new URL("../data/words-hk-wordslist.json", import.meta.url);
 const characterDictionaryUrl = new URL("../data/rime-cantonese-chars.json", import.meta.url);
+const definitionDictionaryUrl = new URL("../data/moe-revised-definitions.json", import.meta.url);
 
 export const cantoneseLexiconState = {
   status: "idle",
   entries: null,
   characterEntries: null,
+  definitionEntries: null,
+  definitionMeta: null,
   entryCount: 0,
   characterEntryCount: 0,
+  definitionEntryCount: 0,
   maxWordLength: 8,
   source: "粵典 words.hk",
   license: "Public domain",
   characterSource: "Rime Cantonese · jyut6ping3.chars",
   characterLicense: "CC BY 4.0",
-  error: ""
+  error: "",
+  definitionStatus: "idle",
+  definitionError: ""
 };
 
 let loadingPromise = null;
+let definitionLoadingPromise = null;
 
 // A small, audited bridge for source corpora that mix simplified or variant
 // glyphs into otherwise traditional text. Readings still come from the pinned
@@ -63,25 +70,38 @@ export function getCantoneseTermData(
   word,
   curatedTerms = {},
   entries = cantoneseLexiconState.entries,
-  characterEntries = entries === cantoneseLexiconState.entries ? cantoneseLexiconState.characterEntries : null
+  characterEntries = entries === cantoneseLexiconState.entries ? cantoneseLexiconState.characterEntries : null,
+  definitionEntries = entries === cantoneseLexiconState.entries ? cantoneseLexiconState.definitionEntries : null
 ) {
-  if (curatedTerms[word]) return { ...curatedTerms[word], dictionaryOnly: false };
+  if (curatedTerms[word]) {
+    const curated = curatedTerms[word];
+    return {
+      ...curated,
+      definitions: curated.mandarin ? [curated.mandarin] : [],
+      readingNote: "",
+      dictionaryOnly: false
+    };
+  }
   const lookup = resolveCantoneseReading(word, entries, characterEntries);
   const { readings } = lookup;
   if (!readings.length) return null;
   const fromCharacterFallback = lookup.source === "rime-cantonese";
   const fromVariantFallback = Boolean(lookup.normalizedWord);
+  const definitionLookupWord = lookup.normalizedWord || word;
+  const definitions = Array.isArray(definitionEntries?.[definitionLookupWord])
+    ? definitionEntries[definitionLookupWord]
+    : [];
+  const definitionMeta = cantoneseLexiconState.definitionMeta || {};
   return {
     text: word,
     jyutping: readings.join(" / "),
-    mandarin: fromVariantFallback
+    definitions,
+    definitionLookupWord,
+    readingNote: fromVariantFallback
       ? `異體字「${word}」按「${lookup.normalizedWord}」提供候選讀音；古典語境及多音字可能有不同讀法。`
       : fromCharacterFallback
       ? "Rime Cantonese 單字表補充的候選讀音；古典語境及多音字可能有不同讀法。"
-      : "粵典公有詞表目前只提供候選讀音；可前往原站查看完整釋義。",
-    english: fromCharacterFallback
-      ? "Pronunciation candidates from the Rime Cantonese character dictionary."
-      : "Pronunciation candidates from the public-domain words.hk word list.",
+      : "粵典公有詞表提供候選讀音；古典語境及多音字可能有不同讀法。",
     type: fromVariantFallback ? "異體字候選" : fromCharacterFallback ? "Rime 單字表" : "粵典詞表",
     dictionaryOnly: true,
     source: fromCharacterFallback ? "Rime Cantonese" : "粵典 words.hk",
@@ -89,7 +109,14 @@ export function getCantoneseTermData(
       ? "https://github.com/rime/rime-cantonese/blob/259f0e48bba840c3a2e0d117539e96937f3d89bc/jyut6ping3.chars.dict.yaml"
       : `https://words.hk/zidin/${encodeURIComponent(word)}`,
     sourceLicense: fromCharacterFallback ? "CC BY 4.0" : "Public domain word list",
-    sourceLinkLabel: fromCharacterFallback ? "查看單字表來源" : "前往粵典查看完整詞條"
+    sourceLinkLabel: fromCharacterFallback ? "查看單字表來源" : "前往粵典查看詞條",
+    definitionStatus: cantoneseLexiconState.definitionStatus,
+    definitionSource: definitions.length ? definitionMeta.source || "" : "",
+    definitionVersion: definitions.length ? definitionMeta.version || "" : "",
+    definitionLicense: definitions.length ? definitionMeta.license || "" : "",
+    definitionSourceUrl: definitions.length ? definitionMeta.dictionaryUrl || definitionMeta.sourceUrl || "" : "",
+    definitionLicenseUrl: definitions.length ? definitionMeta.licenseUrl || "" : "",
+    definitionUsageGuideUrl: definitions.length ? definitionMeta.usageGuideUrl || "" : ""
   };
 }
 
@@ -318,4 +345,35 @@ export async function loadCantoneseLexicon() {
     });
 
   return loadingPromise;
+}
+
+export async function loadCantoneseDefinitions() {
+  if (cantoneseLexiconState.definitionStatus === "ready") return cantoneseLexiconState;
+  if (definitionLoadingPromise) return definitionLoadingPromise;
+
+  cantoneseLexiconState.definitionStatus = "loading";
+  cantoneseLexiconState.definitionError = "";
+  definitionLoadingPromise = fetch(definitionDictionaryUrl)
+    .then(async (response) => {
+      if (!response.ok) throw new Error(`MOE dictionary HTTP ${response.status}`);
+      return response.json();
+    })
+    .then((payload) => {
+      const entries = payload?.entries && typeof payload.entries === "object" ? payload.entries : {};
+      cantoneseLexiconState.definitionEntries = entries;
+      cantoneseLexiconState.definitionMeta = payload?.meta && typeof payload.meta === "object" ? payload.meta : {};
+      cantoneseLexiconState.definitionEntryCount = Number(payload?.meta?.entries) || Object.keys(entries).length;
+      cantoneseLexiconState.definitionStatus = "ready";
+      return cantoneseLexiconState;
+    })
+    .catch((error) => {
+      cantoneseLexiconState.definitionStatus = "error";
+      cantoneseLexiconState.definitionError = error instanceof Error ? error.message : String(error);
+      throw error;
+    })
+    .finally(() => {
+      definitionLoadingPromise = null;
+    });
+
+  return definitionLoadingPromise;
 }

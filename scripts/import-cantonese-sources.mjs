@@ -244,7 +244,7 @@ async function importHblStory(candidate) {
     level: candidate.level,
     publishedAt,
     duration,
-    description: [candidate.englishTitle, `粵文分級 ${candidate.level}，站內收錄完整故事文字。`].filter(Boolean).join(" · "),
+    description: [candidate.englishTitle, "站內收錄完整故事文字。"].filter(Boolean).join(" · "),
     transcriptAvailable: true,
     isDemoNarration: false,
     hasAuthenticAudio: true,
@@ -409,7 +409,7 @@ const sourceCatalog = [
     id: "hbl",
     shortName: "分級故事",
     mark: "級",
-    mode: "Level 1–7",
+    mode: "原站 HBL L1–7",
     description: `${hblStories.length} 篇完整粵文；真人原聲在頁內透過 SoundCloud 播放。`,
     homepage: HBL_HOMEPAGE,
     license: "逐篇保留 CC BY 署名"

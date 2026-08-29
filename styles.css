@@ -742,35 +742,35 @@ summary {
   letter-spacing: 0.24em;
 }
 
-.poem-preview h2 {
-  margin: 0 0 38px;
+.poem-preview .poem-featured-quote {
+  max-width: 820px;
+  margin: 0 auto 18px;
   font-family: var(--serif);
-  font-size: clamp(34px, 4vw, 50px);
+  font-size: clamp(32px, 4vw, 50px);
   font-weight: 600;
-  letter-spacing: 0.14em;
+  line-height: 1.85;
+  letter-spacing: 0.1em;
+  text-wrap: balance;
 }
 
-.preview-verses {
-  display: grid;
-  gap: 24px;
+.poem-featured-quote .daily-quote-jyutping-token {
+  ruby-align: center;
+  ruby-position: over;
 }
 
-.preview-line {
-  display: grid;
-  gap: 7px;
-}
-
-.preview-line > span {
-  font-family: var(--serif);
-  font-size: clamp(24px, 3vw, 33px);
-  letter-spacing: 0.12em;
-}
-
-.preview-line small {
+.poem-featured-quote .daily-quote-jyutping-token rt {
   color: var(--jade);
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.055em;
+  font-size: clamp(8px, 0.24em, 12px);
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.poem-preview .poem-work-title {
+  margin: 0 0 28px;
+  color: var(--muted);
+  font-family: var(--serif);
+  font-size: 16px;
+  letter-spacing: 0.13em;
 }
 
 .sheet-actions {
@@ -2262,6 +2262,19 @@ summary {
   cursor: pointer;
 }
 
+.reader-detail summary > span {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.reader-detail summary small {
+  color: var(--faint);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
 .reader-detail summary::-webkit-details-marker {
   display: none;
 }
@@ -2275,13 +2288,44 @@ summary {
   transform: rotate(180deg);
 }
 
-.reader-detail > p {
-  margin: 0;
+.reader-detail-body {
   padding: 0 2px 20px;
+}
+
+.reader-detail-body > p {
+  margin: 0;
   color: var(--muted);
   font-family: var(--serif);
   font-size: 14px;
   line-height: 2;
+}
+
+.reader-detail-body > p + p {
+  margin-top: 1.05em;
+}
+
+.reader-detail.is-translation[open] {
+  border-bottom-color: color-mix(in srgb, var(--plum) 30%, var(--line));
+}
+
+.reader-detail-source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  margin-top: 16px;
+  padding-top: 11px;
+  border-top: 1px solid var(--line);
+  color: var(--faint);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  line-height: 1.6;
+}
+
+.reader-detail-source small {
+  color: var(--plum);
+  font-size: inherit;
 }
 
 .note-editor,
@@ -2604,7 +2648,7 @@ summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1px;
-  margin: 0 0 28px;
+  margin: 0 0 10px;
   padding: 1px;
   background: var(--line);
 }
@@ -2651,6 +2695,25 @@ summary {
 .cantonese-level-ladder button:hover small,
 .cantonese-level-ladder button.is-active small {
   color: rgb(255 255 255 / 70%);
+}
+
+.cantonese-level-note {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  margin: 0 0 28px;
+  padding: 10px 13px;
+  border-left: 2px solid var(--jade);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.cantonese-level-note strong {
+  color: var(--jade-deep);
+  font-size: 10px;
+  letter-spacing: 0.08em;
 }
 
 .voice-status-note {
@@ -6341,6 +6404,47 @@ summary {
   font-size: 15px;
 }
 
+.word-sheet .term-definition-row {
+  grid-template-columns: 80px minmax(0, 1fr);
+}
+
+.term-definition-list {
+  display: grid;
+  gap: 18px;
+}
+
+.term-definition-list article + article {
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.term-definition-list small {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--plum);
+  font-family: var(--sans);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.term-definition-list p,
+.term-definition-status {
+  margin: 0;
+  white-space: pre-line;
+  line-height: 1.85;
+}
+
+.term-definition-status {
+  color: var(--muted);
+}
+
+.word-sheet-source.definition-source {
+  margin-bottom: 16px;
+  padding-left: 10px;
+  border-left: 2px solid var(--plum);
+}
+
 .word-sheet .primary-button {
   width: 100%;
 }
@@ -7271,12 +7375,10 @@ body:has(.article-reader.is-dark) .nav-item.is-active {
     min-height: 360px;
   }
 
-  .poem-preview h2 {
-    font-size: 34px;
-  }
-
-  .preview-line > span {
-    font-size: 24px;
+  .poem-preview .poem-featured-quote {
+    font-size: 30px;
+    line-height: 1.9;
+    letter-spacing: 0.08em;
   }
 
   .continue-shelf {

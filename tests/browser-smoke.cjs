@@ -244,8 +244,8 @@ async function auditReadingStatus(browser) {
 
   await page.goto(baseUrl, { waitUntil: "networkidle" });
   await page.waitForFunction(() => {
-    const lines = [...document.querySelectorAll(".daily-poem .preview-line small")];
-    return lines.length >= 2 && lines.every((line) => line.textContent.trim().length > 0);
+    const rubies = [...document.querySelectorAll(".daily-poem .daily-quote-jyutping-token")];
+    return rubies.length >= 1 && rubies.every((ruby) => ruby.querySelector("rt")?.textContent.trim().length > 0);
   }, undefined, { timeout: 10000 });
   const result = {
     title: await page.title(),
@@ -264,17 +264,27 @@ async function auditReadingStatus(browser) {
   }, result.todayDaily.key);
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForFunction(() => {
-    const lines = [...document.querySelectorAll(".daily-poem .preview-line small")];
-    return lines.length >= 2 && lines.every((line) => line.textContent.trim().length > 0);
+    const rubies = [...document.querySelectorAll(".daily-poem .daily-quote-jyutping-token")];
+    return rubies.length >= 1 && rubies.every((ruby) => ruby.querySelector("rt")?.textContent.trim().length > 0);
   }, undefined, { timeout: 10000 });
   result.todayDailyAfterReload = await page.locator(".today-view").evaluate((node) => ({
     poem: node.querySelector("[data-daily-poem]")?.dataset.dailyPoem,
     article: node.querySelector("[data-daily-article]")?.dataset.dailyArticle,
     episode: node.querySelector("[data-daily-episode]")?.dataset.dailyEpisode
   }));
-  result.todayJyutpingLines = await page.locator(".daily-poem .preview-line small").evaluateAll((lines) => (
-    lines.filter((line) => line.textContent.trim().length > 0).length
-  ));
+  result.todayPoemFeature = await page.locator(".daily-poem").evaluate((node) => ({
+    quote: node.querySelector("[data-daily-poem-quote]")?.getAttribute("aria-label") || "",
+    title: node.querySelector("[data-daily-poem-title]")?.textContent.trim() || "",
+    quoteElements: node.querySelectorAll("[data-daily-poem-quote]").length,
+    han: (node.querySelector("[data-daily-poem-quote]")?.getAttribute("aria-label")?.match(/\p{Script=Han}/gu) || []).length,
+    rubies: node.querySelectorAll(".daily-quote-jyutping-token").length,
+    legacyJyutpingTracks: node.querySelectorAll(".featured-quote-pronunciation").length,
+    allAnnotatedAbove: [...node.querySelectorAll(".daily-quote-jyutping-token")].every((ruby) => {
+      const base = ruby.querySelector("span")?.getBoundingClientRect();
+      const annotation = ruby.querySelector("rt")?.getBoundingClientRect();
+      return Boolean(base && annotation && annotation.top + annotation.height / 2 < base.top + base.height / 2);
+    })
+  }));
   result.todayShelfHeading = await page.locator(".shelf-heading .eyebrow").textContent();
   result.todayShelfCopy = await page.locator(".shelf-heading p").last().textContent();
   await page.screenshot({ path: path.join(artifactDir, "home-desktop.png"), fullPage: true });
@@ -295,6 +305,18 @@ async function auditReadingStatus(browser) {
     await page.locator(`[data-poetry-kind="${kind}"]`).click();
     result.kindTotals[kind] = await page.locator(".result-heading span").first().textContent();
   }
+  await page.locator('[data-poetry-kind="詞"]').click();
+  result.ciFacetLabels = await page.locator(".facet-tab").allTextContents();
+  await page.getByRole("tab", { name: "按詞牌" }).click();
+  result.ciTuneChipLabels = await page.locator(".filter-chips .filter-chip").evaluateAll((chips) => (
+    chips.slice(0, 5).map((chip) => chip.textContent.trim())
+  ));
+  result.ciGenericTuneChips = await page.locator(".filter-chips .filter-chip").filter({ hasText: /^詞$/ }).count();
+  await page.locator(".filter-chips").getByRole("button", { name: "浣溪沙", exact: true }).click();
+  result.ciTuneFilterLabel = await page.locator(".active-filter-list small").textContent();
+  result.ciTuneFilterTotal = await page.locator(".result-heading span").first().textContent();
+  await page.screenshot({ path: path.join(artifactDir, "poetry-ci-taxonomy-desktop.png"), fullPage: true });
+  await page.locator('[data-poetry-kind="古文"]').click();
   await page.locator("[data-poetry-search]").fill("鄭伯克段於鄢");
   result.guwenSearchCount = await page.locator(".poem-row").count();
   await page.locator(".poem-row").filter({ hasText: "《鄭伯克段於鄢》" }).first().locator(".poem-row-main").click();
@@ -447,6 +469,18 @@ async function auditReadingStatus(browser) {
   result.openPoemTermSourceLink = await page.locator(".word-sheet-source a").count();
   await page.screenshot({ path: path.join(artifactDir, "poem-word-sheet-desktop.png"), fullPage: true });
   await page.locator(".sheet-close").click();
+  await page.goto(`${baseUrl}/#poetry/open-song-ci-02b68e8ec18766c3eb55`, { waitUntil: "networkidle" });
+  await page.waitForSelector('[data-lexicon-status="ready"]');
+  result.moeDefinitionTermCount = await page.locator('[data-dictionary-term="闌干"]').count();
+  await page.locator('[data-dictionary-term="闌干"]').first().click();
+  await page.waitForSelector(".definition-source");
+  result.moeDefinitionText = await page.locator(".term-definition-list").textContent();
+  result.moeDefinitionLabels = await page.locator(".word-sheet dt").allTextContents();
+  result.moeDefinitionPronunciation = await page.locator(".term-jyutping").textContent();
+  result.moeDefinitionSource = await page.locator(".definition-source").textContent();
+  result.moeDefinitionEnglishRows = await page.locator(".word-sheet dt", { hasText: "English" }).count();
+  await page.screenshot({ path: path.join(artifactDir, "poem-word-sheet-chinese-definition-desktop.png") });
+  await page.locator(".sheet-close").click();
   await page.goto(`${baseUrl}/#poetry/open-yuanqu-94a25e7d597cece17e04`, { waitUntil: "networkidle" });
   await page.waitForSelector(".verse-jyutping-token rt");
   result.yuanquRubyAudit = await page.locator(".full-poem").evaluate((node) => ({
@@ -456,6 +490,21 @@ async function auditReadingStatus(browser) {
   }));
   result.yuanquOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   await page.screenshot({ path: path.join(artifactDir, "yuanqu-inline-jyutping-desktop.png"), fullPage: true });
+  await page.goto(`${baseUrl}/#poetry/open-yuanqu-9493c1fa7adc30eea82a`, { waitUntil: "networkidle" });
+  await page.waitForSelector('.reader-detail.is-translation[open]');
+  result.requestedYuanquTranslationSummary = await page.locator(".reader-detail.is-translation summary").textContent();
+  result.requestedYuanquTranslationParagraphs = await page.locator(".reader-detail.is-translation .reader-detail-body > p").count();
+  result.requestedYuanquTranslationText = await page.locator(".reader-detail.is-translation .reader-detail-body").textContent();
+  result.requestedYuanquTranslationOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  await page.screenshot({ path: path.join(artifactDir, "yuanqu-modern-translation-desktop.png"), fullPage: true });
+  await page.goto(`${baseUrl}/#poetry/open-guwen-87c7a29cd59b3c40239e`, { waitUntil: "networkidle" });
+  await page.waitForSelector('.reader-detail.is-translation[open]');
+  result.guwenTranslationSummary = await page.locator(".reader-detail.is-translation summary").textContent();
+  result.guwenTranslationParagraphs = await page.locator(".reader-detail.is-translation .reader-detail-body > p").count();
+  result.guwenTranslationText = await page.locator(".reader-detail.is-translation .reader-detail-body").textContent();
+  result.guwenTranslationSource = await page.locator(".reader-detail-source").textContent();
+  result.guwenTranslationOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  await page.screenshot({ path: path.join(artifactDir, "guwen-modern-translation-desktop.png"), fullPage: true });
 
   await page.getByRole("button", { name: "Language", exact: true }).click();
   await page.getByRole("button", { name: "進入粵語", exact: true }).click();
@@ -463,11 +512,19 @@ async function auditReadingStatus(browser) {
   result.cantoneseSources = await page.locator(".cantonese-source-card").count();
   result.cantoneseLevels = await page.locator("[data-cantonese-level]").count();
   result.cantoneseLevelLabels = await page.locator(".cantonese-level-ladder strong").allTextContents();
+  result.cantoneseLevelRanges = await page.locator(".cantonese-level-ladder span").allTextContents();
+  result.cantoneseLevelNote = await page.locator(".cantonese-level-note").textContent();
+  result.cantoneseLearningMarks = await page.locator(".episode-row.is-hbl .episode-art b").evaluateAll((nodes) => [...new Set(nodes.map((node) => node.textContent))]);
+  result.cantoneseSourceLevelRows = await page.locator(".episode-row.is-hbl .episode-copy small", { hasText: "原站 HBL L" }).count();
   result.cantoneseShelfText = await page.locator(".cantonese-source-shelf").textContent();
   result.episodes = await page.locator(".episode-row").count();
   await page.screenshot({ path: path.join(artifactDir, "cantonese-index-desktop.png"), fullPage: true });
-  await page.locator('[data-cantonese-level="entry"]').click();
-  result.cantoneseEntryEpisodes = await page.locator(".episode-row").count();
+  await page.locator('[data-cantonese-level="start"]').click();
+  result.cantoneseStartEpisodes = await page.locator(".episode-row").count();
+  await page.locator('[data-cantonese-level="daily"]').click();
+  result.cantoneseDailyEpisodes = await page.locator(".episode-row").count();
+  await page.locator('[data-cantonese-level="advance"]').click();
+  result.cantoneseAdvanceEpisodes = await page.locator(".episode-row").count();
   await page.locator('[data-cantonese-level="全部"]').click();
   await page.locator('[data-source-filter="全部"]').click();
   await page.locator(".episode-main").first().click();
@@ -740,6 +797,8 @@ async function auditReadingStatus(browser) {
   await mobile.waitForFunction(() => document.querySelector("[data-cantonese-voice-status]")?.dataset.cantoneseVoiceStatus !== "checking", undefined, { timeout: 3500 });
   await mobile.screenshot({ path: path.join(artifactDir, "cantonese-feed-mobile.png"), fullPage: true });
   result.mobileCantoneseOverflow = await mobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  result.mobileCantoneseLevelOverflow = await mobile.locator(".cantonese-level-ladder").evaluate((node) => node.scrollWidth - node.clientWidth);
+  result.mobileCantoneseLevelNote = await mobile.locator(".cantonese-level-note").textContent();
   await mobile.goto(`${baseUrl}/#poetry/mountain-autumn`, { waitUntil: "networkidle" });
   await mobile.waitForSelector(".verse-jyutping-token rt");
   result.mobilePoemRubyAudit = await mobile.locator(".full-poem").evaluate((node) => ({
@@ -749,6 +808,15 @@ async function auditReadingStatus(browser) {
   await mobile.locator(".poem-thread-mobile").click();
   await mobile.screenshot({ path: path.join(artifactDir, "poem-reader-mobile.png") });
   result.mobilePoemOverflow = await mobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  await mobile.goto(`${baseUrl}/#poetry/open-song-ci-02b68e8ec18766c3eb55`, { waitUntil: "networkidle" });
+  await mobile.waitForSelector('[data-dictionary-term="闌干"]');
+  await mobile.locator('[data-dictionary-term="闌干"]').first().click();
+  await mobile.waitForSelector(".definition-source");
+  result.mobileMoeDefinitionOverflow = await mobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  result.mobileMoeDefinitionSheetOverflow = await mobile.locator(".word-sheet").evaluate((node) => node.scrollWidth - node.clientWidth);
+  result.mobileMoeDefinitionEnglishRows = await mobile.locator(".word-sheet dt", { hasText: "English" }).count();
+  await mobile.screenshot({ path: path.join(artifactDir, "poem-word-sheet-chinese-definition-mobile.png") });
+  await mobile.locator(".sheet-close").click();
   await mobile.goto(`${baseUrl}/#poetry/open-yuanqu-94a25e7d597cece17e04`, { waitUntil: "networkidle" });
   await mobile.waitForSelector(".verse-jyutping-token rt");
   result.mobileYuanquRubyAudit = await mobile.locator(".full-poem").evaluate((node) => ({
@@ -757,6 +825,16 @@ async function auditReadingStatus(browser) {
   }));
   result.mobileYuanquOverflow = await mobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   await mobile.screenshot({ path: path.join(artifactDir, "yuanqu-inline-jyutping-mobile.png"), fullPage: true });
+  await mobile.goto(`${baseUrl}/#poetry/open-yuanqu-9493c1fa7adc30eea82a`, { waitUntil: "networkidle" });
+  await mobile.waitForSelector('.reader-detail.is-translation[open]');
+  result.mobileRequestedYuanquTranslationParagraphs = await mobile.locator(".reader-detail.is-translation .reader-detail-body > p").count();
+  result.mobileRequestedYuanquTranslationOverflow = await mobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  await mobile.screenshot({ path: path.join(artifactDir, "yuanqu-modern-translation-mobile.png"), fullPage: true });
+  await mobile.goto(`${baseUrl}/#poetry/open-guwen-87c7a29cd59b3c40239e`, { waitUntil: "networkidle" });
+  await mobile.waitForSelector('.reader-detail.is-translation[open]');
+  result.mobileGuwenTranslationParagraphs = await mobile.locator(".reader-detail.is-translation .reader-detail-body > p").count();
+  result.mobileGuwenTranslationOverflow = await mobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  await mobile.screenshot({ path: path.join(artifactDir, "guwen-modern-translation-mobile.png"), fullPage: true });
   await mobile.goto(`${baseUrl}/#english/quiet-noticing`, { waitUntil: "networkidle" });
   await mobile.locator('[data-english-word="imperceptibly"]').click();
   result.mobileEnglishLookupVisible = await mobile.locator(".english-lookup-card").isVisible();
@@ -823,7 +901,13 @@ async function auditReadingStatus(browser) {
     || result.todayDailyAfterReload.poem !== result.todayDaily.poem
     || result.todayDailyAfterReload.article !== result.todayDaily.article
     || result.todayDailyAfterReload.episode !== result.todayDaily.episode
-    || result.todayJyutpingLines < 2
+    || !result.todayPoemFeature.quote
+    || !/^《.+》$/u.test(result.todayPoemFeature.title)
+    || result.todayPoemFeature.quote === result.todayPoemFeature.title.replace(/[《》]/gu, "")
+    || result.todayPoemFeature.quoteElements !== 1
+    || result.todayPoemFeature.rubies !== result.todayPoemFeature.han
+    || result.todayPoemFeature.legacyJyutpingTracks !== 0
+    || !result.todayPoemFeature.allAnnotatedAbove
     || result.todayShelfHeading !== "今日選讀 · 選聽"
     || !result.todayShelfCopy.includes("每天按本地日期更換")
     || result.poems !== 24
@@ -835,6 +919,12 @@ async function auditReadingStatus(browser) {
     || result.kindTotals["詞"] !== "2449 首"
     || result.kindTotals["曲"] !== "10906 首"
     || result.kindTotals["古文"] !== "452 篇"
+    || result.ciFacetLabels.join("|") !== "按朝代|按作者|按詞牌|按主題"
+    || result.ciTuneChipLabels[0] !== "全部"
+    || result.ciTuneChipLabels[1] !== "浣溪沙"
+    || result.ciGenericTuneChips !== 0
+    || result.ciTuneFilterLabel !== "詞牌"
+    || result.ciTuneFilterTotal !== "100 首"
     || result.guwenSearchCount < 1
     || result.guwenTitle !== "鄭伯克段於鄢"
     || result.guwenParagraphs < 2
@@ -897,19 +987,46 @@ async function auditReadingStatus(browser) {
     || result.openPoemJyutpingHidden !== 0
     || result.openPoemJyutpingRestored !== result.openPoemAutoJyutpingLines
     || !result.openPoemTermPronunciation
-    || result.openPoemTermSourceLink !== 1
+    || result.openPoemTermSourceLink < 1
+    || result.moeDefinitionTermCount < 1
+    || !result.moeDefinitionText.includes("竹木或金屬條編成的柵欄")
+    || !result.moeDefinitionText.includes("星光橫斜參差的樣子")
+    || result.moeDefinitionLabels[0] !== "中文釋義"
+    || !result.moeDefinitionLabels.includes("讀音說明")
+    || result.moeDefinitionPronunciation !== "laan4 gon1"
+    || !result.moeDefinitionSource.includes("中華民國教育部")
+    || !result.moeDefinitionSource.includes("內容未改寫")
+    || result.moeDefinitionEnglishRows !== 0
     || result.yuanquRubyAudit.rubies !== result.yuanquRubyAudit.han
     || result.yuanquRubyAudit.legacyTracks !== 0
     || result.yuanquOverflow !== 0
+    || !result.requestedYuanquTranslationSummary.includes("今譯")
+    || !result.requestedYuanquTranslationSummary.includes("編輯稿")
+    || result.requestedYuanquTranslationParagraphs !== 1
+    || !result.requestedYuanquTranslationText.includes("哪裏懂得兒女婚聘、締結秦晉之好")
+    || result.requestedYuanquTranslationOverflow !== 0
+    || !result.guwenTranslationSummary.includes("今譯")
+    || !result.guwenTranslationSummary.includes("編輯稿")
+    || result.guwenTranslationParagraphs !== 4
+    || !result.guwenTranslationText.includes("大軍逼近許都")
+    || !result.guwenTranslationSource.includes("Leafbound 今譯")
+    || result.guwenTranslationOverflow !== 0
     || result.cantoneseLexiconNoticeCount !== 0
     || result.cantoneseSources !== 3
     || result.cantoneseLevels !== 4
-    || result.cantoneseLevelLabels.join("|") !== "全部|入門|進階|長篇"
-    || result.cantoneseEntryEpisodes < 24
+    || result.cantoneseLevelLabels.join("|") !== "全部|起步|日常|進階"
+    || result.cantoneseLevelRanges.join("|") !== "全部故事|路徑 01|路徑 02|路徑 03"
+    || !result.cantoneseLevelNote.includes("詞頻與用法")
+    || !result.cantoneseLevelNote.includes("不等同 CEFR")
+    || result.cantoneseLearningMarks.join("|") !== "起|常|進"
+    || result.cantoneseSourceLevelRows !== 149
+    || result.cantoneseStartEpisodes !== 44
+    || result.cantoneseDailyEpisodes !== 48
+    || result.cantoneseAdvanceEpisodes !== 57
     || !result.cantoneseShelfText.includes("208")
     || result.episodes < 150
     || result.dynamicTranscriptTerms < 1
-    || result.dynamicTermSourceLink !== 1
+    || result.dynamicTermSourceLink < 1
     || result.hblJyutpingLines < 2
     || !/\d/.test(result.hblFirstJyutping)
     || result.hblRubyTokens < 20
@@ -922,13 +1039,22 @@ async function auditReadingStatus(browser) {
     || result.longHblLegacyJyutpingTracks !== 0
     || result.mobileOverflow !== 0
     || result.mobileCantoneseOverflow !== 0
+    || result.mobileCantoneseLevelOverflow !== 0
+    || !result.mobileCantoneseLevelNote.includes("不等同 CEFR")
     || result.mobileHblJyutpingLines < 2
     || result.mobileHblRubyTokens < 20
     || result.mobileHblJyutpingOverflow !== 0
     || result.mobilePoemOverflow !== 0
     || result.mobilePoemRubyAudit.rubies !== result.mobilePoemRubyAudit.han
+    || result.mobileMoeDefinitionOverflow !== 0
+    || result.mobileMoeDefinitionSheetOverflow !== 0
+    || result.mobileMoeDefinitionEnglishRows !== 0
     || result.mobileYuanquRubyAudit.rubies !== result.mobileYuanquRubyAudit.han
     || result.mobileYuanquOverflow !== 0
+    || result.mobileRequestedYuanquTranslationParagraphs !== 1
+    || result.mobileRequestedYuanquTranslationOverflow !== 0
+    || result.mobileGuwenTranslationParagraphs !== 4
+    || result.mobileGuwenTranslationOverflow !== 0
     || result.mobileGuwenOverflow !== 0
     || result.mobileGuwenJyutpingTokens < 100
     || !result.mobileGuwenTypographyVisible
@@ -1014,6 +1140,8 @@ async function auditReadingStatus(browser) {
     || !result.aboutSourceText.includes("四書")
     || !result.aboutSourceText.includes("62,274")
     || !result.aboutSourceText.includes("26,983")
+    || !result.aboutSourceText.includes("38,450")
+    || !result.aboutSourceText.includes("教育部辭典")
     || !result.aboutSourceText.includes("Rime Cantonese")
     || !result.aboutSourceText.includes("7 個官方訂閱源")
     || !result.aboutSourceText.includes("Standard Ebooks")
@@ -1023,7 +1151,7 @@ async function auditReadingStatus(browser) {
     || !result.aboutSourceText.includes("Chinese Open Wordnet")
     || !result.aboutSourceText.includes("FreeDict")
     || !/\d{1,3}(?:,\d{3})* 個詞形/.test(result.aboutSourceText)
-    || result.aboutSourceLinks !== 16
+    || result.aboutSourceLinks !== 22
     || !result.settingsVisible
     || result.settingsGroups !== 5
     || !result.settingsLanguageGroup

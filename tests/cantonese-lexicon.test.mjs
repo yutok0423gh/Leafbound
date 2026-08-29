@@ -48,10 +48,37 @@ test("curated meanings and public word-list entries remain distinguishable", () 
       type: "Cantonese word"
     }
   };
-  assert.equal(getCantoneseTermData("收檔", curated, entries).dictionaryOnly, false);
-  const dynamic = getCantoneseTermData("嗰陣時", curated, entries);
+  const curatedTerm = getCantoneseTermData("收檔", curated, entries);
+  assert.equal(curatedTerm.dictionaryOnly, false);
+  assert.deepEqual(curatedTerm.definitions, ["收攤"]);
+  const dynamic = getCantoneseTermData(
+    "嗰陣時",
+    curated,
+    entries,
+    null,
+    { "嗰陣時": ["當時。"] }
+  );
   assert.equal(dynamic.dictionaryOnly, true);
+  assert.deepEqual(dynamic.definitions, ["當時。"]);
+  assert.equal(dynamic.readingNote.includes("候選讀音"), true);
   assert.match(dynamic.sourceUrl, /words\.hk\/zidin/);
+});
+
+test("the generated MOE subset preserves exact Traditional Chinese definitions", () => {
+  const rawPayload = readFileSync(new URL("../data/moe-revised-definitions.json", import.meta.url), "utf8");
+  const payload = JSON.parse(rawPayload);
+  const usageGuide = readFileSync(new URL("../data/licenses/moe-revised-dictionary-usage.txt", import.meta.url), "utf8");
+
+  assert.equal(payload.meta.source, "中華民國教育部《重編國語辭典修訂本》");
+  assert.equal(payload.meta.version, "2015_20260625");
+  assert.equal(payload.meta.license, "CC BY-ND 3.0 TW");
+  assert.equal(payload.meta.sourceSha256, "df94ae4384ae3f33f573ded5c2f142041ea7530d381a285163593d6252ea4a9a");
+  assert.equal(payload.meta.entries, 38_450);
+  assert.ok(payload.entries["闌干"][0].includes("竹木或金屬條編成的柵欄"));
+  assert.ok(payload.entries["闌干"][0].includes("星光橫斜參差的樣子"));
+  assert.equal(rawPayload.includes("Pronunciation candidates"), false);
+  assert.ok(usageGuide.includes("創用 CC－姓名標示－禁止改作 臺灣 3.0 版授權條款"));
+  assert.ok(usageGuide.includes("版本編號：2015_20260625"));
 });
 
 test("prose pronunciation combines word matches with rare-character fallback readings", () => {
@@ -68,9 +95,16 @@ test("prose pronunciation combines word matches with rare-character fallback rea
     ]
   );
 
-  const fallbackTerm = getCantoneseTermData("矣", {}, wordEntries, characterEntries);
+  const fallbackTerm = getCantoneseTermData(
+    "矣",
+    {},
+    wordEntries,
+    characterEntries,
+    { "矣": ["文言句末助詞。"] }
+  );
   assert.equal(fallbackTerm.type, "Rime 單字表");
   assert.equal(fallbackTerm.sourceLicense, "CC BY 4.0");
+  assert.deepEqual(fallbackTerm.definitions, ["文言句末助詞。"]);
 });
 
 test("transcript pronunciation lines keep first candidates and readable Latin words", () => {

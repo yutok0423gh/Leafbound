@@ -3,6 +3,7 @@ node_modules/
 Thumbs.db
 *.log
 .tmp-data/
+.cache/
 artifacts/
 coverage/
 .env

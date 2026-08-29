@@ -25,15 +25,36 @@ import { cantoneseSourceCatalog, cantoneseSourceSnapshot } from "./open-cantones
 import { englishDiscoveries, englishSourceCatalog, englishSourceSnapshot } from "./open-english.js";
 import { englishNewsDesks } from "./english-news-sources.js";
 import {
+  classicalTranslationSnapshot,
+  getClassicalTranslation,
+  isClassicalTranslationUnavailableError,
+  loadClassicalTranslation
+} from "./classical-translations.js";
+import {
   alignCantonesePronunciation,
   buildCantonesePronunciationLine,
   cantoneseLexiconState,
   getCantoneseTermData,
+  loadCantoneseDefinitions,
   loadCantoneseLexicon,
   segmentCantonesePronunciation,
   segmentCantoneseText
 } from "./cantonese-lexicon.js";
+import {
+  cantoneseEpisodeDescription,
+  cantoneseEpisodeSourceLabel,
+  cantoneseGradingNote,
+  cantoneseLearningBands,
+  getCantoneseLearningBand
+} from "./cantonese-grading.js";
 import { findCantoneseVoice } from "./voice.js";
+import {
+  poetryFacetDefinitions,
+  poetryFacetLabel,
+  poetryFacetValues,
+  poetryFacetValue,
+  poetryMatchesFacet
+} from "./poetry-taxonomy.js";
 import {
   COMPLETE_PROGRESS_THRESHOLD,
   PREFERENCES_COOKIE_KEY,
@@ -60,6 +81,21 @@ const dailyEnglishArticles = [...articles, ...englishDiscoveries]
   .filter((article) => Array.isArray(article.paragraphs) && article.paragraphs.length);
 const dailyPoems = uniqueDailyPoems(poems);
 const DAILY_SELECTION_RETENTION = 800;
+const inlineClassicalTranslationByKind = poems.reduce((counts, poem) => {
+  if (String(poem.translation || "").trim()) counts[poem.kind] = (counts[poem.kind] || 0) + 1;
+  return counts;
+}, {});
+const inlineClassicalTranslationCount = Object.values(inlineClassicalTranslationByKind)
+  .reduce((total, count) => total + count, 0);
+const completeClassicalTranslationByKind = Object.keys({
+  ...classicalTranslationSnapshot.byKind,
+  ...inlineClassicalTranslationByKind
+}).reduce((counts, kind) => {
+  counts[kind] = (classicalTranslationSnapshot.byKind[kind] || 0) + (inlineClassicalTranslationByKind[kind] || 0);
+  return counts;
+}, {});
+const completeClassicalTranslationCount = classicalTranslationSnapshot.count + inlineClassicalTranslationCount;
+const classicalTranslationLoadStates = new Map();
 
 function uniqueDailyPoems(items) {
   const signatures = new Set();
@@ -75,6 +111,40 @@ function uniqueDailyPoems(items) {
   });
 }
 
+function buildDailyPoemFeature(poem) {
+  const fallbackLines = (poem?.lines || []).filter((line) => line?.text?.trim()).slice(0, 2);
+  const quote = String(poem?.featuredQuote || "").trim()
+    || fallbackLines.map((line) => line.text.trim()).join("，");
+  const segments = quote.split(/[，。！？；]+/u).map((segment) => segment.trim()).filter(Boolean);
+  const pronunciationLines = (segments.length ? segments : fallbackLines.map((line) => line.text.trim())).map((text) => {
+    const normalizedText = text.replace(/[\p{P}\p{S}\s]/gu, "");
+    return (poem?.lines || []).find((line) => (
+      String(line?.text || "").replace(/[\p{P}\p{S}\s]/gu, "") === normalizedText
+    )) || { text, jyutping: "" };
+  });
+
+  return { quote, pronunciationLines };
+}
+
+function renderDailyPoemFeature(poemFeature) {
+  const chunks = poemFeature.quote.match(/[^，。！？；]+[，。！？；]*/gu) || [poemFeature.quote];
+  return chunks.map((chunk, index) => {
+    const text = chunk.replace(/[，。！？；]+$/u, "");
+    const punctuation = chunk.slice(text.length);
+    const sourceLine = poemFeature.pronunciationLines[index] || { text, jyutping: "" };
+    const pronunciation = classicalLinePronunciation(sourceLine);
+    const annotated = pronunciation.value
+      ? renderClassicalAnnotatedText(
+        text,
+        pronunciation.kind === "curated" ? pronunciation.value : "",
+        false,
+        "daily-quote-jyutping-token"
+      )
+      : escapeHtml(text);
+    return `${annotated}${escapeHtml(punctuation)}`;
+  }).join("");
+}
+
 function findEnglishArticle(id, fallback = true) {
   const match = articles.find((article) => article.id === id)
     || englishDiscoveries.find((article) => article.id === id);
@@ -88,6 +158,7 @@ const ui = {
     dynasty: null,
     poet: null,
     form: null,
+    tune: null,
     theme: null
   },
   poetryQuery: "",
@@ -110,13 +181,6 @@ const ui = {
   notePanel: null,
   revealedSegments: new Set(),
   focusTarget: null
-};
-
-const poetryFacetLabels = {
-  dynasty: "朝代",
-  poet: "作者",
-  form: "體裁",
-  theme: "主題"
 };
 
 const poetryKindDetails = {
@@ -701,6 +765,7 @@ function renderToday() {
   const poem = poemSelection.item;
   const article = articleSelection.item;
   const episode = episodeSelection.item;
+  const poemFeature = buildDailyPoemFeature(poem);
   const todaySelection = { poem: poem.id, article: article.id, episode: episode.id };
   if (["poem", "article", "episode"].some((field) => recorded[field] !== todaySelection[field])) {
     state = appStore.update((current) => rememberDailySelection(current, dailyKey, todaySelection), false);
@@ -746,14 +811,8 @@ function renderToday() {
           </div>
           <div class="poem-preview">
             <p class="poem-author">${escapeHtml(poem.poet)}</p>
-            <h2>${escapeHtml(poem.title)}</h2>
-            <div class="preview-verses">
-              ${poem.lines.slice(0, 2).map((line) => `
-                <div class="preview-line">
-                  <span>${escapeHtml(line.text)}</span>
-                  <small lang="yue-Latn">${escapeHtml(classicalLinePronunciation(line).value)}</small>
-                </div>`).join("")}
-            </div>
+            <h2 class="poem-featured-quote" data-daily-poem-quote aria-label="${escapeHtml(poemFeature.quote)}">${renderDailyPoemFeature(poemFeature)}</h2>
+            <p class="poem-work-title" data-daily-poem-title>《${escapeHtml(poem.title)}》</p>
           </div>
           <div class="sheet-actions">
             <button class="text-link" type="button" data-route="poetry" data-route-id="${poem.id}">
@@ -817,8 +876,7 @@ function filteredPoems() {
   return poems.filter((poem) => {
     const matchesKind = ui.poetryKind === "全部" || poem.kind === ui.poetryKind;
     const matchesFacets = Object.entries(ui.poetryFilters).every(([facet, value]) => {
-      if (!value) return true;
-      return facet === "theme" ? poem.themes.includes(value) : poem[facet] === value;
+      return poetryMatchesFacet(poem, facet, value);
     });
     const searchable = [poem.kind, poem.title, poem.poet, poem.dynasty, poem.form, poem.originalSource, ...poem.themes, ...poem.lines.map((line) => line.text)].join(" ").toLocaleLowerCase();
     return matchesKind && matchesFacets && (!query || searchable.includes(query));
@@ -827,19 +885,7 @@ function filteredPoems() {
 
 function visiblePoetryFacetValues() {
   const candidates = poetryKindWorks();
-  const facetValues = ui.poetryFacet === "theme"
-    ? candidates.flatMap((poem) => poem.themes)
-    : candidates.map((poem) => poem[ui.poetryFacet]);
-  const values = ["全部", ...new Set(facetValues.filter(Boolean))];
-  if (ui.poetryFacet !== "poet" || values.length <= 25) return values;
-  const active = ui.poetryFilters.poet;
-  const counts = new Map();
-  candidates.forEach((poem) => counts.set(poem.poet, (counts.get(poem.poet) || 0) + 1));
-  const popular = values.slice(1)
-    .sort((a, b) => (counts.get(b) || 0) - (counts.get(a) || 0) || a.localeCompare(b, "zh-Hant"))
-    .slice(0, 24);
-  if (active && !popular.includes(active)) popular.push(active);
-  return ["全部", ...popular];
+  return poetryFacetValues(candidates, ui.poetryFacet, ui.poetryFilters[ui.poetryFacet]);
 }
 
 function activePoetryFilters() {
@@ -860,8 +906,8 @@ function renderActivePoetryFilters() {
       <span class="filter-thread-label">文庫篩選</span>
       <div class="active-filter-list">
         ${active.map(([facet, value]) => `
-          <button type="button" data-remove-poetry-filter="${facet}" aria-label="移除${poetryFacetLabels[facet]}條件${escapeHtml(value)}">
-            <small>${poetryFacetLabels[facet]}</small>${escapeHtml(value)} <span aria-hidden="true">×</span>
+          <button type="button" data-remove-poetry-filter="${facet}" aria-label="移除${poetryFacetLabel(facet, ui.poetryKind)}條件${escapeHtml(value)}">
+            <small>${poetryFacetLabel(facet, ui.poetryKind)}</small>${escapeHtml(value)} <span aria-hidden="true">×</span>
           </button>`).join("")}
       </div>
       <button class="clear-filter-link" type="button" data-clear-poetry>清除全部</button>
@@ -874,6 +920,8 @@ function renderPoetryIndex() {
   const visibleResults = results.slice(0, ui.poetryLimit);
   const active = activePoetryFilters();
   const resultUnit = poetryWorkUnit();
+  const facetDefinitions = poetryFacetDefinitions(ui.poetryKind);
+  const activeFacetLabel = poetryFacetLabel(ui.poetryFacet, ui.poetryKind);
 
   return `
     <section class="collection-view page-enter">
@@ -904,11 +952,11 @@ function renderPoetryIndex() {
           <input type="search" value="${escapeHtml(ui.poetryQuery)}" data-poetry-search placeholder="搜尋篇名、作者或一句原文" autocomplete="off" />
         </label>
         <div class="facet-tabs" role="tablist" aria-label="分類方式">
-          ${Object.entries(poetryFacetLabels).map(([id, label]) => `
+          ${facetDefinitions.map(({ id, label }) => `
             <button type="button" role="tab" class="facet-tab ${ui.poetryFacet === id ? "is-active" : ""}"
               data-poetry-facet="${id}" aria-selected="${ui.poetryFacet === id}">按${label}</button>`).join("")}
         </div>
-        <div class="filter-chips" aria-label="${poetryFacetLabels[ui.poetryFacet]}選項">
+        <div class="filter-chips" aria-label="${activeFacetLabel}選項">
           ${visiblePoetryFacetValues().map((value) => `
             <button type="button" class="filter-chip ${(value === "全部" ? !ui.poetryFilters[ui.poetryFacet] : ui.poetryFilters[ui.poetryFacet] === value) ? "is-active" : ""}"
               data-poetry-filter="${escapeHtml(value)}" aria-pressed="${value === "全部" ? !ui.poetryFilters[ui.poetryFacet] : ui.poetryFilters[ui.poetryFacet] === value}">${escapeHtml(value)}</button>`).join("")}
@@ -961,20 +1009,25 @@ function poetryLineId(poemId, lineIndex) {
 
 function relatedPoemsFor(poem) {
   const authorReason = poem.kind === "詞" ? "同一詞人" : poem.kind === "詩" ? "同一詩人" : "同一作者";
+  const classificationFacet = poem.kind === "詞" ? "tune" : "form";
+  const classificationValue = poetryFacetValue(poem, classificationFacet);
+  const classificationLabel = poetryFacetLabel(classificationFacet, poem.kind);
   return poems
     .filter((candidate) => candidate.id !== poem.id && candidate.kind === poem.kind)
     .map((candidate) => {
       const sharedThemes = candidate.themes.filter((theme) => poem.themes.includes(theme));
+      const sameClassification = Boolean(classificationValue)
+        && poetryFacetValue(candidate, classificationFacet) === classificationValue;
       const score = (candidate.poet === poem.poet ? 4 : 0)
         + sharedThemes.length * 2
-        + (candidate.form === poem.form ? 1 : 0)
+        + (sameClassification ? 1 : 0)
         + (candidate.dynasty === poem.dynasty ? 1 : 0);
       const reason = candidate.poet === poem.poet
         ? authorReason
         : sharedThemes.length
           ? `同寫${sharedThemes[0]}`
-          : candidate.form === poem.form
-            ? `同為${poem.form}`
+          : sameClassification
+            ? `同${classificationLabel} · ${classificationValue}`
             : candidate.dynasty === poem.dynasty
               ? `同屬${poem.dynasty}`
               : "延伸閱讀";
@@ -999,6 +1052,9 @@ function renderPoemThread(poem) {
   if (!ui.poemThreadOpen) return "";
   const related = relatedPoemsFor(poem);
   const thread = poemThreadCopy(poem);
+  const classificationFacet = poem.kind === "詞" ? "tune" : "form";
+  const classificationValue = poetryFacetValue(poem, classificationFacet);
+  const classificationLabel = poetryFacetLabel(classificationFacet, poem.kind);
   return `
     <section class="poem-thread-panel" id="poem-thread-panel" aria-label="${thread.label}" tabindex="-1">
       <div class="aside-title"><span>${thread.label}</span><button class="thread-close" type="button" data-toggle-poem-thread>收起</button></div>
@@ -1006,7 +1062,7 @@ function renderPoemThread(poem) {
       <dl class="poem-relations">
         <div><dt>作者</dt><dd>${poetryRelationButton("poet", poem.poet, poem.poet, poem.kind)}</dd></div>
         <div><dt>時代</dt><dd>${poetryRelationButton("dynasty", poem.dynasty, poem.dynasty, poem.kind)}</dd></div>
-        <div><dt>體裁</dt><dd>${poetryRelationButton("form", poem.form, poem.form, poem.kind)}</dd></div>
+        ${classificationValue ? `<div><dt>${classificationLabel}</dt><dd>${poetryRelationButton(classificationFacet, classificationValue, classificationValue, poem.kind)}</dd></div>` : ""}
         <div><dt>題材</dt><dd>${poem.themes.map((theme) => poetryRelationButton("theme", theme, theme, poem.kind)).join("")}</dd></div>
       </dl>
       <div class="related-reading">
@@ -1091,28 +1147,88 @@ function renderProseText(text, showJyutping, interactive = true) {
   return renderClassicalAnnotatedText(text, "", interactive, "prose-jyutping-token");
 }
 
+function requestClassicalTranslation(poem, retry = false) {
+  if (!poem || poem.translation || getClassicalTranslation(poem)) return null;
+  const current = classicalTranslationLoadStates.get(poem.id);
+  if (!retry && (current?.status === "loading" || current?.status === "ready" || current?.status === "error" || current?.status === "unavailable")) {
+    return current.promise || null;
+  }
+
+  const pending = loadClassicalTranslation(poem)
+    .then(() => {
+      classicalTranslationLoadStates.set(poem.id, { status: "ready", promise: null });
+      const route = parseRoute();
+      if (route.page === "poetry" && route.id === poem.id) render();
+      return getClassicalTranslation(poem);
+    })
+    .catch((error) => {
+      classicalTranslationLoadStates.set(poem.id, {
+        status: isClassicalTranslationUnavailableError(error) ? "unavailable" : "error",
+        errorCode: error?.code || null,
+        promise: null
+      });
+      const route = parseRoute();
+      if (route.page === "poetry" && route.id === poem.id) render();
+      return null;
+    });
+  classicalTranslationLoadStates.set(poem.id, { status: "loading", promise: pending });
+  return pending;
+}
+
 function renderPoemDetails(poem) {
+  const importedTranslation = getClassicalTranslation(poem);
+  const translation = poem.translation
+    ? { paragraphs: [poem.translation], source: null }
+    : importedTranslation;
+  const translationLoadState = classicalTranslationLoadStates.get(poem.id);
   const details = [
-    ["注釋", poem.annotation, true],
-    ["譯文", poem.translation, false],
-    ["賞析", poem.appreciation, false],
-    ["典故", poem.allusion, false]
-  ].filter(([, content]) => Boolean(content));
+    { label: "注釋", content: poem.annotation, open: true },
+    ...(translation || translationLoadState?.status === "error" ? [{
+      label: "今譯",
+      content: translation,
+      open: !poem.annotation || !translation,
+      loadStatus: translation ? "ready" : "error"
+    }] : []),
+    { label: "賞析", content: poem.appreciation, open: false },
+    { label: "典故", content: poem.allusion, open: false }
+  ].filter(({ label, content }) => label === "今譯" || Boolean(content));
 
   if (!details.length) {
     const saveCopy = poem.kind === "古文" ? "收藏段落" : poem.kind === "詞" ? "收藏詞句" : poem.kind === "曲" ? "收藏曲句" : "收藏詩句";
     return `
       <section class="source-only-note">
-        <span aria-hidden="true">原</span>
-        <div><strong>這一頁只收錄古典原文</strong><p>未把來源不明的現代譯文、注釋或賞析混入書房；你仍可${saveCopy}、寫筆記與點詞查音。</p></div>
+        <span aria-hidden="true">譯</span>
+        <div><strong>這一篇的今譯仍在校訂</strong><p>Leafbound 不會用來源不明或未核對的文字填補空缺；目前仍可${saveCopy}、寫筆記與點詞查音。</p></div>
       </section>`;
   }
 
-  return details.map(([label, content, open]) => `
-    <details class="reader-detail" ${open ? "open" : ""}>
-      <summary>${label} ${icon("chevron")}</summary>
-      <p>${escapeHtml(content)}</p>
-    </details>`).join("");
+  return details.map(({ label, content, open, loadStatus }) => {
+    if (label === "今譯" && !content) {
+      return `
+    <details class="reader-detail is-translation" open data-classical-translation-state="${loadStatus}">
+      <summary><span>今譯<small>載入失敗</small></span>${icon("chevron")}</summary>
+      <div class="reader-detail-body" aria-live="polite">
+        <p>今譯分片暫時未能載入；原文、收藏、筆記與粵拼仍可正常使用。</p>
+        <button class="quiet-button" type="button" data-retry-classical-translation="${escapeHtml(poem.id)}">重新載入今譯</button>
+      </div>
+    </details>`;
+    }
+    const paragraphs = Array.isArray(content?.paragraphs)
+      ? content.paragraphs
+      : [content];
+    const source = content?.source;
+    const sourceStatus = source
+      ? `${source.label}${source.status ? ` · ${source.status}` : ""}`
+      : "";
+    return `
+    <details class="reader-detail ${label === "今譯" ? "is-translation" : ""}" ${open ? "open" : ""}>
+      <summary><span>${label}${source ? `<small>${escapeHtml(source.status || source.label)}</small>` : ""}</span>${icon("chevron")}</summary>
+      <div class="reader-detail-body">
+        ${paragraphs.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join("")}
+        ${sourceStatus ? `<div class="reader-detail-source"><span>${escapeHtml(sourceStatus)}</span>${source.license ? `<small>${escapeHtml(source.license)}</small>` : ""}</div>` : ""}
+      </div>
+    </details>`;
+  }).join("");
 }
 
 function renderPoemSourceCard(poem) {
@@ -1347,12 +1463,7 @@ function renderPoemReader(id) {
 function renderCantoneseFeed() {
   const state = appStore.getState();
   const levelCounts = cantoneseSourceSnapshot.levelCounts || {};
-  const levelGroups = [
-    { id: "全部", label: "全部", range: "L1–7", levels: null },
-    { id: "entry", label: "入門", range: "L1–2", levels: [1, 2] },
-    { id: "story", label: "進階", range: "L3–5", levels: [3, 4, 5] },
-    { id: "long", label: "長篇", range: "L6–7", levels: [6, 7] }
-  ];
+  const levelGroups = cantoneseLearningBands;
   const selectedLevelGroup = levelGroups.find((group) => group.id === ui.cantoneseLevel) || levelGroups[0];
   const visible = episodes.filter((episode) => {
     const sourceMatches = ui.sourceFilter === "全部" || episode.sourceId === ui.sourceFilter;
@@ -1388,7 +1499,7 @@ function renderCantoneseFeed() {
             return `
               <button type="button" class="cantonese-source-card ${ui.sourceFilter === source.id ? "is-active" : ""}" data-source-filter="${escapeHtml(source.id)}" aria-pressed="${ui.sourceFilter === source.id}">
                 <span class="cantonese-source-mark" aria-hidden="true">${escapeHtml(source.mark)}</span>
-                <span><small>${escapeHtml(source.mode)}</small><strong>${escapeHtml(source.shortName)}</strong><em>${escapeHtml(detail)}</em></span>
+                <span><small>${escapeHtml(source.id === "hbl" ? "原站 HBL L1–7" : source.mode)}</small><strong>${escapeHtml(source.shortName)}</strong><em>${escapeHtml(detail)}</em></span>
                 <b>${count}</b>
               </button>`;
           }).join("")}
@@ -1396,7 +1507,7 @@ function renderCantoneseFeed() {
       </section>
 
       ${["全部", "hbl"].includes(ui.sourceFilter) ? `
-        <div class="cantonese-level-ladder" aria-label="粵文故事分類">
+        <div class="cantonese-level-ladder" aria-label="粵文故事學習分組">
           ${levelGroups.map((group) => {
             const count = group.levels
               ? group.levels.reduce((total, level) => total + (levelCounts[level] || 0), 0)
@@ -1404,11 +1515,12 @@ function renderCantoneseFeed() {
             const isActive = selectedLevelGroup.id === group.id;
             return `
               <button type="button" class="${isActive ? "is-active" : ""}" data-cantonese-level="${group.id}" aria-pressed="${isActive}"
-                aria-label="${group.label}，${group.range}，${count} 篇">
-                <span>${group.range}</span><strong>${group.label}</strong><small>${count} 篇</small>
+                aria-label="${group.label}，${group.sourceRange}，${count} 篇">
+                <span>${group.stepLabel}</span><strong>${group.label}</strong><small>${count} 篇</small>
               </button>`;
           }).join("")}
-        </div>` : ""}
+        </div>
+        <p class="cantonese-level-note"><strong>三段學習路徑</strong><span>${escapeHtml(cantoneseGradingNote)}</span></p>` : ""}
 
       ${ui.sourceFilter === "local" ? renderCantoneseVoiceNotice() : ""}
 
@@ -1435,18 +1547,21 @@ function renderCantoneseFeed() {
             : episode.audioKind === "soundcloud"
               ? "站內全文"
               : current ? `${progressPercent(current, episode.duration)}%` : "未開始";
-          const artMark = episode.sourceId === "hbl" ? `L${episode.level}` : episode.sourceId === "hkcancor" ? "港" : "";
+          const learningBand = getCantoneseLearningBand(episode.level);
+          const artMark = episode.sourceId === "hbl" ? learningBand?.mark || "讀" : episode.sourceId === "hkcancor" ? "港" : "";
+          const episodeSourceLabel = cantoneseEpisodeSourceLabel(episode);
+          const episodeDescription = cantoneseEpisodeDescription(episode);
           return `
-            <article class="episode-row is-${escapeHtml(episode.sourceId)} is-${readingStatus.status}">
+            <article class="episode-row is-${escapeHtml(episode.sourceId)} is-${readingStatus.status}" ${learningBand ? `data-learning-band="${learningBand.id}"` : ""}>
               <button class="episode-main" type="button" data-route="cantonese" data-route-id="${episode.id}">
                 <span class="episode-art is-${escapeHtml(episode.sourceId)}" aria-hidden="true">
                   ${artMark ? `<b>${escapeHtml(artMark)}</b>` : ""}<i></i><i></i><i></i><i></i><i></i>
                 </span>
                 <span class="episode-copy">
-                  <small>${escapeHtml(episode.source)} · ${escapeHtml(episode.episode)}</small>
+                  <small>${escapeHtml(episodeSourceLabel)}</small>
                   <strong>${escapeHtml(episode.title)}</strong>
                   ${renderListReadingMark(progress)}
-                  <span>${escapeHtml(episode.description)}</span>
+                  <span>${escapeHtml(episodeDescription)}</span>
                   <span class="episode-meta">${[date, availability].filter(Boolean).map(escapeHtml).join(" · ")}</span>
                 </span>
                 <span class="episode-progress-copy">${progressCopy}</span>
@@ -1570,6 +1685,8 @@ function transcriptSegmentHtml(segment, index, mode, episodeId, showJyutping) {
 function renderEpisodePlayer(id) {
   const episode = findEpisode(id);
   const state = appStore.getState();
+  const episodeSourceLabel = cantoneseEpisodeSourceLabel(episode);
+  const episodeDescription = cantoneseEpisodeDescription(episode);
   const mode = state.preferences.transcriptMode;
   const showTranscriptJyutping = state.preferences.showTranscriptJyutping !== false;
   const speed = state.preferences.playbackSpeed;
@@ -1623,9 +1740,9 @@ function renderEpisodePlayer(id) {
           <div class="large-wave" aria-hidden="true">
             ${Array.from({ length: 19 }, (_, index) => `<i style="--h:${24 + ((index * 17) % 58)}%"></i>`).join("")}
           </div>
-          <p class="eyebrow">${escapeHtml(episode.source)} · ${escapeHtml(episode.episode)}</p>
+          <p class="eyebrow">${escapeHtml(episodeSourceLabel)}</p>
           <h1>${escapeHtml(episode.title)}</h1>
-          <p>${escapeHtml(episode.description)}</p>
+          <p>${escapeHtml(episodeDescription)}</p>
 
           ${hasRemoteRecording ? `
             <div class="soundcloud-player" data-soundcloud-shell>
@@ -2360,6 +2477,7 @@ function renderAboutPanel() {
   const kindCount = (kind) => poems.filter((poem) => poem.kind === kind).length;
   const lexiconCount = cantoneseLexiconState.entryCount || 62_274;
   const characterCount = cantoneseLexiconState.characterEntryCount || 26_983;
+  const definitionCount = cantoneseLexiconState.definitionEntryCount || 38_450;
   const importedEnglishCount = englishDiscoveries.length;
   const localCantoneseCount = episodes.filter((episode) => episode.sourceId === "local").length;
 
@@ -2379,12 +2497,16 @@ function renderAboutPanel() {
             <p>${poems.length} 篇本地內容，包括 ${kindCount("詩")} 首詩、${kindCount("詞")} 首詞、${kindCount("曲")} 首曲與 ${kindCount("古文")} 篇古文；其中 ${openWorks} 篇來自固定版本的 chinese-poetry 開放資料。</p>
             <dl>
               <div><dt>收錄</dt><dd>唐詩三百首 · 全唐詩選 · 千家詩 · 宋詞三百首 · 全宋詞選 · 古文觀止 · 詩經 · 楚辭 · 元曲 · 四書 · 曹操詩集 · 納蘭詞 · 幽夢影 · 蒙學原典</dd></div>
-              <div><dt>授權</dt><dd>MIT</dd></div>
-              <div><dt>邊界</dt><dd>開放條目只收錄古典原文，不混入來源不明的現代譯註</dd></div>
+              <div><dt>今譯</dt><dd>${completeClassicalTranslationCount} 篇已有現代中文：${completeClassicalTranslationByKind.詩 || 0} 首詩、${completeClassicalTranslationByKind.詞 || 0} 首詞、${completeClassicalTranslationByKind.曲 || 0} 首曲、${completeClassicalTranslationByKind.古文 || 0} 篇古文；其中 ${classicalTranslationSnapshot.openCount} 篇為精確原文匹配的開放機器語料，其餘 ${completeClassicalTranslationCount - classicalTranslationSnapshot.openCount} 篇為 Leafbound 編輯稿</dd></div>
+              <div><dt>授權</dt><dd>古典正文 MIT · 開放今譯 Apache 2.0</dd></div>
+              <div><dt>邊界</dt><dd>機器今譯逐篇標示「未校訂」；沒有精確匹配的作品不以同題、近似文字或來源不明的網頁譯文補位</dd></div>
             </dl>
             <div class="about-source-links">
               <a href="https://github.com/chinese-poetry/chinese-poetry" target="_blank" rel="noreferrer">查看資料庫</a>
               <a href="https://github.com/chinese-poetry/chinese-poetry/blob/master/LICENSE" target="_blank" rel="noreferrer">MIT 授權</a>
+              <a href="https://github.com/mobvoi/seq-monkey-data/blob/main/docs/cchs_open_corpus.md" target="_blank" rel="noreferrer">古詩今譯資料說明</a>
+              <a href="https://github.com/mobvoi/seq-monkey-data/blob/main/LICENSE" target="_blank" rel="noreferrer">Apache 2.0</a>
+              <a href="./data/licenses/mobvoi-seq-monkey-apache-2.0.txt" target="_blank" rel="noreferrer">完整修改與授權說明</a>
             </div>
           </div>
         </article>
@@ -2394,10 +2516,11 @@ function renderAboutPanel() {
           <div class="about-source-copy">
             <p class="eyebrow">Cantonese listening shelf</p>
             <h3>香港口語與分級故事</h3>
-            <p>${cantoneseSourceSnapshot.authenticSampleCount} 段 HKCanCor 真人錄音與標注逐字稿保存在本機；另收錄 ${cantoneseSourceSnapshot.importedStoryCount} 篇冚唪唥粵文故事，平均分布在 Level 1–7。</p>
+            <p>${cantoneseSourceSnapshot.authenticSampleCount} 段 HKCanCor 真人錄音與標注逐字稿保存在本機；另收錄 ${cantoneseSourceSnapshot.importedStoryCount} 篇冚唪唥粵文故事，保留原站 HBL L1–7。</p>
             <dl>
               <div><dt>HKCanCor</dt><dd>1997–1998 香港自然對話／電台樣本 · 原有粵拼 · CC BY 4.0</dd></div>
               <div><dt>冚唪唥</dt><dd>${cantoneseSourceSnapshot.catalogCount} 篇公開目錄中，匯入 ${cantoneseSourceSnapshot.importedStoryCount} 篇有正文、署名與原聲入口的故事</dd></div>
+              <div><dt>分組</dt><dd>原站按詞頻與用法分級；Leafbound 整理為起步、日常、進階三組，不等同 CEFR</dd></div>
               <div><dt>教材邊界</dt><dd>香港教育局與出版社教材不整套複製；只接受使用者有權使用的個人檔案</dd></div>
             </dl>
             <div class="about-source-links">
@@ -2418,19 +2541,22 @@ function renderAboutPanel() {
         <article class="about-source-card is-cantonese">
           <span class="about-source-mark" aria-hidden="true">字</span>
           <div class="about-source-copy">
-            <p class="eyebrow">Cantonese pronunciation</p>
-            <h3>粵拼候選讀音</h3>
-            <p>${lexiconCount.toLocaleString("en-US")} 個粵典本地詞條用於點詞查音；另以 ${characterCount.toLocaleString("en-US")} 個 Rime Cantonese 單字條目補全古文逐字粵拼。</p>
+            <p class="eyebrow">Cantonese pronunciation & Chinese definitions</p>
+            <h3>粵拼與中文釋義</h3>
+            <p>${lexiconCount.toLocaleString("en-US")} 個粵典本地詞條用於點詞查音，${characterCount.toLocaleString("en-US")} 個 Rime Cantonese 單字條目補全古文逐字粵拼；另按需載入 ${definitionCount.toLocaleString("en-US")} 個教育部辭典繁體中文釋義。</p>
             <dl>
-              <div><dt>收錄</dt><dd>詞形候選讀音 · 古文單字候選讀音</dd></div>
-              <div><dt>授權</dt><dd>Public domain · CC BY 4.0</dd></div>
-              <div><dt>邊界</dt><dd>古文預設顯示首個候選；不複製粵典完整釋義</dd></div>
+              <div><dt>收錄</dt><dd>詞形候選讀音 · 古文單字候選讀音 · 歷史語詞中文釋義</dd></div>
+              <div><dt>授權</dt><dd>Public domain · CC BY 4.0 · CC BY-ND 3.0 TW</dd></div>
+              <div><dt>邊界</dt><dd>粵拼是候選讀音；中文釋義原樣保留，不改寫、不轉簡體，也不顯示英譯</dd></div>
             </dl>
             <div class="about-source-links">
               <a href="https://words.hk/faiman/analysis/" target="_blank" rel="noreferrer">粵典開放詞表</a>
               <a href="https://words.hk/" target="_blank" rel="noreferrer">前往粵典</a>
               <a href="https://github.com/rime/rime-cantonese/blob/259f0e48bba840c3a2e0d117539e96937f3d89bc/jyut6ping3.chars.dict.yaml" target="_blank" rel="noreferrer">Rime 單字表</a>
               <a href="https://github.com/rime/rime-cantonese/blob/259f0e48bba840c3a2e0d117539e96937f3d89bc/LICENSE-CC-BY" target="_blank" rel="noreferrer">CC BY 4.0</a>
+              <a href="https://dict.revised.moe.edu.tw/" target="_blank" rel="noreferrer">教育部重編國語辭典</a>
+              <a href="https://language.moe.gov.tw/001/Upload/Files/site_content/M0001/respub/index.html" target="_blank" rel="noreferrer">公眾授權與版本</a>
+              <a href="./data/licenses/moe-revised-dictionary-usage.txt" target="_blank" rel="noreferrer">完整使用說明</a>
             </div>
           </div>
         </article>
@@ -2467,7 +2593,7 @@ function renderAboutPanel() {
           <div class="about-source-copy">
             <p class="eyebrow">Leafbound originals</p>
             <h3>編輯示範內容</h3>
-            <p>目前的 ${articles.length} 篇 English 精讀稿、${localCantoneseCount} 篇粵語練習與 6 篇精修古典內容均為 Leafbound 本地示範，用來驗證閱讀、收藏與筆記流程。</p>
+            <p>目前的 ${articles.length} 篇 English 精讀稿、${localCantoneseCount} 篇粵語練習、${inlineClassicalTranslationCount} 篇自帶今譯的精修古典內容與 ${classicalTranslationSnapshot.editorialCount} 篇條目級今譯均為 Leafbound 本地編輯稿，用來驗證閱讀、收藏與筆記流程。</p>
             <dl>
               <div><dt>English</dt><dd>本地精讀稿與清洗後的公開來源正文分開標示</dd></div>
               <div><dt>粵語</dt><dd>本地練習與 HKCanCor 真人錄音、冚唪唥分級故事分開標示</dd></div>
@@ -2802,17 +2928,32 @@ function renderTermSheet() {
   if (!term) return "";
   const id = `cantonese:${term.text}`;
   const saved = appStore.getState().savedItems.some((item) => item.id === id);
+  const definitions = Array.isArray(term.definitions) ? term.definitions : [];
+  const definitionStatusCopy = cantoneseLexiconState.definitionStatus === "loading"
+    ? "中文釋義正在載入……"
+    : cantoneseLexiconState.definitionStatus === "error"
+      ? "中文釋義資料暫時未能載入；粵拼候選仍可使用。"
+      : "教育部《重編國語辭典修訂本》暫未收錄這個詞目；粵拼候選仍可使用。";
   return `
     <div class="modal-backdrop sheet-backdrop" data-close-sheet>
       <section class="word-sheet" role="dialog" aria-modal="true" aria-labelledby="term-title" data-modal-panel>
         <button class="icon-button sheet-close" type="button" data-close-sheet aria-label="關閉詞語解釋">${icon("close")}</button>
-        <p class="eyebrow">${term.dictionaryOnly ? `${escapeHtml(term.type)} · 讀音` : "Transcript phrase"}</p>
+        <p class="eyebrow">${term.dictionaryOnly ? `${escapeHtml(term.type)} · 中文釋義` : "粵語詞語 · 中文釋義"}</p>
         <h2 id="term-title">${escapeHtml(term.text)}</h2>
         <p class="term-jyutping" lang="yue-Latn">${escapeHtml(term.jyutping)}</p>
-        <dl>${term.dictionaryOnly
-          ? `<div><dt>範圍</dt><dd>${escapeHtml(term.mandarin)}</dd></div><div><dt>English</dt><dd>${escapeHtml(term.english)}</dd></div>`
-          : `<div><dt>普通話</dt><dd>${escapeHtml(term.mandarin)}</dd></div><div><dt>English</dt><dd>${escapeHtml(term.english)}</dd></div>`}
+        <dl>
+          <div class="term-definition-row"><dt>中文釋義</dt><dd>${definitions.length
+            ? `<div class="term-definition-list">${definitions.map((definition, index) => `
+                <article>${definitions.length > 1 ? `<small>詞典條目 ${index + 1}</small>` : ""}<p>${escapeHtml(definition)}</p></article>`).join("")}</div>`
+            : `<p class="term-definition-status">${escapeHtml(term.dictionaryOnly ? definitionStatusCopy : "暫未收錄中文釋義。")}</p>`}</dd></div>
+          ${term.readingNote ? `<div><dt>讀音說明</dt><dd>${escapeHtml(term.readingNote)}</dd></div>` : ""}
         </dl>
+        ${term.definitionSource ? `
+          <p class="word-sheet-source definition-source">中文釋義原文來自
+            <a href="${safeExternalHref(term.definitionSourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(term.definitionSource)}</a>
+            （版本 ${escapeHtml(term.definitionVersion)} · <a href="${safeExternalHref(term.definitionLicenseUrl)}" target="_blank" rel="noreferrer">${escapeHtml(term.definitionLicense)}</a>），內容未改寫。
+            ${term.definitionUsageGuideUrl ? `<a href="${safeExternalHref(term.definitionUsageGuideUrl)}" target="_blank" rel="noreferrer">查看完整使用說明</a>` : ""}
+          </p>` : ""}
         ${term.dictionaryOnly ? `
           <p class="word-sheet-source">讀音來自 ${escapeHtml(term.source)}（${escapeHtml(term.sourceLicense)}）。<a href="${safeExternalHref(term.sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(term.sourceLinkLabel || "查看資料來源")}</a></p>` : ""}
         <button class="primary-button" type="button" data-save-term="${escapeHtml(term.text)}" ${saved ? "disabled" : ""}>${saved ? `${icon("check")} 已加入粵語詞庫` : "加入粵語詞庫"}</button>
@@ -2924,7 +3065,13 @@ function afterRender(route) {
     });
   }
 
-  if (route.page === "poetry" && route.id) setupPoetryProgressTracking();
+  if (route.page === "poetry" && route.id) {
+    setupPoetryProgressTracking();
+    const poem = findPoem(route.id);
+    if (!poem.translation && !getClassicalTranslation(poem) && !classicalTranslationLoadStates.has(poem.id)) {
+      requestClassicalTranslation(poem);
+    }
+  }
 
   if (route.page === "cantonese" && route.id) syncPlayerDom();
 
@@ -3052,11 +3199,15 @@ function saveCantoneseTerm(termText) {
     type: term.type,
     language: "Cantonese",
     pronunciation: term.jyutping,
-    meaning: `${term.mandarin} · ${term.english}`,
+    meaning: Array.isArray(term.definitions) && term.definitions.length
+      ? term.definitions.join("\n\n")
+      : term.mandarin || term.readingNote || "",
     source,
-    sourceUrl: term.sourceUrl || "",
-    sourceLicense: term.sourceLicense || "",
-    tags: term.dictionaryOnly ? ["粵典", "讀音"] : ["transcript"],
+    sourceUrl: term.definitionSourceUrl || term.sourceUrl || "",
+    sourceLicense: term.definitionLicense || term.sourceLicense || "",
+    tags: term.dictionaryOnly
+      ? ["粵典", "讀音", ...(term.definitions?.length ? ["中文釋義", "教育部辭典"] : [])]
+      : ["transcript"],
     favorite: true,
     reviewStatus: "new"
   };
@@ -3372,6 +3523,14 @@ app.addEventListener("click", (event) => {
   const contentSeen = event.target.closest("[data-toggle-content-seen]");
   if (contentSeen) return toggleContentSeen(contentSeen.dataset.toggleContentSeen);
 
+  const retryClassicalTranslation = event.target.closest("[data-retry-classical-translation]");
+  if (retryClassicalTranslation) {
+    const poem = findPoem(retryClassicalTranslation.dataset.retryClassicalTranslation);
+    requestClassicalTranslation(poem, true);
+    render();
+    return;
+  }
+
   if (event.target.closest("[data-open-search]")) {
     ui.searchOpen = true;
     ui.focusTarget = "[data-global-search]";
@@ -3680,8 +3839,21 @@ app.addEventListener("click", (event) => {
   }
   const term = event.target.closest("[data-term], [data-dictionary-term]");
   if (term) {
-    ui.selectedTerm = term.dataset.term || term.dataset.dictionaryTerm;
+    const selectedTerm = term.dataset.term || term.dataset.dictionaryTerm;
+    ui.selectedTerm = selectedTerm;
+    const definitionPromise = term.dataset.dictionaryTerm && cantoneseLexiconState.definitionStatus !== "ready"
+      ? loadCantoneseDefinitions()
+      : null;
     render();
+    if (definitionPromise) {
+      definitionPromise
+        .then(() => {
+          if (ui.selectedTerm === selectedTerm) render();
+        })
+        .catch(() => {
+          if (ui.selectedTerm === selectedTerm) render();
+        });
+    }
     return;
   }
   const saveTerm = event.target.closest("[data-save-term]");

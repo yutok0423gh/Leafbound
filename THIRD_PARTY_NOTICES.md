@@ -22,6 +22,22 @@ The app does not copy full words.hk dictionary definitions. Those entries may ca
 
 The build-time importer normalizes the upstream single-character Rime dictionary to local JSON and lists unweighted readings before weighted alternatives. The app uses these entries only when the words.hk word list does not contain a character, primarily to complete automatic Jyutping annotation for classical prose. Automatic annotation displays the first candidate and clearly identifies that classical context and polyphonic characters may require a different reading.
 
+## 教育部《重編國語辭典修訂本》
+
+- Used file: exact Traditional Chinese headwords and definitions matching Leafbound's local Cantonese pronunciation terms
+- Official dictionary: https://dict.revised.moe.edu.tw/
+- Public-data page: https://language.moe.gov.tw/001/Upload/Files/site_content/M0001/respub/index.html
+- Source version: `2015_20260625`
+- Source XLSX SHA-256: `df94ae4384ae3f33f573ded5c2f142041ea7530d381a285163593d6252ea4a9a`
+- Imported subset: 38,450 headwords
+- License: Creative Commons Attribution-NoDerivatives 3.0 Taiwan (CC BY-ND 3.0 TW)
+- License: https://creativecommons.org/licenses/by-nd/3.0/tw/
+- Complete official usage guide: https://language.moe.gov.tw/001/Upload/Files/site_content/M0001/respub/reviseddict_10312.pdf
+- Bundled usage guide copy: `data/licenses/moe-revised-dictionary-usage.txt`
+- Required credit: 中華民國教育部（Ministry of Education, R.O.C.）。《重編國語辭典修訂本》（版本編號：2015_20260625）網址：https://dict.revised.moe.edu.tw/
+
+`scripts/import-moe-definitions.py` selects only exact headword matches needed by Leafbound. It copies each headword and definition without rewriting, translating, simplifying, reordering, or truncating the entry; the only technical transformation is decoding Excel newline escapes and normalizing line endings. The resulting local JSON is loaded only after a user opens a Chinese term sheet. The sheet presents the unchanged Traditional Chinese definition separately from Cantonese pronunciation candidates and does not add an English translation.
+
 ## chinese-poetry / 古典文庫
 
 - Source repository: https://github.com/chinese-poetry/chinese-poetry
@@ -113,7 +129,7 @@ The app copies the five sample MP3 files and corresponding tagged transcripts di
 - Site license statement: https://hambaanglaang.hk/
 - Audio: official SoundCloud track is loaded only after the user asks for it; audio files, illustrations, PDFs, videos, and translations are not copied
 
-The importer only accepts a story when its page exposes a complete public Cantonese text document, an authentic audio track, and document-level CC BY attribution. Each generated story keeps its canonical page, text-document URL, exact attribution text, license, PDF reference, and SoundCloud track. The complete per-work attribution list is available under「我的 → 關於 → 香港口語與分級故事」. Underlying source works can have different attribution histories, so the importer never substitutes one global credit for the per-work notice.
+The importer only accepts a story when its page exposes a complete public Cantonese text document, an authentic audio track, and document-level CC BY attribution. Each generated story keeps its canonical page, text-document URL, exact attribution text, license, PDF reference, SoundCloud track, and original HBL level. HBL describes its grading as based on word frequency and usage. Leafbound keeps HBL L1–7 as source metadata but groups the shelf into Start (L1–2), Everyday (L3–4), and Advanced (L5–7) for navigation; these groups are not presented as CEFR equivalents or as a length scale. The complete per-work attribution list is available under「我的 → 關於 → 香港口語與分級故事」. Underlying source works can have different attribution histories, so the importer never substitutes one global credit for the per-work notice.
 
 ## VOA Learning English source feeds
 
@@ -195,9 +211,22 @@ Both upstream licenses permit copying, modification, and distribution without a 
 
 FreeDict identifies this dictionary as an automatic WikDict build based on Wiktionary data obtained through DBnary. Leafbound uses it only when a selected WordNet entry has no Chinese Open Wordnet meaning. The importer extracts the matching article vocabulary, converts Simplified Chinese to Hong Kong Traditional Chinese, and marks every fallback entry with `translationSource: "freedict"` so its provenance remains machine-readable. The FreeDict-derived translations remain available under CC BY-SA 3.0, including its attribution and share-alike requirements.
 
+## Mobvoi seq-monkey-data — 古詩今譯
+
+- Publisher and upstream repository: Mobvoi — https://github.com/mobvoi/seq-monkey-data
+- Corpus documentation: https://github.com/mobvoi/seq-monkey-data/blob/main/docs/cchs_open_corpus.md
+- License: Apache License 2.0
+- Published archive MD5: `42ca0782bdc0165b8e5a68186d04aa8c`
+- Transport mirror used by the reproducible importer: https://huggingface.co/datasets/ej2/seq-monkey-data
+- Bundled license and modification notice: `data/licenses/mobvoi-seq-monkey-apache-2.0.txt`
+
+`scripts/import-classical-translations.mjs` verifies the archive against Mobvoi's published MD5 before reading it. The generated `src/open-classical-translations.js` keeps only records whose complete punctuation-free classical text matches an existing Leafbound work after Hong Kong Traditional/Simplified normalization. It does not match by title alone, because repeated tune names can refer to different works. The selected modern-Chinese paragraphs are converted to Hong Kong Traditional Chinese and remain labelled `機器語料 · 未經 Leafbound 人工校訂` in the reader. The full 680,000-item upstream archive remains build cache only and is not deployed.
+
+The current exact-match subset contains 122 ci entries. Fifty-six additional modern-Chinese translations for one classical-prose work and fifty-five Yuan-qu reading units are Leafbound editorial text, stored separately in `src/classical-translations.js`; they are not attributed to Mobvoi.
+
 ## Content boundary
 
-No text, annotation, translation, or commentary has been copied from 古詩文網. The open-corpus entries in this app contain classical text from the pinned chinese-poetry dataset only. The six curated sample works and their modern explanatory text remain the app's existing hand-authored content. Cantonese character readings are generated by `scripts/import-cantonese-pronunciation.mjs` from the pinned Rime Cantonese source. English metadata and approved plain-text bodies are generated by `scripts/import-english-sources.mjs`; every imported item keeps its canonical source URL, attribution, scope, and rights note.
+No text, annotation, translation, or commentary has been copied from 古詩文網. The open-corpus entries in this app contain classical text from the pinned chinese-poetry dataset; modern-Chinese text is limited to the exact-match Apache-2.0 subset described above and Leafbound's separately labelled editorial translations. The six curated sample works and their modern explanatory text remain the app's existing hand-authored content. Cantonese character readings are generated by `scripts/import-cantonese-pronunciation.mjs` from the pinned Rime Cantonese source. English metadata and approved plain-text bodies are generated by `scripts/import-english-sources.mjs`; every imported item keeps its canonical source URL, attribution, scope, and rights note.
 
 Hong Kong Education Bureau and commercial textbook pages are not treated as open corpora. No textbook has been copied into the app. Future textbook support must be limited to material with explicit redistribution permission or to private files the user is authorized to import.
 
