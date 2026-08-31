@@ -113,9 +113,10 @@ export async function loadReviewRecords(root = projectRoot) {
     }
   }
 
+  const reviewRecords = records.filter((record) => record.editorialTriage === "initially-usable");
   return {
     manifest,
-    records: records.sort((left, right) => {
+    records: reviewRecords.sort((left, right) => {
       if (left.priority !== right.priority) return left.priority ? -1 : 1;
       return left.kind.localeCompare(right.kind, "zh-Hant") || left.title.localeCompare(right.title, "zh-Hant");
     })

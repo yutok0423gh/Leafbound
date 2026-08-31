@@ -176,10 +176,12 @@ test("successful generation posts chat completions and checkpoints pipeline-comp
   assert.match(requestBody.messages[0].content, /不加入英文/u);
   assert.match(requestBody.messages[1].content, /Fixture Classical Dictionary/u);
   assert.match(requestBody.messages[1].content, /剛好 2 個 paragraphs/u);
+  assert.deepEqual(requestBody.response_format, { type: "json_object" });
   assert.deepEqual(requestBody.chat_template_kwargs, { enable_thinking: false });
   const critiqueBody = JSON.parse(requests[1].init.body);
   assert.match(critiqueBody.messages[0].content, /品質審校員/u);
   assert.match(critiqueBody.messages[0].content, /農具誤作貨幣/u);
+  assert.deepEqual(critiqueBody.response_format, { type: "json_object" });
 
   const record = JSON.parse((await readFile(outputPath, "utf8")).trim());
   assert.equal(record.status, "pending-review");
