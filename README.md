@@ -77,6 +77,8 @@ npm run content:update:cantonese
 
 `prepare:english-dictionary` 會從 [Open Multilingual Wordnet 2.0](https://github.com/omwn/omw-data/releases/tag/v2.0) 下載並解壓 `omw-en-2.0`、`omw-cmn-2.0`，再從 [FreeDict `eng-zho` 2025.11.23](https://download.freedict.org/dictionaries/eng-zho/2025.11.23/) 取得 TEI 原始檔；三個固定版本均會先核對官方校驗值。統一更新命令會按需自動執行這一步。上游 XML／TEI 只作本機或 GitHub Actions 建置快取，不會部署；倉庫只保存文章詞彙子集與對應授權／署名文件。
 
+英文詞典的中文釋義比例會隨每日文章詞彙改變；低於或等於 88% 的參考值會在匯入日誌中提示，GitHub Actions 會顯示 warning，不會僅因這項比例中止更新。詞典規模、文章查詞覆蓋率、核心詞義，以及生成詞條與統計資料的一致性仍由測試驗證；驗證失敗仍會回復更新前的內容。
+
 ## 驗證
 
 ```powershell

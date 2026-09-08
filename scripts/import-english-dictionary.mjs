@@ -388,3 +388,11 @@ const [dictionaryChanged, metadataChanged] = await Promise.all([
 
 console.log(`${dictionaryChanged || metadataChanged ? "Updated" : "No content changes in"} the local English dictionary (${Object.keys(outputEntries).length.toLocaleString("en-US")} article-word entries)`);
 console.log(`${bilingualWords.toLocaleString("en-US")} entries have Chinese meanings (${freedictFallbackWords.toLocaleString("en-US")} supplied by FreeDict fallback); ${exampleWords.toLocaleString("en-US")} include a direct WordNet example.`);
+
+// The fixed dictionaries cannot guarantee the same Chinese coverage for each
+// day's news vocabulary. Report this changing metric without rejecting valid data.
+const bilingualCoverage = bilingualWords / Object.keys(outputEntries).length;
+if (bilingualCoverage <= 0.88) {
+  const message = `Chinese dictionary coverage is ${(bilingualCoverage * 100).toFixed(2)}% (${bilingualWords}/${Object.keys(outputEntries).length}), at or below the 88% reference level. Article vocabulary changes daily; dictionary integrity and lookup checks still apply.`;
+  console.warn(process.env.GITHUB_ACTIONS === "true" ? `::warning::${message}` : message);
+}

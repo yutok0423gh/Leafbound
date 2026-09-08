@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import { articles } from "../src/data.js";
 import { englishDiscoveries } from "../src/open-english.js";
+import { openEnglishDictionary } from "../src/open-english-dictionary.js";
 import { englishNewsDesks } from "../src/english-news-sources.js";
 import {
   englishDictionarySnapshot,
@@ -161,7 +162,26 @@ test("dictionary snapshot stays compact and covers most current article vocabula
   assert.ok(englishDictionarySnapshot.bilingualWordCount >= 3_350);
   assert.ok(englishDictionarySnapshot.freedictFallbackWordCount >= 750);
   assert.ok(englishDictionarySnapshot.matchedWordCount / englishDictionarySnapshot.articleWordCount > 0.9);
-  assert.ok(englishDictionarySnapshot.bilingualWordCount / englishDictionarySnapshot.matchedWordCount > 0.88);
+});
+
+test("dictionary coverage statistics agree with the generated entries", () => {
+  const words = new Set([...articles, ...englishDiscoveries].flatMap((article) =>
+    (article.paragraphs || []).flatMap((paragraph) =>
+      [...paragraph.matchAll(wordPattern)].map((match) => normalizeEnglishWord(match[0]))
+    )
+  ));
+  const entries = Object.entries(openEnglishDictionary);
+  const bilingual = entries.filter(([, entry]) => /\p{Script=Han}/u.test(entry.meaning));
+  const freedict = bilingual.filter(([, entry]) => entry.translationSource === "freedict");
+  assert.equal(englishDictionarySnapshot.articleWordCount, words.size);
+  assert.equal(englishDictionarySnapshot.matchedWordCount, entries.length);
+  assert.equal(englishDictionarySnapshot.bilingualWordCount, bilingual.length);
+  assert.equal(englishDictionarySnapshot.freedictFallbackWordCount, freedict.length);
+  assert.equal(englishDictionarySnapshot.chineseWordnetWordCount, bilingual.length - freedict.length);
+  for (const [word, entry] of entries) {
+    assert.ok(words.has(word), `Dictionary word is absent from the current articles: ${word}`);
+    assert.ok(entry.meaning || entry.definition, `Dictionary entry is empty: ${word}`);
+  }
 });
 
 test("every word in The quiet work of noticing has a local Chinese gloss", () => {
