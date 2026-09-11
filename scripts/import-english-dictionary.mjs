@@ -392,6 +392,11 @@ console.log(`${bilingualWords.toLocaleString("en-US")} entries have Chinese mean
 // The fixed dictionaries cannot guarantee the same Chinese coverage for each
 // day's news vocabulary. Report this changing metric without rejecting valid data.
 const bilingualCoverage = bilingualWords / Object.keys(outputEntries).length;
+const vocabularyCoverage = Object.keys(outputEntries).length / words.size;
+if (vocabularyCoverage <= 0.9) {
+  const message = `Article dictionary coverage is ${(vocabularyCoverage * 100).toFixed(2)}% (${Object.keys(outputEntries).length}/${words.size}), at or below the 90% reference level. Fixed-corpus coverage and dictionary integrity are verified separately.`;
+  console.warn(process.env.GITHUB_ACTIONS === "true" ? `::warning::${message}` : message);
+}
 if (bilingualCoverage <= 0.88) {
   const message = `Chinese dictionary coverage is ${(bilingualCoverage * 100).toFixed(2)}% (${bilingualWords}/${Object.keys(outputEntries).length}), at or below the 88% reference level. Article vocabulary changes daily; dictionary integrity and lookup checks still apply.`;
   console.warn(process.env.GITHUB_ACTIONS === "true" ? `::warning::${message}` : message);

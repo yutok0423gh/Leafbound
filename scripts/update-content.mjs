@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, readdir, unlink, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { contentRelease, loadContentHistory } from "./content-history.mjs";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const reportPath = resolve(projectRoot, ".tmp-data", "content-update-report.json");
@@ -16,7 +17,7 @@ function requestedTarget(argv) {
 }
 
 function generatedFiles(target) {
-  const files = [];
+  const files = ["data/content-history.json", "src/content-release.js"];
   if (target === "all" || target === "english") {
     files.push(
       "src/open-english.js",
@@ -49,7 +50,7 @@ async function run(command, args) {
     const child = spawn(command, args, {
       cwd: projectRoot,
       stdio: "inherit",
-      env: { ...process.env, LEAFBOUND_CONTENT_UPDATE: "1" }
+      env: { ...process.env, LEAFBOUND_CONTENT_UPDATE: "1", LEAFBOUND_PUBLICATION_TIME: startedAt }
     });
     child.once("error", reject);
     child.once("exit", (code) => {
@@ -86,7 +87,6 @@ try {
   }
   if (target === "all" || target === "cantonese") {
     await runNode("scripts/import-cantonese-sources.mjs");
-    await runNode("scripts/import-spice-interview-audio.mjs");
   }
 
   const testFiles = (await readdir(resolve(projectRoot, "tests")))
@@ -104,7 +104,8 @@ try {
     target,
     startedAt,
     finishedAt: new Date().toISOString(),
-    changedFiles
+    changedFiles,
+    weeklyRelease: contentRelease(await loadContentHistory(), startedAt)
   };
   await writeReport(report);
   console.log(`LEAFBOUND_CONTENT_REPORT=${JSON.stringify(report)}`);

@@ -154,14 +154,21 @@ test("editorial overrides keep irregular homonyms useful in context", async () =
   assert.equal(died.partOfSpeech, "verb");
 });
 
-test("dictionary snapshot stays compact and covers most current article vocabulary", () => {
+test("dictionary snapshot retains its established vocabulary and current article counts", () => {
   assert.equal(englishDictionarySnapshot.articleCount, articles.length + englishDiscoveries.length);
   assert.match(englishDictionarySnapshot.contentDigest, /^[a-f0-9]{64}$/);
   assert.ok(englishDictionarySnapshot.articleWordCount >= 3_500);
   assert.ok(englishDictionarySnapshot.matchedWordCount >= 3_600);
   assert.ok(englishDictionarySnapshot.bilingualWordCount >= 3_350);
   assert.ok(englishDictionarySnapshot.freedictFallbackWordCount >= 750);
-  assert.ok(englishDictionarySnapshot.matchedWordCount / englishDictionarySnapshot.articleWordCount > 0.9);
+});
+
+test("the fixed close-reading corpus retains at least 98 percent local dictionary coverage", () => {
+  const words = new Set(articles.flatMap((article) => article.paragraphs.flatMap((paragraph) =>
+    [...paragraph.matchAll(wordPattern)].map((match) => normalizeEnglishWord(match[0]))
+  )));
+  const matched = [...words].filter((word) => openEnglishDictionary[word]).length;
+  assert.ok(matched / words.size >= 0.98, `Fixed-corpus coverage fell to ${matched}/${words.size}`);
 });
 
 test("dictionary coverage statistics agree with the generated entries", () => {

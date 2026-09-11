@@ -1,0 +1,3424 @@
+{
+  "schemaVersion": 1,
+  "seededThroughCommit": "08ac64f4a98f5c461fcdf9aeb6e4687fdab06f41",
+  "languages": {
+    "english": {
+      "records": [
+        {
+          "id": "voa-voanews-com-a-wilbur-and-orville-wright-the-first-airplane-7998765-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/wilbur-and-orville-wright-the-first-airplane/7998765.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:9af0b031a27947e73d0e7513ff187587da02e26a8565cfc6e3e74278d0495261",
+            "id:voa-voanews-com-a-wilbur-and-orville-wright-the-first-airplane-7998765-html",
+            "title:7a91629978f550d6f2b6605eb384ef04112fba85063f4e9ba9dda5fd1d496616",
+            "url:https://learningenglish.voanews.com/a/wilbur-and-orville-wright-the-first-airplane/7998765.html"
+          ]
+        },
+        {
+          "id": "voa-news-com-a-mary-kay-a-leader-in-the-beauty-product-industry-7972740-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/mary-kay-a-leader-in-the-beauty-product-industry/7972740.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:6ccf7314942603bf8614ac96e91cf741e64213cd52cc0adc0188a1e43f7ac804",
+            "id:voa-news-com-a-mary-kay-a-leader-in-the-beauty-product-industry-7972740-html",
+            "title:f2fc87a881c5fe483941fb08a3b335b770cdaefc3b44a9c5734deb591eb71192",
+            "url:https://learningenglish.voanews.com/a/mary-kay-a-leader-in-the-beauty-product-industry/7972740.html"
+          ]
+        },
+        {
+          "id": "voa-english-voanews-com-a-grammar-games-at-home-part-1-jeopardy-5345471-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/grammar-games-at-home-part-1-jeopardy/5345471.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:9736f26402e47e620feb69aba9133015cb0ae35dd8feaa30904ec8e7f30e4ceb",
+            "id:voa-english-voanews-com-a-grammar-games-at-home-part-1-jeopardy-5345471-html",
+            "title:ecfee0cc872ee63ac5c07fe64015e8d3c87a66cb373f02c529af48a38a3dc7d4",
+            "url:https://learningenglish.voanews.com/a/grammar-games-at-home-part-1-jeopardy/5345471.html"
+          ]
+        },
+        {
+          "id": "voa-learningenglish-voanews-com-a-amplifiers-downtoners-3714862-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/amplifiers-downtoners/3714862.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:adc95857d7ae659e84eafc2a140bc031eb386e7d2e34ba4ec857617c57a99c0c",
+            "id:voa-learningenglish-voanews-com-a-amplifiers-downtoners-3714862-html",
+            "title:492a537dd18b76bf44fb87b9c321c0042374a61bb597cd6e89987ae0709857c0",
+            "url:https://learningenglish.voanews.com/a/amplifiers-downtoners/3714862.html"
+          ]
+        },
+        {
+          "id": "voa-learningenglish-voanews-com-a-adverbs-and-adjectives-3702382-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/adverbs-and-adjectives/3702382.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:8ae1563a12fc80a209bab0e56d8f389863c8676ee0904d662437e97d7d311235",
+            "id:voa-learningenglish-voanews-com-a-adverbs-and-adjectives-3702382-html",
+            "title:2528a6a95c84068bd8019ad5e707ed4eaad5ae384077d1add273b1b855286b63",
+            "url:https://learningenglish.voanews.com/a/adverbs-and-adjectives/3702382.html"
+          ]
+        },
+        {
+          "id": "voa-ews-com-a-open-boat-stephen-crane-part-two-american-stories-7504521-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/open-boat-stephen-crane-part-two-american-stories/7504521.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:b36a9213f31bae40f0ceabdaa0b6f449e4402d6eff8d38c3d1a15d6a8c9e5b02",
+            "id:voa-ews-com-a-open-boat-stephen-crane-part-two-american-stories-7504521-html",
+            "title:8fd9586cdb324bbac8330dbe8c3da2da4e133e9f95fe14986284f2efde31f942",
+            "url:https://learningenglish.voanews.com/a/open-boat-stephen-crane-part-two-american-stories/7504521.html"
+          ]
+        },
+        {
+          "id": "voa-ngenglish-voanews-com-a-open-boat-american-stories-part-one-2572601-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/open-boat-american-stories-part-one/2572601.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:d257d9436bab1415f0a3e7ab804c16f2c6c9683c331b28a4b9ec7a4da94dce8b",
+            "id:voa-ngenglish-voanews-com-a-open-boat-american-stories-part-one-2572601-html",
+            "title:efc73987679edb817ffe8929e044ebca239c6b11b76e535a90fb9a947e6b3ae5",
+            "url:https://learningenglish.voanews.com/a/open-boat-american-stories-part-one/2572601.html"
+          ]
+        },
+        {
+          "id": "voa-lish-voanews-com-a-rappaccinis-daughter-nathaniel-hawthorne-2615957-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/rappaccinis-daughter-nathaniel-hawthorne/2615957.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:be27131f8ca8dc567673938796ac7b5b22610fdf5da57f50daaaf1de37d18ded",
+            "id:voa-lish-voanews-com-a-rappaccinis-daughter-nathaniel-hawthorne-2615957-html",
+            "title:27649df50d71eec6c62631b62e3390912595047377d869402445a4be725554b1",
+            "url:https://learningenglish.voanews.com/a/rappaccinis-daughter-nathaniel-hawthorne/2615957.html"
+          ]
+        },
+        {
+          "id": "nasa-science-nasa-gov-earth-earth-observatory-lala-batters-hawaii",
+          "sourceUrl": "https://science.nasa.gov/earth/earth-observatory/lala-batters-hawaii/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:06988d3d978831cf9733c8602ddda6f59c8f5277ed5ca355fbaa29c4bce25060",
+            "id:nasa-science-nasa-gov-earth-earth-observatory-lala-batters-hawaii",
+            "title:0711d45a53c3a5037a4e62f51ea9c551e53334750b1caf5fa7c07667f2837282",
+            "url:https://science.nasa.gov/earth/earth-observatory/lala-batters-hawaii"
+          ]
+        },
+        {
+          "id": "nasa-science-nasa-gov-earth-earth-observatory-chasing-fire-clouds-in-utah",
+          "sourceUrl": "https://science.nasa.gov/earth/earth-observatory/chasing-fire-clouds-in-utah/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:e319fee186766f8eeee3d8a4197d3673e044e7e26e99a03906d0e5c914a34ec1",
+            "id:nasa-science-nasa-gov-earth-earth-observatory-chasing-fire-clouds-in-utah",
+            "title:0ad6e0135e6c07a1fdacc7671b6f2abbfc86f79a0221c50ddb7e5298a9e05270",
+            "url:https://science.nasa.gov/earth/earth-observatory/chasing-fire-clouds-in-utah"
+          ]
+        },
+        {
+          "id": "nasa-nsfer-spinoffs-nasa-data-helps-commercial-space-plan-living-off-our-moon",
+          "sourceUrl": "https://www.nasa.gov/technology/tech-transfer-spinoffs/nasa-data-helps-commercial-space-plan-living-off-our-moon/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:2d201bcf74a74d8fc6a7783bf50f152857a439a1858171312c1d19c48858a217",
+            "id:nasa-nsfer-spinoffs-nasa-data-helps-commercial-space-plan-living-off-our-moon",
+            "title:1faa841920e416f96c5fec1f424fd507800dae9ae7022a10957ce28ab301e860",
+            "url:https://nasa.gov/technology/tech-transfer-spinoffs/nasa-data-helps-commercial-space-plan-living-off-our-moon"
+          ]
+        },
+        {
+          "id": "nasa-s-nasa-completes-astronaut-deployed-science-instrument-for-lunar-surface",
+          "sourceUrl": "https://science.nasa.gov/missions/artemis/nasa-completes-astronaut-deployed-science-instrument-for-lunar-surface/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:c6bb98d36f6c99add6be05d9b95c6ee52853f65283e9651dfe9201dcd58509f8",
+            "id:nasa-s-nasa-completes-astronaut-deployed-science-instrument-for-lunar-surface",
+            "title:0c3420df3989e74f5faab6d21d9204e30e2875d591150336464ff53c8465ae29",
+            "url:https://science.nasa.gov/missions/artemis/nasa-completes-astronaut-deployed-science-instrument-for-lunar-surface"
+          ]
+        },
+        {
+          "id": "standard-standardebooks-org-ebooks-j-storer-clouston-the-man-from-the-clouds",
+          "sourceUrl": "https://standardebooks.org/ebooks/j-storer-clouston/the-man-from-the-clouds",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:b94d5fab87085692d359643c1fb22614a3f70b37c40b85be43c5332d6b1a47bf",
+            "id:standard-standardebooks-org-ebooks-j-storer-clouston-the-man-from-the-clouds",
+            "title:9602b079e9b2e0aad88b085101effe0194c1473beb59f5c6eeab4cb5964fd35e",
+            "url:https://standardebooks.org/ebooks/j-storer-clouston/the-man-from-the-clouds"
+          ]
+        },
+        {
+          "id": "standard-standardebooks-org-ebooks-marie-belloc-lowndes-the-chink-in-the-armour",
+          "sourceUrl": "https://standardebooks.org/ebooks/marie-belloc-lowndes/the-chink-in-the-armour",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:bc9e5a257ef4013f86ccea0bf1bc874a30169a2b7f9bd09f9419f42b1e46cf31",
+            "id:standard-standardebooks-org-ebooks-marie-belloc-lowndes-the-chink-in-the-armour",
+            "title:313248e8c91a4e3e8fc30df92565db0eb8aff886bbdb43c61a757db2b6b328df",
+            "url:https://standardebooks.org/ebooks/marie-belloc-lowndes/the-chink-in-the-armour"
+          ]
+        },
+        {
+          "id": "standard-books-org-ebooks-mor-jokai-the-slaves-of-the-padishah-robert-nisbet-bain",
+          "sourceUrl": "https://standardebooks.org/ebooks/mor-jokai/the-slaves-of-the-padishah/robert-nisbet-bain",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:165afd94cbc3893a21304a420d489d0721620e9925794ac77f710c76b1056b33",
+            "id:standard-books-org-ebooks-mor-jokai-the-slaves-of-the-padishah-robert-nisbet-bain",
+            "title:1dc24f4b248e7641349d5bba01fa55a848d9a486019484d7bf61eaee3b0f2c9a",
+            "url:https://standardebooks.org/ebooks/mor-jokai/the-slaves-of-the-padishah/robert-nisbet-bain"
+          ]
+        },
+        {
+          "id": "standard-standardebooks-org-ebooks-david-hume-a-treatise-of-human-nature",
+          "sourceUrl": "https://standardebooks.org/ebooks/david-hume/a-treatise-of-human-nature",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:4dc9d4f510832955faa327a4e50601f4b3b605e2c8cfe53da2df0c646577dd11",
+            "id:standard-standardebooks-org-ebooks-david-hume-a-treatise-of-human-nature",
+            "title:96dc9e0a09c753e3a301864fedb6f3e6e0cddf53d85dd95a19d4b9ece4982854",
+            "url:https://standardebooks.org/ebooks/david-hume/a-treatise-of-human-nature"
+          ]
+        },
+        {
+          "id": "voa-a-new-discovery-could-explain-what-gives-mars-its-red-color-7990107-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/new-discovery-could-explain-what-gives-mars-its-red-color/7990107.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:20754792772dba87bb4f80fca8322cff012cbf40eed6ba9d162519023fc453f0",
+            "id:voa-a-new-discovery-could-explain-what-gives-mars-its-red-color-7990107-html",
+            "title:db49414036bf5086246fb51ca6506900344d68dbd4b91a14ebcf043ea3e31b6d",
+            "url:https://learningenglish.voanews.com/a/new-discovery-could-explain-what-gives-mars-its-red-color/7990107.html"
+          ]
+        },
+        {
+          "id": "voa-arningenglish-voanews-com-a-reviewing-your-birthday-message-6724744-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/reviewing-your-birthday-message/6724744.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:a099e546c6c12717ab805efb01b178bce27e0c7f0cbc6436758cd82a4a53ea6f",
+            "id:voa-arningenglish-voanews-com-a-reviewing-your-birthday-message-6724744-html",
+            "title:471e88ade8b58c4034c2271d6c94a8a52b7f7539555d6d222cb0e0af0a42978b",
+            "url:https://learningenglish.voanews.com/a/reviewing-your-birthday-message/6724744.html"
+          ]
+        },
+        {
+          "id": "voa-learningenglish-voanews-com-a-describing-your-birthday-6705484-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/describing-your-birthday/6705484.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:8a2d9116f126257dc326b2043976fcfb013aed333a104ad2decdbe4ddba5c0dc",
+            "id:voa-learningenglish-voanews-com-a-describing-your-birthday-6705484-html",
+            "title:41dd0aacb38bf7241060814a1901247e7e04cccdb4a71efa4a7c35e076477a32",
+            "url:https://learningenglish.voanews.com/a/describing-your-birthday/6705484.html"
+          ]
+        },
+        {
+          "id": "voa-news-com-a-everyday-grammar-common-sentence-patterns-part-4-3499292-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/everyday-grammar-common-sentence-patterns-part-4/3499292.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:9e1b32a6d713d543dd82f2bc76d9138d2f54552ae437c247addfdd369e2231f0",
+            "id:voa-news-com-a-everyday-grammar-common-sentence-patterns-part-4-3499292-html",
+            "title:443145d89067743b90d70e1768b8240547a279ae5c6f807654948c07f973e7eb",
+            "url:https://learningenglish.voanews.com/a/everyday-grammar-common-sentence-patterns-part-4/3499292.html"
+          ]
+        },
+        {
+          "id": "voa-news-com-a-everyday-grammar-common-sentence-patterns-part-3-3488629-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/everyday-grammar-common-sentence-patterns-part-3/3488629.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:2f6a021296cf778a27b6a72795382583d219b49d92f2911833c0f10e98cec3b8",
+            "id:voa-news-com-a-everyday-grammar-common-sentence-patterns-part-3-3488629-html",
+            "title:2ef4704bdbce843014dcde21d04a7aeac06d7aeb58ef752838c676954fbf6c9a",
+            "url:https://learningenglish.voanews.com/a/everyday-grammar-common-sentence-patterns-part-3/3488629.html"
+          ]
+        },
+        {
+          "id": "voa-academic-writing-common-patterns-part-two-everyday-grammar-3997498-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/academic-writing-common-patterns-part-two-everyday-grammar/3997498.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:e442700ab293b4626e9f4f95d7ad1af5c16b6a06ccee1150db04b1c45170f613",
+            "id:voa-academic-writing-common-patterns-part-two-everyday-grammar-3997498-html",
+            "title:c6c22da14a5f576d462f7b234661f586afed66775ea648438c82d62aaddae151",
+            "url:https://learningenglish.voanews.com/a/academic-writing-common-patterns-part-two-everyday-grammar/3997498.html"
+          ]
+        },
+        {
+          "id": "voa-rningenglish-voanews-com-a-everyday-grammar-common-patterns-3988378-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/everyday-grammar-common-patterns/3988378.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:8780075dd17f7a2e6d9da16973ec55264bf2b03b8b907832e1ea807d349bbaf1",
+            "id:voa-rningenglish-voanews-com-a-everyday-grammar-common-patterns-3988378-html",
+            "title:13407d7a0a817a91ea30bf20c5808f49c104bdc502daa5da2838abb6c56de420",
+            "url:https://learningenglish.voanews.com/a/everyday-grammar-common-patterns/3988378.html"
+          ]
+        },
+        {
+          "id": "voa-com-a-studying-sentence-patterns-to-improve-writing-part-2-3459324-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/studying-sentence-patterns-to-improve-writing-part-2/3459324.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:6582a774143ddfb4c41a74bd5c7e114a409b3e158452e2337e4dd04a30c024c3",
+            "id:voa-com-a-studying-sentence-patterns-to-improve-writing-part-2-3459324-html",
+            "title:425810836da5c13533f3a6b5682c590b6258361855bf3cfe16fbebd916257c21",
+            "url:https://learningenglish.voanews.com/a/studying-sentence-patterns-to-improve-writing-part-2/3459324.html"
+          ]
+        },
+        {
+          "id": "voa-a-rappaccini-daughter-nathaniel-hawthorne-american-stories-2600030-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/rappaccini-daughter-nathaniel-hawthorne-american-stories/2600030.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:ec5ed89151ccf86c958c14cf8eee9f251c7d73094667c9ed0fc9c4fd3f8bc1fc",
+            "id:voa-a-rappaccini-daughter-nathaniel-hawthorne-american-stories-2600030-html",
+            "title:eb2d772146304f0701bf6fef2a117addcc4444def21171f1db5935980b27fbae",
+            "url:https://learningenglish.voanews.com/a/rappaccini-daughter-nathaniel-hawthorne-american-stories/2600030.html"
+          ]
+        },
+        {
+          "id": "voa-a-the-fall-of-the-house-of-usher-part-three-edgar-allan-poe-3748407-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/the-fall-of-the-house-of-usher-part-three-edgar-allan-poe/3748407.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:2406cb67c8f2d394328ac815acb382dab0de3c981eab4ffdeb77fb0e333c9774",
+            "id:voa-a-the-fall-of-the-house-of-usher-part-three-edgar-allan-poe-3748407-html",
+            "title:bad5efda0a1e7523b409c7aed12db6a93443fd3da6a97f6e9bb8da40e2c46f8e",
+            "url:https://learningenglish.voanews.com/a/the-fall-of-the-house-of-usher-part-three-edgar-allan-poe/3748407.html"
+          ]
+        },
+        {
+          "id": "voa-m-a-the-fall-of-the-house-of-usher-part-two-edgar-allan-poe-3738372-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/the-fall-of-the-house-of-usher-part-two-edgar-allan-poe/3738372.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:6eac26aff2d236dc1f5652670a34e4e4cfcd2f1908288c0df7c51714b7395fcf",
+            "id:voa-m-a-the-fall-of-the-house-of-usher-part-two-edgar-allan-poe-3738372-html",
+            "title:ff87645020bf8ac5c3d3368142e9a970dd276d064f8b5e496c3cde7e53c50611",
+            "url:https://learningenglish.voanews.com/a/the-fall-of-the-house-of-usher-part-two-edgar-allan-poe/3738372.html"
+          ]
+        },
+        {
+          "id": "voa-m-a-the-fall-of-the-house-of-usher-edgar-allan-poe-part-one-3726233-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/the-fall-of-the-house-of-usher-edgar-allan-poe-part-one/3726233.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:23e0ec7a1dbe2f29dcfeb2438940c0ac200bb117ad421c2466c3443eb7bc23f3",
+            "id:voa-m-a-the-fall-of-the-house-of-usher-edgar-allan-poe-part-one-3726233-html",
+            "title:40c15a89d2971a419d2a12b34608f4984ee2df8a96fcef7134522eb4e74440d2",
+            "url:https://learningenglish.voanews.com/a/the-fall-of-the-house-of-usher-edgar-allan-poe-part-one/3726233.html"
+          ]
+        },
+        {
+          "id": "voa-nglish-voanews-com-a-stephen-crane-the-blue-hotel-part-four-4307363-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/stephen-crane-the-blue-hotel-part-four/4307363.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:45a4b8f7323f7565136edb3ef44b5908fc26461a802aba0aba6e2d3bf3fa8e57",
+            "id:voa-nglish-voanews-com-a-stephen-crane-the-blue-hotel-part-four-4307363-html",
+            "title:9044cf683a87a99054d23b0ce154e19e8b1d0ebbec2bb57cd719189a6ad1482f",
+            "url:https://learningenglish.voanews.com/a/stephen-crane-the-blue-hotel-part-four/4307363.html"
+          ]
+        },
+        {
+          "id": "voa-sh-voanews-com-a-the-blue-hotel-by-stephen-crane-part-three-4773659-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/the-blue-hotel-by-stephen-crane-part-three/4773659.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:f2ac6dffbac1254cb63d741760cac082ee5e88412400e978f63576d30dcf6d28",
+            "id:voa-sh-voanews-com-a-the-blue-hotel-by-stephen-crane-part-three-4773659-html",
+            "title:dfe5410da6336b41a9a724822a9c2133477708409b62cc30ca4f08dd5361d795",
+            "url:https://learningenglish.voanews.com/a/the-blue-hotel-by-stephen-crane-part-three/4773659.html"
+          ]
+        },
+        {
+          "id": "voa-lish-voanews-com-a-the-blue-hotel-by-stephen-crane-part-two-4773654-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/the-blue-hotel-by-stephen-crane-part-two/4773654.html",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:a3e1c80b7c3f00afbd6f6564fe16457fb617d85e3005ab4461999c715f99a787",
+            "id:voa-lish-voanews-com-a-the-blue-hotel-by-stephen-crane-part-two-4773654-html",
+            "title:60091c39076a04626ee66e7e786d663bc7fcd7ad06d9f402e8e0bcce7496f651",
+            "url:https://learningenglish.voanews.com/a/the-blue-hotel-by-stephen-crane-part-two/4773654.html"
+          ]
+        },
+        {
+          "id": "nasa-space-network-new-next-gen-dish-adds-muscle-to-nasas-deep-space-network",
+          "sourceUrl": "https://www.nasa.gov/technology/space-comms/deep-space-network/new-next-gen-dish-adds-muscle-to-nasas-deep-space-network/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:c7c32ece78b8c2b656a26f24790734bec73f03929deb92b72a5cfdb17de57166",
+            "id:nasa-space-network-new-next-gen-dish-adds-muscle-to-nasas-deep-space-network",
+            "title:3e381bbd4198e33bdd09b2467d4d2d83d2dbbd406728697a27d755c7809ce153",
+            "url:https://nasa.gov/technology/space-comms/deep-space-network/new-next-gen-dish-adds-muscle-to-nasas-deep-space-network"
+          ]
+        },
+        {
+          "id": "nasa-www-nasa-gov-general-copernicus",
+          "sourceUrl": "https://www.nasa.gov/general/copernicus/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:423705a2a544ae40d34dfe3016c874dfcc676582d5ea7dd0a1264ae7a0a4c21f",
+            "id:nasa-www-nasa-gov-general-copernicus",
+            "title:ae72b0f51f6917ca7835b1b62be4aba312434ed1367e8e445bbad651c5074003",
+            "url:https://nasa.gov/general/copernicus"
+          ]
+        },
+        {
+          "id": "nasa-y-space-comms-nasa-delivers-navigation-system-for-commercial-lunar-relay",
+          "sourceUrl": "https://www.nasa.gov/technology/space-comms/nasa-delivers-navigation-system-for-commercial-lunar-relay/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:8c213597e8ee58aa757651ed75f4505909af99ff3894ce88d604ed2d8c31e7c3",
+            "id:nasa-y-space-comms-nasa-delivers-navigation-system-for-commercial-lunar-relay",
+            "title:0099499a34f5e3ecddd6f4e128cb854f80926be5327de47e4bb651f212fdc104",
+            "url:https://nasa.gov/technology/space-comms/nasa-delivers-navigation-system-for-commercial-lunar-relay"
+          ]
+        },
+        {
+          "id": "nasa-y-rover-nasas-curiosity-mars-rover-discovers-field-of-honeycomb-textures",
+          "sourceUrl": "https://www.nasa.gov/missions/mars-science-laboratory/curiosity-rover/nasas-curiosity-mars-rover-discovers-field-of-honeycomb-textures/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:299d5d86c573da21ac397bd26834910328ce88812802803f99513757ecca3fe2",
+            "id:nasa-y-rover-nasas-curiosity-mars-rover-discovers-field-of-honeycomb-textures",
+            "title:d35000c77b8f23991f0e4ec6925955b485f32bb44ff4f10748de24a6139cd28c",
+            "url:https://nasa.gov/missions/mars-science-laboratory/curiosity-rover/nasas-curiosity-mars-rover-discovers-field-of-honeycomb-textures"
+          ]
+        },
+        {
+          "id": "nasa-d-nasa-announces-new-spacecraft-technology-demonstration-mission-at-moon",
+          "sourceUrl": "https://www.nasa.gov/directorates/rtmd/nasa-announces-new-spacecraft-technology-demonstration-mission-at-moon/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:ed1be0e8394881aae042c2c01e75dde2fa2c7b276de48dae6404ba46376b42ad",
+            "id:nasa-d-nasa-announces-new-spacecraft-technology-demonstration-mission-at-moon",
+            "title:a33fdf2d485d8d2beff834932ddc9f3a38dd25c10a24f83823568facc29f7516",
+            "url:https://nasa.gov/directorates/rtmd/nasa-announces-new-spacecraft-technology-demonstration-mission-at-moon"
+          ]
+        },
+        {
+          "id": "nasa-nasa-gov-technology-robotic-servicing-mission-launches-with-nasa-support",
+          "sourceUrl": "https://www.nasa.gov/technology/robotic-servicing-mission-launches-with-nasa-support/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:ab2f510a4c95b129e7a92d77da0c8bcdb91d5993bc5e5129a707d7310459b8cc",
+            "id:nasa-nasa-gov-technology-robotic-servicing-mission-launches-with-nasa-support",
+            "title:0c112e50f173895ff8d07cddf4c0641b83947c367f06e949e9c028643c264425",
+            "url:https://nasa.gov/technology/robotic-servicing-mission-launches-with-nasa-support"
+          ]
+        },
+        {
+          "id": "standard-rg-ebooks-samuel-taylor-coleridge-robert-southey-the-fall-of-robespierre",
+          "sourceUrl": "https://standardebooks.org/ebooks/samuel-taylor-coleridge_robert-southey/the-fall-of-robespierre",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:23aac58e4bd43911794cc724ce41279b77aa75c2d38ad9357b4e12cc4c530d4a",
+            "id:standard-rg-ebooks-samuel-taylor-coleridge-robert-southey-the-fall-of-robespierre",
+            "title:ad1dd265a75a09a6cefe32cca56617a3a9b51268a63878bc72a1d130ec2ecd09",
+            "url:https://standardebooks.org/ebooks/samuel-taylor-coleridge_robert-southey/the-fall-of-robespierre"
+          ]
+        },
+        {
+          "id": "standard-standardebooks-org-ebooks-h-g-wells-the-wheels-of-chance",
+          "sourceUrl": "https://standardebooks.org/ebooks/h-g-wells/the-wheels-of-chance",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:b5dae1444d0c295b1c9d018a94281301980388b86166b7e8c002dd93872d5b88",
+            "id:standard-standardebooks-org-ebooks-h-g-wells-the-wheels-of-chance",
+            "title:aded4b4b96a33ef4cf364c36e28903a8d90e070753011e7dab22d5d044022540",
+            "url:https://standardebooks.org/ebooks/h-g-wells/the-wheels-of-chance"
+          ]
+        },
+        {
+          "id": "standard-standardebooks-org-ebooks-jane-c-loudon-the-mummy",
+          "sourceUrl": "https://standardebooks.org/ebooks/jane-c-loudon/the-mummy",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:7a596d03c7e1591e94fe6e613e1e161260e91e16a01c4733e639d1ac96115089",
+            "id:standard-standardebooks-org-ebooks-jane-c-loudon-the-mummy",
+            "title:5500c672ba090eccb7aab66d1d1d2934c040dc35e68b091a3d3b89c1ed39711e",
+            "url:https://standardebooks.org/ebooks/jane-c-loudon/the-mummy"
+          ]
+        },
+        {
+          "id": "standard-standardebooks-org-ebooks-herbert-gorman-the-place-called-dagon",
+          "sourceUrl": "https://standardebooks.org/ebooks/herbert-gorman/the-place-called-dagon",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:50a27a7e06ab0f4eb6907cb4380c325a72e34f2d08ba3492be81c92e5dc20069",
+            "id:standard-standardebooks-org-ebooks-herbert-gorman-the-place-called-dagon",
+            "title:949ba7448850c1fcc6215524e811bbfbee826384467b35558ad63cc42a0154f0",
+            "url:https://standardebooks.org/ebooks/herbert-gorman/the-place-called-dagon"
+          ]
+        },
+        {
+          "id": "standard-standardebooks-org-ebooks-anna-katharine-green-hand-and-ring",
+          "sourceUrl": "https://standardebooks.org/ebooks/anna-katharine-green/hand-and-ring",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:6306acf279660a476b4733f39052aba43435fbb03a3f734057979b6d465c40c7",
+            "id:standard-standardebooks-org-ebooks-anna-katharine-green-hand-and-ring",
+            "title:ba164584b95bc4b292b3e394b1699fc8713d19ab7e8128b74bdb460e09faf64d",
+            "url:https://standardebooks.org/ebooks/anna-katharine-green/hand-and-ring"
+          ]
+        },
+        {
+          "id": "standard-standardebooks-org-ebooks-john-meade-falkner-the-lost-stradivarius",
+          "sourceUrl": "https://standardebooks.org/ebooks/john-meade-falkner/the-lost-stradivarius",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:c8bba2e45bb1b204405e9260e16e7fd7ef3a45c5387a997a9f0160c88b6a0284",
+            "id:standard-standardebooks-org-ebooks-john-meade-falkner-the-lost-stradivarius",
+            "title:175a7f90f3911f1aa42ad91b08a62a66036ef81c5750d11cc768bf3b6707e438",
+            "url:https://standardebooks.org/ebooks/john-meade-falkner/the-lost-stradivarius"
+          ]
+        },
+        {
+          "id": "standard-standardebooks-org-ebooks-arthur-ransome-racundras-first-cruise",
+          "sourceUrl": "https://standardebooks.org/ebooks/arthur-ransome/racundras-first-cruise",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:88088d395b08db8e6692e580466dd2ee43f992542a741a0c2819a98073e618a9",
+            "id:standard-standardebooks-org-ebooks-arthur-ransome-racundras-first-cruise",
+            "title:743ff76dc24fe0274741db76763e27bf1bcb9e59ea0dcc7a34bde5ce0feb4753",
+            "url:https://standardebooks.org/ebooks/arthur-ransome/racundras-first-cruise"
+          ]
+        },
+        {
+          "id": "standard-standardebooks-org-ebooks-aristophanes-the-birds-the-athenian-society",
+          "sourceUrl": "https://standardebooks.org/ebooks/aristophanes/the-birds/the-athenian-society",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:c11fc7a6e233c80ecab5dffded761733c42d5d349eb719654a774f0751bf9f93",
+            "id:standard-standardebooks-org-ebooks-aristophanes-the-birds-the-athenian-society",
+            "title:218b36d459f2f2229f6233e0122461cb3443a15eba88516da77d02ab556cba2d",
+            "url:https://standardebooks.org/ebooks/aristophanes/the-birds/the-athenian-society"
+          ]
+        },
+        {
+          "id": "global-voices-chinas-new-cotton-law-deepens-control-over-uyghur-farmers-land-and-labor",
+          "sourceUrl": "https://globalvoices.org/2026/08/28/chinas-new-cotton-law-deepens-control-over-uyghur-farmers-land-and-labor/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:6639d746975bc9817f172fcde7273f68e8b18fb60fbe8efb36d75489dea038d4",
+            "id:global-voices-chinas-new-cotton-law-deepens-control-over-uyghur-farmers-land-and-labor",
+            "title:06e5dd9d7095a7513f880d47c95a79e2937d8f27f98cadcf9333ea02e4cec8fa",
+            "url:https://globalvoices.org/2026/08/28/chinas-new-cotton-law-deepens-control-over-uyghur-farmers-land-and-labor"
+          ]
+        },
+        {
+          "id": "global-voices-on-designer-oksana-alkhunsaeva-stitched-her-life-back-together-in-russia",
+          "sourceUrl": "https://globalvoices.org/2026/08/27/how-buryat-fashion-designer-oksana-alkhunsaeva-stitched-her-life-back-together-in-russia/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:745d524346c1d1960d59c60551a56a7a471e4451d273279210df8ee62972464b",
+            "id:global-voices-on-designer-oksana-alkhunsaeva-stitched-her-life-back-together-in-russia",
+            "title:9b7416e74f045aa24e553aedd33bee46024a693fe4885fbb31ed4706a19ad48c",
+            "url:https://globalvoices.org/2026/08/27/how-buryat-fashion-designer-oksana-alkhunsaeva-stitched-her-life-back-together-in-russia"
+          ]
+        },
+        {
+          "id": "global-voices-usands-of-little-penguins-will-be-vaccinated-against-bird-flu-down-under",
+          "sourceUrl": "https://globalvoices.org/2026/08/26/thousands-of-little-penguins-will-be-vaccinated-against-bird-flu-down-under/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:7d8102c4de641873242ecaf64e2d5d216ede4533a6c0b6c88ccf98e2f0622647",
+            "id:global-voices-usands-of-little-penguins-will-be-vaccinated-against-bird-flu-down-under",
+            "title:ba8f340678da0f1a7f970563b621566bb547f62590da4a330f35b292e6879c7b",
+            "url:https://globalvoices.org/2026/08/26/thousands-of-little-penguins-will-be-vaccinated-against-bird-flu-down-under"
+          ]
+        },
+        {
+          "id": "global-voices-s-org-2026-08-26-in-cameroon-before-the-scroll-there-was-the-dance-floor",
+          "sourceUrl": "https://globalvoices.org/2026/08/26/in-cameroon-before-the-scroll-there-was-the-dance-floor/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:687ad6e2aefc570dffd3bca6f94bbfaf7d2549ac878f5bfdc0aab063522c0004",
+            "id:global-voices-s-org-2026-08-26-in-cameroon-before-the-scroll-there-was-the-dance-floor",
+            "title:d1c51e1e06f5f94e2ade13c0783b3a20c491693105993568a6b5abf89f63c4d2",
+            "url:https://globalvoices.org/2026/08/26/in-cameroon-before-the-scroll-there-was-the-dance-floor"
+          ]
+        },
+        {
+          "id": "global-voices-women-capulana-dresses-and-police-violence-stand-out-at-nampula-protests",
+          "sourceUrl": "https://globalvoices.org/2026/08/25/mozambique-women-capulana-dresses-and-police-violence-stand-out-at-nampula-protests/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:ed8b250fa8bc2a49727f89e48263325d8b240b141ed2581976ff366cf417f17c",
+            "id:global-voices-women-capulana-dresses-and-police-violence-stand-out-at-nampula-protests",
+            "title:6caa73e06bbed2973784db1b089c2f6e3c9dc8766dcb04a8ce69f3ec51d37b39",
+            "url:https://globalvoices.org/2026/08/25/mozambique-women-capulana-dresses-and-police-violence-stand-out-at-nampula-protests"
+          ]
+        },
+        {
+          "id": "global-voices-e-criminal-raps-for-setting-up-anti-mining-barricades-in-the-philippines",
+          "sourceUrl": "https://globalvoices.org/2026/08/25/indigenous-peoples-leaders-face-criminal-raps-for-setting-up-anti-mining-barricades-in-the-philippines/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:ddeaae4ed5cb290be7d2d8272892e2a05a76cbd42e01d5d0b8e9554f54b0e42a",
+            "id:global-voices-e-criminal-raps-for-setting-up-anti-mining-barricades-in-the-philippines",
+            "title:13b60df075a1f0cf018817756443536b52fdb78587156e777ea8edec5e9c9820",
+            "url:https://globalvoices.org/2026/08/25/indigenous-peoples-leaders-face-criminal-raps-for-setting-up-anti-mining-barricades-in-the-philippines"
+          ]
+        },
+        {
+          "id": "global-voices-soned-waters-indigenous-communities-fight-to-protect-thailands-kok-river",
+          "sourceUrl": "https://globalvoices.org/2026/08/24/poisoned-waters-indigenous-communities-fight-to-protect-thailands-kok-river/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:dd34e404549fdc557896eaaaa786a4d7a0e30405ee10f109ab65db1a431feb39",
+            "id:global-voices-soned-waters-indigenous-communities-fight-to-protect-thailands-kok-river",
+            "title:a82fc4adbd4cd5efa6b7276973c7536824e582e6fa693248d944ba1151983c85",
+            "url:https://globalvoices.org/2026/08/24/poisoned-waters-indigenous-communities-fight-to-protect-thailands-kok-river"
+          ]
+        },
+        {
+          "id": "global-voices-ices-org-2026-08-24-support-global-voices-spotlight-protest-in-democracy",
+          "sourceUrl": "https://globalvoices.org/2026/08/24/support-global-voices-spotlight-protest-in-democracy/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:b50aa4a2e28aa0fdfd64e1251f9f52984555bd8298ce33794233950760813b85",
+            "id:global-voices-ices-org-2026-08-24-support-global-voices-spotlight-protest-in-democracy",
+            "title:0d33157790d261dad3e0350ca63d0a95aee9c9f071d3e36ff5636d950bf7caca",
+            "url:https://globalvoices.org/2026/08/24/support-global-voices-spotlight-protest-in-democracy"
+          ]
+        },
+        {
+          "id": "global-voices-t-education-for-girls-afghanistan-loses-its-chance-for-a-better-tomorrow",
+          "sourceUrl": "https://globalvoices.org/2026/08/23/without-education-for-girls-afghanistan-loses-its-chance-for-a-better-tomorrow/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:a4f4aacb70e02e55cb6a213442d486ed2e786371ca3d0559c3f8ebb6f31e1f2b",
+            "id:global-voices-t-education-for-girls-afghanistan-loses-its-chance-for-a-better-tomorrow",
+            "title:e669e4e72d92aef04e21164f9186c59c9256cfd1834c8a955f500341afaecc19",
+            "url:https://globalvoices.org/2026/08/23/without-education-for-girls-afghanistan-loses-its-chance-for-a-better-tomorrow"
+          ]
+        },
+        {
+          "id": "global-voices-22-caught-between-silence-and-visibility-lgbtq-experiences-in-mozambique",
+          "sourceUrl": "https://globalvoices.org/2026/08/22/caught-between-silence-and-visibility-lgbtq-experiences-in-mozambique/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:db74e53a2905a0039dccae5ce6ca85809f095494a90ac1e473d48ea62a5c176b",
+            "id:global-voices-22-caught-between-silence-and-visibility-lgbtq-experiences-in-mozambique",
+            "title:f9b2340ad3686f2d82c07d7936457cd1e95a54d6a5b6ecf26fa6d9c379f2faa5",
+            "url:https://globalvoices.org/2026/08/22/caught-between-silence-and-visibility-lgbtq-experiences-in-mozambique"
+          ]
+        },
+        {
+          "id": "global-voices-6-08-21-the-everyday-guardians-rana-tharu-womens-implicit-roles-in-nepal",
+          "sourceUrl": "https://globalvoices.org/2026/08/21/the-everyday-guardians-rana-tharu-womens-implicit-roles-in-nepal/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:d5b6cb731762123e97f0a721d6b3d3d2e5cdca6a7875bcf85b80c3c54ef5f606",
+            "id:global-voices-6-08-21-the-everyday-guardians-rana-tharu-womens-implicit-roles-in-nepal",
+            "title:5ca28373235be140366cb1130a8be1dc29fc2a69aeaf6ae63858762a6d121ce4",
+            "url:https://globalvoices.org/2026/08/21/the-everyday-guardians-rana-tharu-womens-implicit-roles-in-nepal"
+          ]
+        },
+        {
+          "id": "global-voices-tinue-to-survive-interview-with-juang-language-writer-kshetrabasi-juanga",
+          "sourceUrl": "https://globalvoices.org/2026/08/20/indigenous-languages-and-cultures-are-surviving-and-will-continue-to-survive-interview-with-juang-language-writer-kshetrabasi-juanga/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:899038bb9ba429bec1f956be32c3678d9707893c709d71cc7d4fa99eb46c27ac",
+            "id:global-voices-tinue-to-survive-interview-with-juang-language-writer-kshetrabasi-juanga",
+            "title:94ecb68d383501673e94c2a4eab60059b7c457abd7000643d3247a64d07279f7",
+            "url:https://globalvoices.org/2026/08/20/indigenous-languages-and-cultures-are-surviving-and-will-continue-to-survive-interview-with-juang-language-writer-kshetrabasi-juanga"
+          ]
+        },
+        {
+          "id": "global-voices-arthquakes-leave-children-facing-trauma-displacement-and-food-insecurity",
+          "sourceUrl": "https://globalvoices.org/2026/08/28/venezuelas-earthquakes-leave-children-facing-trauma-displacement-and-food-insecurity/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:e94f42a41f6bd4607c3f7ccec457492b2926fa8cbef99d724948c8440653ccb8",
+            "id:global-voices-arthquakes-leave-children-facing-trauma-displacement-and-food-insecurity",
+            "title:ca82e9e7500efd4fa19c8b6fab0fba69f41a7833ee05b673f900b61881730c89",
+            "url:https://globalvoices.org/2026/08/28/venezuelas-earthquakes-leave-children-facing-trauma-displacement-and-food-insecurity"
+          ]
+        },
+        {
+          "id": "global-voices-devastating-impact-of-copper-and-cobalt-mining-pollution-in-lualaba-drc",
+          "sourceUrl": "https://globalvoices.org/2026/08/29/the-devastating-impact-of-copper-and-cobalt-mining-pollution-in-lualaba-drc/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:54a81119693a8b56b31633ba54cca5d905534f9fc0bc6a197a142e213fbe21a9",
+            "id:global-voices-devastating-impact-of-copper-and-cobalt-mining-pollution-in-lualaba-drc",
+            "title:9d9c0ea52ec31827ca485547b13f9fe96b5643b624ece59ee2bdfeb4a0216726",
+            "url:https://globalvoices.org/2026/08/29/the-devastating-impact-of-copper-and-cobalt-mining-pollution-in-lualaba-drc"
+          ]
+        },
+        {
+          "id": "global-voices-org-2026-08-29-haitis-security-crisis-forces-displacement-and-relocation",
+          "sourceUrl": "https://globalvoices.org/2026/08/29/haitis-security-crisis-forces-displacement-and-relocation/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:0e3919d8727cc54444d9e2c544ee324b1a26e59c2206371b6368d82e336bcac3",
+            "id:global-voices-org-2026-08-29-haitis-security-crisis-forces-displacement-and-relocation",
+            "title:21b9d1cd017f7536a1d636cc1a2f87619e512b9a0bfd14139341399f9b689c8f",
+            "url:https://globalvoices.org/2026/08/29/haitis-security-crisis-forces-displacement-and-relocation"
+          ]
+        },
+        {
+          "id": "nasa-ribbon-cutting-event-for-nasa-deep-space-networks-deep-space-station-23",
+          "sourceUrl": "https://science.nasa.gov/photojournal/ribbon-cutting-event-for-nasa-deep-space-networks-deep-space-station-23/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:87092a9ccf979fb03b268d726910f561ffe3d3392ee5dff103b0c43bc00e9e62",
+            "id:nasa-ribbon-cutting-event-for-nasa-deep-space-networks-deep-space-station-23",
+            "title:1423f99c9ffa1ee51b13cb3d42b2e05d54cbeab373299866ce1470ac1417e867",
+            "url:https://science.nasa.gov/photojournal/ribbon-cutting-event-for-nasa-deep-space-networks-deep-space-station-23"
+          ]
+        },
+        {
+          "id": "nasa-photojournal-nasa-deep-space-networks-new-goldstone-antenna-goes-online",
+          "sourceUrl": "https://science.nasa.gov/photojournal/nasa-deep-space-networks-new-goldstone-antenna-goes-online/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:3755f158a505dca3af0a7ba1668f2240e1d61de563f9e405619214b6db79ed15",
+            "id:nasa-photojournal-nasa-deep-space-networks-new-goldstone-antenna-goes-online",
+            "title:e2293fdc7728824fbb334d83489a26e9f95d17239d350072ebd5db5991eabb3d",
+            "url:https://science.nasa.gov/photojournal/nasa-deep-space-networks-new-goldstone-antenna-goes-online"
+          ]
+        },
+        {
+          "id": "nasa-panorama-showcasing-the-34-meter-antennas-of-the-dsns-goldstone-complex",
+          "sourceUrl": "https://science.nasa.gov/photojournal/panorama-showcasing-the-34-meter-antennas-of-the-dsns-goldstone-complex/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:f1d2614f61ebeb1381f90c2db1b26467e1dabcb23dfd5efea7e9f5f77866b948",
+            "id:nasa-panorama-showcasing-the-34-meter-antennas-of-the-dsns-goldstone-complex",
+            "title:46ffefb438046f92444e22f4c07f92a50f6730f9ec8dd21964b9a5928e0c6ce9",
+            "url:https://science.nasa.gov/photojournal/panorama-showcasing-the-34-meter-antennas-of-the-dsns-goldstone-complex"
+          ]
+        },
+        {
+          "id": "global-voices-1-how-croatian-communities-are-taking-on-planned-poultry-slaughterhouses",
+          "sourceUrl": "https://globalvoices.org/2026/08/31/how-croatian-communities-are-taking-on-planned-poultry-slaughterhouses/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:3134cd2ff4e52015e989dd4cd0d51e2d99fd81fad58841a395a313241a146a49",
+            "id:global-voices-1-how-croatian-communities-are-taking-on-planned-poultry-slaughterhouses",
+            "title:c658d54db70231389ad80ab19d64dc5e60ebc1240226e59707c85cd0251aa046",
+            "url:https://globalvoices.org/2026/08/31/how-croatian-communities-are-taking-on-planned-poultry-slaughterhouses"
+          ]
+        },
+        {
+          "id": "global-voices-6-08-30-chinas-fertility-crisis-is-evidence-of-its-modernization-success",
+          "sourceUrl": "https://globalvoices.org/2026/08/30/chinas-fertility-crisis-is-evidence-of-its-modernization-success/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:44e61d9ddb58b4b77e388b8537324927bfa6daead92306e700e0e87bdf2d1188",
+            "id:global-voices-6-08-30-chinas-fertility-crisis-is-evidence-of-its-modernization-success",
+            "title:97e8feaa8ed596994a40e01bf5e5f94337012ce3ca8036dcbeff0e504beaed20",
+            "url:https://globalvoices.org/2026/08/30/chinas-fertility-crisis-is-evidence-of-its-modernization-success"
+          ]
+        },
+        {
+          "id": "standard-standardebooks-org-ebooks-dorothy-m-richardson-the-trap",
+          "sourceUrl": "https://standardebooks.org/ebooks/dorothy-m-richardson/the-trap",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:abba7b90f7c814a5fdeac186cebdb5441faa4a3b8fa67b121e92e35620f5f42c",
+            "id:standard-standardebooks-org-ebooks-dorothy-m-richardson-the-trap",
+            "title:dc6e1dd832f5755e6697e95120ae185d3e2b67acdba66072c12ec377ff351477",
+            "url:https://standardebooks.org/ebooks/dorothy-m-richardson/the-trap"
+          ]
+        },
+        {
+          "id": "standard-rdebooks-org-ebooks-heinrich-kramer-malleus-maleficarum-montague-summers",
+          "sourceUrl": "https://standardebooks.org/ebooks/heinrich-kramer/malleus-maleficarum/montague-summers",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:ded77a7475450a910ced1a562b3e279b83c4793019616744cac879958b467811",
+            "id:standard-rdebooks-org-ebooks-heinrich-kramer-malleus-maleficarum-montague-summers",
+            "title:818827a5c11d5b2cdb62bf77a8dd3d9560c81d017d9016fa2bb6de16068e0f90",
+            "url:https://standardebooks.org/ebooks/heinrich-kramer/malleus-maleficarum/montague-summers"
+          ]
+        },
+        {
+          "id": "global-voices-globalvoices-org-2026-09-01-when-the-lights-go-out-in-libyas-cyrenaica",
+          "sourceUrl": "https://globalvoices.org/2026/09/01/when-the-lights-go-out-in-libyas-cyrenaica/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:0e021f3d1ffed0a7aa4ec55737dd8027e2117a7c3ad217db170b9a3ad693f983",
+            "id:global-voices-globalvoices-org-2026-09-01-when-the-lights-go-out-in-libyas-cyrenaica",
+            "title:7abff90fbea3a1cbe7cefcef178bde62021053f3d87245efd72fbcd3395fae0f",
+            "url:https://globalvoices.org/2026/09/01/when-the-lights-go-out-in-libyas-cyrenaica"
+          ]
+        },
+        {
+          "id": "global-voices-31-nigerias-dambe-is-evolving-its-communities-should-not-be-left-behind",
+          "sourceUrl": "https://globalvoices.org/2026/08/31/nigerias-dambe-is-evolving-its-communities-should-not-be-left-behind/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:46aa511e5a2264e1986a64ee91a49122da4b64c217c223ea19a60efdc3328c08",
+            "id:global-voices-31-nigerias-dambe-is-evolving-its-communities-should-not-be-left-behind",
+            "title:c1cc814de7c6a737b578c2937809ce41efbf253f0c847431961f6bf237967f2b",
+            "url:https://globalvoices.org/2026/08/31/nigerias-dambe-is-evolving-its-communities-should-not-be-left-behind"
+          ]
+        },
+        {
+          "id": "nasa-ase-nasa-selects-blue-origin-as-mars-telecommunications-network-provider",
+          "sourceUrl": "https://www.nasa.gov/news-release/nasa-selects-blue-origin-as-mars-telecommunications-network-provider/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:e8ea2f7a1179417e7c9d8aca925a092deef1b82c8448a3dd21b3e54cdd5e0d80",
+            "id:nasa-ase-nasa-selects-blue-origin-as-mars-telecommunications-network-provider",
+            "title:06dda146945ebd435f8d261fe2262c4826fecf36ff857cf04db2557b404ab714",
+            "url:https://nasa.gov/news-release/nasa-selects-blue-origin-as-mars-telecommunications-network-provider"
+          ]
+        },
+        {
+          "id": "global-voices-igenous-plants-offer-ghanaians-an-alternative-to-costly-western-medicine",
+          "sourceUrl": "https://globalvoices.org/2026/09/03/indigenous-plants-offer-ghanaians-an-alternative-to-costly-western-medicine/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:721f0a0d11aca51b0a8dbe41e6a86c40f39bfdbc60fdb061a566ec55bae80480",
+            "id:global-voices-igenous-plants-offer-ghanaians-an-alternative-to-costly-western-medicine",
+            "title:df8e731b3aeeeacd99b70a6f04d6ce16e13a384d3c8dd85f0a42f233a4d32008",
+            "url:https://globalvoices.org/2026/09/03/indigenous-plants-offer-ghanaians-an-alternative-to-costly-western-medicine"
+          ]
+        },
+        {
+          "id": "global-voices-indomitable-lionesses-football-team-finally-shatter-wafcon-glass-ceiling",
+          "sourceUrl": "https://globalvoices.org/2026/09/04/cameroons-indomitable-lionesses-football-team-finally-shatter-wafcon-glass-ceiling/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:8b33e067fdd256fa02c80a26295728a54bd08b9cfa71c1aac4c4eab3365abe41",
+            "id:global-voices-indomitable-lionesses-football-team-finally-shatter-wafcon-glass-ceiling",
+            "title:178b233cd93ff6aa0ea0654ed5201ac67273bd7d55933865da8f15426fb017ec",
+            "url:https://globalvoices.org/2026/09/04/cameroons-indomitable-lionesses-football-team-finally-shatter-wafcon-glass-ceiling"
+          ]
+        },
+        {
+          "id": "nasa-ransfer-spinoffs-nasas-life-saving-technology-where-cell-signals-cant-go",
+          "sourceUrl": "https://www.nasa.gov/technology/tech-transfer-spinoffs/nasas-life-saving-technology-where-cell-signals-cant-go/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:a6d8f7d78a7db73ae1441a8a1ae4f7700c5c5aca13ebf45fe37072b232a3a643",
+            "id:nasa-ransfer-spinoffs-nasas-life-saving-technology-where-cell-signals-cant-go",
+            "title:9eda19dc00ece9ae5feb4673888779a824ef570ef271c1020ae8591c5d1d636f",
+            "url:https://nasa.gov/technology/tech-transfer-spinoffs/nasas-life-saving-technology-where-cell-signals-cant-go"
+          ]
+        },
+        {
+          "id": "nasa-science-nasa-gov-earth-earth-observatory-anak-krakatau-rumbles-again",
+          "sourceUrl": "https://science.nasa.gov/earth/earth-observatory/anak-krakatau-rumbles-again/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:9356b90ca7fec53eb389f07b19624754890ef501e22cb7167feaabfe7dbc77fb",
+            "id:nasa-science-nasa-gov-earth-earth-observatory-anak-krakatau-rumbles-again",
+            "title:de851c66385617772b0ca941c8a0c60554cdee4dffa637dc08bf53558370856c",
+            "url:https://science.nasa.gov/earth/earth-observatory/anak-krakatau-rumbles-again"
+          ]
+        },
+        {
+          "id": "nasa-a-technique-for-manipulating-satellite-photos-now-reveals-ancient-images",
+          "sourceUrl": "https://www.nasa.gov/technology/tech-transfer-spinoffs/nasa-technique-for-manipulating-satellite-photos-now-reveals-ancient-images/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:80df5655a1f2f5c02bded8130cd1b9c607d23d475024900380af25bf3918c3f1",
+            "id:nasa-a-technique-for-manipulating-satellite-photos-now-reveals-ancient-images",
+            "title:3ec97e97b42cde54d052ccfe26f2dfa3bb266eb2b835de293ae070548d6a3524",
+            "url:https://nasa.gov/technology/tech-transfer-spinoffs/nasa-technique-for-manipulating-satellite-photos-now-reveals-ancient-images"
+          ]
+        },
+        {
+          "id": "standard-standardebooks-org-ebooks-thomas-mann-short-fiction-various-translators",
+          "sourceUrl": "https://standardebooks.org/ebooks/thomas-mann/short-fiction/various-translators",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:1c11a26a6d305d5904e9cb6787ebfbcdabe846279a2830fd312d788d368896f4",
+            "id:standard-standardebooks-org-ebooks-thomas-mann-short-fiction-various-translators",
+            "title:262174d1c6cc89f93805a358e240a5ee78e27c5df6189d167d6823e8e89e9435",
+            "url:https://standardebooks.org/ebooks/thomas-mann/short-fiction/various-translators"
+          ]
+        },
+        {
+          "id": "standard-standardebooks-org-ebooks-c-h-spurgeon-the-art-of-illustration",
+          "sourceUrl": "https://standardebooks.org/ebooks/c-h-spurgeon/the-art-of-illustration",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:0b0fd6ed8a690ef880f5ccd14c926890eaf6d570b0dc1fc735e9382f315779f9",
+            "id:standard-standardebooks-org-ebooks-c-h-spurgeon-the-art-of-illustration",
+            "title:7e73e927be20231c0d3032e33928e091e936e0a58f670a07aedd84416aca4708",
+            "url:https://standardebooks.org/ebooks/c-h-spurgeon/the-art-of-illustration"
+          ]
+        },
+        {
+          "id": "standard-standardebooks-org-ebooks-george-macdonald-within-and-without",
+          "sourceUrl": "https://standardebooks.org/ebooks/george-macdonald/within-and-without",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:14bd922cf121756ae442ba0e79d840a987fb57d9109977b9d71e91f2311f808c",
+            "id:standard-standardebooks-org-ebooks-george-macdonald-within-and-without",
+            "title:37cf7e834e9eaa49624799c139a67c18d15c89d0dd5e11f6144f4b100a4105b1",
+            "url:https://standardebooks.org/ebooks/george-macdonald/within-and-without"
+          ]
+        },
+        {
+          "id": "standard-standardebooks-org-ebooks-h-c-mcneile-the-final-count",
+          "sourceUrl": "https://standardebooks.org/ebooks/h-c-mcneile/the-final-count",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:f5d3220786a870305d4b4ea009976e30b2cb1b88ffc3d71634bb021579cbc5ca",
+            "id:standard-standardebooks-org-ebooks-h-c-mcneile-the-final-count",
+            "title:7d1bfb2753150910cd4373189cb43f51439b93d490cf81dc962630ff6400ffbd",
+            "url:https://standardebooks.org/ebooks/h-c-mcneile/the-final-count"
+          ]
+        },
+        {
+          "id": "standard-debooks-org-ebooks-theodore-roosevelt-a-book-lovers-holidays-in-the-open",
+          "sourceUrl": "https://standardebooks.org/ebooks/theodore-roosevelt/a-book-lovers-holidays-in-the-open",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:38c0a387bcc428fc64588af99dfb5142ab84dd58915712c93ae729bbdfcfc72c",
+            "id:standard-debooks-org-ebooks-theodore-roosevelt-a-book-lovers-holidays-in-the-open",
+            "title:93c141028232981856e46e66f8f473db82a55b65a781301d05ce20f507db9197",
+            "url:https://standardebooks.org/ebooks/theodore-roosevelt/a-book-lovers-holidays-in-the-open"
+          ]
+        },
+        {
+          "id": "global-voices-he-day-living-in-pereira-the-forgotten-survivors-of-colombias-earthquake",
+          "sourceUrl": "https://globalvoices.org/2026/09/11/pay-by-the-day-living-in-pereira-the-forgotten-survivors-of-colombias-earthquake/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:110d5faacabee5c4b4c0c9ba413d58e3e819a6ecac4970f4b06f854994f83779",
+            "id:global-voices-he-day-living-in-pereira-the-forgotten-survivors-of-colombias-earthquake",
+            "title:800db080f817eddfbf9a264447a182682eaa2509dfa6b3ff37eb20538c78545e",
+            "url:https://globalvoices.org/2026/09/11/pay-by-the-day-living-in-pereira-the-forgotten-survivors-of-colombias-earthquake"
+          ]
+        },
+        {
+          "id": "global-voices-9-10-south-korean-civil-society-says-no-to-military-deployment-to-hormuz",
+          "sourceUrl": "https://globalvoices.org/2026/09/10/south-korean-civil-society-says-no-to-military-deployment-to-hormuz/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:a1b0fb902867b697ccdf076bc9746eacbe6d622bece32d328428c3aba6a31b8a",
+            "id:global-voices-9-10-south-korean-civil-society-says-no-to-military-deployment-to-hormuz",
+            "title:7d72238ced4bf02a8fdaccd05b03bfaefeb1b85620535423905abb62816c052c",
+            "url:https://globalvoices.org/2026/09/10/south-korean-civil-society-says-no-to-military-deployment-to-hormuz"
+          ]
+        },
+        {
+          "id": "global-voices-026-09-08-can-a-new-national-peace-policy-fix-nigerias-security-problems",
+          "sourceUrl": "https://globalvoices.org/2026/09/08/can-a-new-national-peace-policy-fix-nigerias-security-problems/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:04fac3f2a54baca537231615d0a03e5217562833e9a68da81476628733745dd9",
+            "id:global-voices-026-09-08-can-a-new-national-peace-policy-fix-nigerias-security-problems",
+            "title:181f7574a0de64d373b7c0094be1ad12ab7390fffdd15a65b87928a2ebc5872f",
+            "url:https://globalvoices.org/2026/09/08/can-a-new-national-peace-policy-fix-nigerias-security-problems"
+          ]
+        },
+        {
+          "id": "global-voices-hat-remains-after-nepals-gen-z-protests-survivors-reflect-one-year-later",
+          "sourceUrl": "https://globalvoices.org/2026/09/08/what-remains-after-nepals-gen-z-protests-survivors-reflect-one-year-later/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:7c044bc4281aa6d40cf554e3935ac1c685ea2d096c24a2ba9babb1cc572eea41",
+            "id:global-voices-hat-remains-after-nepals-gen-z-protests-survivors-reflect-one-year-later",
+            "title:48ca81307ada47175dff8868a581c7f233cecb515ee9ad4393c9c9321ca2c3f3",
+            "url:https://globalvoices.org/2026/09/08/what-remains-after-nepals-gen-z-protests-survivors-reflect-one-year-later"
+          ]
+        },
+        {
+          "id": "global-voices-ms-on-malaysias-draconian-peaceful-assembly-act-encounter-further-delays",
+          "sourceUrl": "https://globalvoices.org/2026/09/07/reforms-on-malaysias-draconian-peaceful-assembly-act-encounter-further-delays/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:25512f2b24dbcf2ce8af55d881000cbb21657c443d53b35120ae0e5dac1524b2",
+            "id:global-voices-ms-on-malaysias-draconian-peaceful-assembly-act-encounter-further-delays",
+            "title:8e442fea978fbca5e6268f43f9b30410662110217e2a35b661095a033ca3c0c2",
+            "url:https://globalvoices.org/2026/09/07/reforms-on-malaysias-draconian-peaceful-assembly-act-encounter-further-delays"
+          ]
+        },
+        {
+          "id": "global-voices-s-uncover-untold-facets-of-indigenous-stories-overlooked-for-generations",
+          "sourceUrl": "https://globalvoices.org/2026/09/06/what-does-folklore-have-to-say-it-helps-uncover-untold-facets-of-indigenous-stories-overlooked-for-generations/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:de9e1f0605624ae4d650be363f545af19533cef0ae64315a5486d1468894b04c",
+            "id:global-voices-s-uncover-untold-facets-of-indigenous-stories-overlooked-for-generations",
+            "title:c352e794e4b429e3a6989d45a304c13dfe17774f327c20d4aad260957f166c3b",
+            "url:https://globalvoices.org/2026/09/06/what-does-folklore-have-to-say-it-helps-uncover-untold-facets-of-indigenous-stories-overlooked-for-generations"
+          ]
+        },
+        {
+          "id": "global-voices-have-a-say-in-how-they-are-shaped-notes-from-the-common-city-conference",
+          "sourceUrl": "https://globalvoices.org/2026/09/05/the-people-who-live-in-cities-must-have-a-say-in-how-they-are-shaped-notes-from-the-common-city-conference/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:26768a7cfb0946fb3bb9f5c3e50dd78b58f4181ed8f6c41056b46c52b21b31be",
+            "id:global-voices-have-a-say-in-how-they-are-shaped-notes-from-the-common-city-conference",
+            "title:53d3d59fc46d5e9b91c167543f9229dc99ec69ce61544033930d2bca14452120",
+            "url:https://globalvoices.org/2026/09/05/the-people-who-live-in-cities-must-have-a-say-in-how-they-are-shaped-notes-from-the-common-city-conference"
+          ]
+        },
+        {
+          "id": "global-voices-lobalvoices-org-2026-09-05-in-turbulent-times-football-brings-haiti-hope",
+          "sourceUrl": "https://globalvoices.org/2026/09/05/in-turbulent-times-football-brings-haiti-hope/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:c0a6a61934efa18987653899772e870f60b4361d53d02d4ab452ebe067063623",
+            "id:global-voices-lobalvoices-org-2026-09-05-in-turbulent-times-football-brings-haiti-hope",
+            "title:31edad0b2524b612bcb0902ef91b797ff40a9bfd4ce5ca26c461d34fd113b8e8",
+            "url:https://globalvoices.org/2026/09/05/in-turbulent-times-football-brings-haiti-hope"
+          ]
+        },
+        {
+          "id": "global-voices-expanding-in-bangladesh-but-garment-workers-still-struggle-for-childcare",
+          "sourceUrl": "https://globalvoices.org/2026/09/04/maternity-leave-is-expanding-in-bangladesh-but-garment-workers-still-struggle-for-childcare/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:261f027e421d413844ea9b9a80853eeb681246652d68220a916eeda4fa38ab92",
+            "id:global-voices-expanding-in-bangladesh-but-garment-workers-still-struggle-for-childcare",
+            "title:02505b313ef9ccbb35645b9b0b9a9e86d6b90f36f13e598d0dfd2b1a4b7c322e",
+            "url:https://globalvoices.org/2026/09/04/maternity-leave-is-expanding-in-bangladesh-but-garment-workers-still-struggle-for-childcare"
+          ]
+        },
+        {
+          "id": "quiet-noticing",
+          "sourceUrl": "",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:960e5c4e4c8b91abc3437f48970cb976063abe69d7c1b60e3416637fc451afb2",
+            "id:quiet-noticing",
+            "title:9fb1712db730b8e864c295f06f9dc3e41f299a99e9d8a1cef9206df980973095"
+          ]
+        },
+        {
+          "id": "phrases-carry",
+          "sourceUrl": "",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:f5f6d722629939a308599e32915aa7a1840fee8f1e7248a4e6d9342b5a971c4a",
+            "id:phrases-carry",
+            "title:09e84d64d2d7bba6d382f36454cf164854cdf195469e1d3788f4e205710e0283"
+          ]
+        },
+        {
+          "id": "upper-deck",
+          "sourceUrl": "",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:7239796ae847b2ebe8538c071a4a9229690e5d4d01f10c04215323574d136675",
+            "id:upper-deck",
+            "title:836ada7e22b623d021b60908692478a932118fd6d63f02428dfa52e60180dc31"
+          ]
+        },
+        {
+          "id": "voa-s-com-a-studying-patterns-to-improve-your-writting-part-one-3427791-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/studying-patterns-to-improve-your-writting-part-one/3427791.html",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:cda6f29d6e0bcd194655174467d18b04d04eb4566c3a17b2f3c4ed23df5287d0",
+            "id:voa-s-com-a-studying-patterns-to-improve-your-writting-part-one-3427791-html",
+            "title:932bf2c9fa37292abae77b2d90ff1a35aec2a77efef686bfad500c69107caf8d",
+            "url:https://learningenglish.voanews.com/a/studying-patterns-to-improve-your-writting-part-one/3427791.html"
+          ]
+        },
+        {
+          "id": "voa-lish-voanews-com-a-the-blue-hotel-by-stephen-crane-part-one-4773641-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/the-blue-hotel-by-stephen-crane-part-one/4773641.html",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:8ae68c8387f49cf00612405cb8c476264d2db82a914a63d9ed4cc0b4ab0f8d05",
+            "id:voa-lish-voanews-com-a-the-blue-hotel-by-stephen-crane-part-one-4773641-html",
+            "title:13835d227a53cfb3e294d0f170bd7cdb12246bd2c94d3335168c1a19fd303b84",
+            "url:https://learningenglish.voanews.com/a/the-blue-hotel-by-stephen-crane-part-one/4773641.html"
+          ]
+        },
+        {
+          "id": "voa-sh-voanews-com-a-questions-answers-about-holiday-activities-6904240-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/questions-answers-about-holiday-activities/6904240.html",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:29dba54dda13ee16edac1e4b10620433a4f30c6271e4f6bd975239dda22b4c8f",
+            "id:voa-sh-voanews-com-a-questions-answers-about-holiday-activities-6904240-html",
+            "title:b5d7b1f83025d872e7423fd13cd80e27638006d6525a15d147ce4ded69c92693",
+            "url:https://learningenglish.voanews.com/a/questions-answers-about-holiday-activities/6904240.html"
+          ]
+        },
+        {
+          "id": "voa-s-com-a-celebrated-jumping-frog-calaveras-county-mark-twain-3160704-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/celebrated-jumping-frog-calaveras-county-mark-twain/3160704.html",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:607874fe90fb0ef93dff50feb530e7e88fdbe364978503b4c5fbcc010992c5e2",
+            "id:voa-s-com-a-celebrated-jumping-frog-calaveras-county-mark-twain-3160704-html",
+            "title:5f8781629ce99b8c8253d735efa59900fbe0172fa53c7b0c67151900795f8bdd",
+            "url:https://learningenglish.voanews.com/a/celebrated-jumping-frog-calaveras-county-mark-twain/3160704.html"
+          ]
+        },
+        {
+          "id": "voa-ish-voanews-com-a-grammar-for-making-new-year-s-resolutions-5226829-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/grammar-for-making-new-year-s-resolutions/5226829.html",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:175a826a0adf212d126a98d2948e94df96632227b5602db16d56dd20e45fbc1c",
+            "id:voa-ish-voanews-com-a-grammar-for-making-new-year-s-resolutions-5226829-html",
+            "title:e28919e5d43ecb45cd3172b727aa4b72917ce66178402c1c27fa5d08902a323d",
+            "url:https://learningenglish.voanews.com/a/grammar-for-making-new-year-s-resolutions/5226829.html"
+          ]
+        },
+        {
+          "id": "voa-arningenglish-voanews-com-a-the-gift-of-the-magi-by-o-henry-4656574-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/the-gift-of-the-magi-by-o-henry/4656574.html",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:bde027d6ab4176a8db4ed5712c80af9c98878af5cbb04aec0a5c8be679f1a374",
+            "id:voa-arningenglish-voanews-com-a-the-gift-of-the-magi-by-o-henry-4656574-html",
+            "title:c66cca58ab16c8a2cc2125d50b26cc203afe19a56ae3f3cdee79ececdaecba85",
+            "url:https://learningenglish.voanews.com/a/the-gift-of-the-magi-by-o-henry/4656574.html"
+          ]
+        },
+        {
+          "id": "voa-earningenglish-voanews-com-a-everyday-grammar-and-christmas-4172368-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/everyday-grammar-and-christmas/4172368.html",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:54b1b9be52b2008912ca40465c80c2abcc5febc7e6d5083a2a0116f8aeb510f9",
+            "id:voa-earningenglish-voanews-com-a-everyday-grammar-and-christmas-4172368-html",
+            "title:63229e4ee525eb904aa476108bf40d7e462a6bbd962991bc4f3f1c00af8a5aa9",
+            "url:https://learningenglish.voanews.com/a/everyday-grammar-and-christmas/4172368.html"
+          ]
+        },
+        {
+          "id": "voa-arningenglish-voanews-com-a-american-stories-chicken-little-6947104-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/american-stories-chicken-little/6947104.html",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:a51e5d81c043446466f66e1941f310e1a732aa26070a0b4d4838a063b269dfbd",
+            "id:voa-arningenglish-voanews-com-a-american-stories-chicken-little-6947104-html",
+            "title:bb6747c7cea089ac2cdefa9c7a45acc35a1848c828360acb33d498d81442dabe",
+            "url:https://learningenglish.voanews.com/a/american-stories-chicken-little/6947104.html"
+          ]
+        },
+        {
+          "id": "voa-n-stories-how-the-animals-lost-their-tails-by-carl-sandburg-6956466-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/american-stories-how-the-animals-lost-their-tails-by-carl-sandburg/6956466.html",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:2cb14e34193d78896d570554b5ffc38df85154878148b3ceeedabb45f908e005",
+            "id:voa-n-stories-how-the-animals-lost-their-tails-by-carl-sandburg-6956466-html",
+            "title:6bb8d7529f34ea68839a416d774c93921c5fb289e9d912309e5fa0b48a3a6a61",
+            "url:https://learningenglish.voanews.com/a/american-stories-how-the-animals-lost-their-tails-by-carl-sandburg/6956466.html"
+          ]
+        },
+        {
+          "id": "voa-com-a-cask-of-amontillado-edgar-allan-poe-american-stories-3249195-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/cask-of-amontillado-edgar-allan-poe-american-stories/3249195.html",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:f477c44f82f0385abcb499540399fbf85449d549399cd0a332eac7f8c076279d",
+            "id:voa-com-a-cask-of-amontillado-edgar-allan-poe-american-stories-3249195-html",
+            "title:a139a694141a93de8d8d15c47d44f4a9cdeeea1ebbb07bbb37bb7b1806f4ddd1",
+            "url:https://learningenglish.voanews.com/a/cask-of-amontillado-edgar-allan-poe-american-stories/3249195.html"
+          ]
+        },
+        {
+          "id": "voa-ish-voanews-com-a-two-thanksgiving-day-gentlemen-by-o-henry-4656560-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/two-thanksgiving-day-gentlemen-by-o-henry/4656560.html",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:0812c96dea9fe4879cd468a2a662d4982ca2998e6540f4596a3fa88316dd1135",
+            "id:voa-ish-voanews-com-a-two-thanksgiving-day-gentlemen-by-o-henry-4656560-html",
+            "title:06c1ca49ee1d0ee67ad7b4e4a1a1ca1c193f1af8f053e873256c5bfb3d63623d",
+            "url:https://learningenglish.voanews.com/a/two-thanksgiving-day-gentlemen-by-o-henry/4656560.html"
+          ]
+        },
+        {
+          "id": "voa-genglish-voanews-com-a-the-purloined-letter-edgar-allan-poe-3307412-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/the-purloined-letter-edgar-allan-poe/3307412.html",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:da3d3002a7741fcfeb8f39719e3425a2945856ae011e1d33df32fc5ecb8c39d6",
+            "id:voa-genglish-voanews-com-a-the-purloined-letter-edgar-allan-poe-3307412-html",
+            "title:f00583f256f9ac08d44a843eb84223316c63e0eb8a41ce3a4530448aa86c49f9",
+            "url:https://learningenglish.voanews.com/a/the-purloined-letter-edgar-allan-poe/3307412.html"
+          ]
+        },
+        {
+          "id": "voa-ingenglish-voanews-com-a-the-tell-tale-heat-edgar-allan-poe-3538402-html",
+          "sourceUrl": "https://learningenglish.voanews.com/a/the-tell-tale-heat-edgar-allan-poe/3538402.html",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:cebcaeb71e1b14c1467b457b5071ea9ac4976b8edd88522a75f2ad5d74906f5d",
+            "id:voa-ingenglish-voanews-com-a-the-tell-tale-heat-edgar-allan-poe-3538402-html",
+            "title:7ac3431f64465cbdfaf358eb5d28389a378c9868c25c7fa454122e22b77f59b4",
+            "url:https://learningenglish.voanews.com/a/the-tell-tale-heat-edgar-allan-poe/3538402.html"
+          ]
+        },
+        {
+          "id": "global-voices-es-org-2026-08-19-the-invisible-crisis-that-strips-people-of-citizenship",
+          "sourceUrl": "https://globalvoices.org/2026/08/19/the-invisible-crisis-that-strips-people-of-citizenship/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:3b5946530f6666580181f5b8a0cd1ab505a814f971042e214443fc46624416d0",
+            "id:global-voices-es-org-2026-08-19-the-invisible-crisis-that-strips-people-of-citizenship",
+            "title:c4f948e9d9d7be43ccd82c576decb840574df75924d18de3ab5ba345ccac62b0",
+            "url:https://globalvoices.org/2026/08/19/the-invisible-crisis-that-strips-people-of-citizenship"
+          ]
+        },
+        {
+          "id": "global-voices-razil-sees-a-rise-in-land-conflicts-and-the-murders-of-indigenous-people",
+          "sourceUrl": "https://globalvoices.org/2026/08/19/amid-political-and-economic-pressure-brazil-sees-a-rise-in-land-conflicts-and-the-murders-of-indigenous-people/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:5b61cebf02ee206428ce5734a4ff3188d7f7c0ad140fa1f072446bd5efaaa0e1",
+            "id:global-voices-razil-sees-a-rise-in-land-conflicts-and-the-murders-of-indigenous-people",
+            "title:f1af5f53a28c1f4590e34f94a91a25a39582103ea64d2e2513d0c0d9068b291f",
+            "url:https://globalvoices.org/2026/08/19/amid-political-and-economic-pressure-brazil-sees-a-rise-in-land-conflicts-and-the-murders-of-indigenous-people"
+          ]
+        },
+        {
+          "id": "global-voices-globalvoices-org-2026-08-18-who-are-the-m23-rebels-in-eastern-drc",
+          "sourceUrl": "https://globalvoices.org/2026/08/18/who-are-the-m23-rebels-in-eastern-drc/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:2e7f8c27e13510e0ba033ee94bdeedf6a77d83abfab276065c92acbd1d7ed982",
+            "id:global-voices-globalvoices-org-2026-08-18-who-are-the-m23-rebels-in-eastern-drc",
+            "title:97315a8a870868b7d3aa0fe55b2762c368fd274861448c707130d9014337333b",
+            "url:https://globalvoices.org/2026/08/18/who-are-the-m23-rebels-in-eastern-drc"
+          ]
+        },
+        {
+          "id": "global-voices-g-2026-08-17-who-was-here-first-the-two-meanings-of-indigenous-in-europe",
+          "sourceUrl": "https://globalvoices.org/2026/08/17/who-was-here-first-the-two-meanings-of-indigenous-in-europe/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:ed100fcff2d7539cf9dee4ff7964e9fb9a25ca1eb863d5bef68b21bab94a4896",
+            "id:global-voices-g-2026-08-17-who-was-here-first-the-two-meanings-of-indigenous-in-europe",
+            "title:b534df7cf3d0bfae4a20e8b22acf4db9693cb71e67ebf9c5bb0a6869c04c1c15",
+            "url:https://globalvoices.org/2026/08/17/who-was-here-first-the-two-meanings-of-indigenous-in-europe"
+          ]
+        },
+        {
+          "id": "global-voices-earth-fragments-from-communities-overlooked-after-venezuelas-earthquakes",
+          "sourceUrl": "https://globalvoices.org/2026/08/16/the-sigh-of-the-earth-fragments-from-communities-overlooked-after-venezuelas-earthquakes/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:a428404a765f88425cc968c444bd8961722a0435430c0728c5da357bbb2bf26e",
+            "id:global-voices-earth-fragments-from-communities-overlooked-after-venezuelas-earthquakes",
+            "title:aba0975c56f4f4d8cc2411417921d5e6bccc7265a18845da3fce5a7fd91c930c",
+            "url:https://globalvoices.org/2026/08/16/the-sigh-of-the-earth-fragments-from-communities-overlooked-after-venezuelas-earthquakes"
+          ]
+        },
+        {
+          "id": "global-voices-of-sexual-violence-raises-alarm-in-the-democratic-republic-of-the-congo",
+          "sourceUrl": "https://globalvoices.org/2026/08/16/escalation-of-sexual-violence-raises-alarm-in-the-democratic-republic-of-the-congo/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:b3a1031c19eb59b2051938af190bbda095946049a47faea58a1c19a71d422e44",
+            "id:global-voices-of-sexual-violence-raises-alarm-in-the-democratic-republic-of-the-congo",
+            "title:90692359d3d985e5fd813b4dde814bb05666796b8f7d8e2091f947696f0418e0",
+            "url:https://globalvoices.org/2026/08/16/escalation-of-sexual-violence-raises-alarm-in-the-democratic-republic-of-the-congo"
+          ]
+        },
+        {
+          "id": "global-voices-ransgender-person-raises-questions-about-faith-and-belonging-in-pakistan",
+          "sourceUrl": "https://globalvoices.org/2026/08/15/a-mosque-built-by-a-transgender-person-raises-questions-about-faith-and-belonging-in-pakistan/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:e50d503fb769134658c42ac4c51eb74d7d805190bdaba1a866268e1c721eb08d",
+            "id:global-voices-ransgender-person-raises-questions-about-faith-and-belonging-in-pakistan",
+            "title:ddeb1134a929d688fc6253b1edecf145211850fbaea4715d723d7d5075daa923",
+            "url:https://globalvoices.org/2026/08/15/a-mosque-built-by-a-transgender-person-raises-questions-about-faith-and-belonging-in-pakistan"
+          ]
+        }
+      ],
+      "weeks": {
+        "2026-09-07": {
+          "articleIds": [
+            "voa-s-com-a-studying-patterns-to-improve-your-writting-part-one-3427791-html",
+            "voa-lish-voanews-com-a-the-blue-hotel-by-stephen-crane-part-one-4773641-html",
+            "voa-sh-voanews-com-a-questions-answers-about-holiday-activities-6904240-html",
+            "voa-s-com-a-celebrated-jumping-frog-calaveras-county-mark-twain-3160704-html",
+            "voa-ish-voanews-com-a-grammar-for-making-new-year-s-resolutions-5226829-html",
+            "voa-arningenglish-voanews-com-a-the-gift-of-the-magi-by-o-henry-4656574-html",
+            "voa-earningenglish-voanews-com-a-everyday-grammar-and-christmas-4172368-html",
+            "voa-arningenglish-voanews-com-a-american-stories-chicken-little-6947104-html",
+            "voa-n-stories-how-the-animals-lost-their-tails-by-carl-sandburg-6956466-html",
+            "voa-com-a-cask-of-amontillado-edgar-allan-poe-american-stories-3249195-html",
+            "voa-ish-voanews-com-a-two-thanksgiving-day-gentlemen-by-o-henry-4656560-html",
+            "voa-genglish-voanews-com-a-the-purloined-letter-edgar-allan-poe-3307412-html",
+            "voa-ingenglish-voanews-com-a-the-tell-tale-heat-edgar-allan-poe-3538402-html",
+            "global-voices-es-org-2026-08-19-the-invisible-crisis-that-strips-people-of-citizenship",
+            "global-voices-razil-sees-a-rise-in-land-conflicts-and-the-murders-of-indigenous-people",
+            "global-voices-globalvoices-org-2026-08-18-who-are-the-m23-rebels-in-eastern-drc",
+            "global-voices-g-2026-08-17-who-was-here-first-the-two-meanings-of-indigenous-in-europe",
+            "global-voices-earth-fragments-from-communities-overlooked-after-venezuelas-earthquakes",
+            "global-voices-of-sexual-violence-raises-alarm-in-the-democratic-republic-of-the-congo",
+            "global-voices-ransgender-person-raises-questions-about-faith-and-belonging-in-pakistan"
+          ],
+          "checkedAt": "2026-09-11T12:15:04.525Z",
+          "sourceErrors": []
+        }
+      }
+    },
+    "cantonese": {
+      "records": [
+        {
+          "id": "hkcancor-m",
+          "sourceUrl": "https://github.com/fcbond/hkcancor#downloads-%E4%B8%8B%E8%BC%89",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:104196fa5a765963c6f35d3bfade2187dcc0312a609437af36c727e8225cae4b",
+            "body:423f973831cf4b7234a730b59df0808d5e31dce63a8a15b61e88285cded83b9d",
+            "body:77168119049245209eb60ceef14f4e73463bb8fce5ab96d67b9248492003c4a4",
+            "body:8c30033c576ee4a4f34bf07bceba4eb4b83f0af7bfa185aea1482a19dc2efe06",
+            "body:bc0e4157ec30a9a5799810455e530f203196f07b2b9b2d7a52b45acf20c452f2",
+            "id:hkcancor-d1",
+            "id:hkcancor-d2",
+            "id:hkcancor-m",
+            "id:hkcancor-r1",
+            "id:hkcancor-r2",
+            "title:524478918523a3878f51360aedae609dde4b929c45dae6a09f0172e3e6f9632d",
+            "title:7d2f80f5f6902f6d9aacace8e1b4ef974a29e198c6374f42268823391ecbfc8a",
+            "title:bcc3b9bc43430a1123d918b8e94eb78132db4be225bf8839f3988ffb6f2a2f74",
+            "title:d103174437a9eefc4caea3d9f3b45d3ee4aa18d18ac3c55696108bea6e637dad",
+            "title:fded5f49cdbd93e115aa9e10ffcc2c2b1c0095929f68ac801604b952a02f4ddb",
+            "url:https://github.com/fcbond/hkcancor"
+          ]
+        },
+        {
+          "id": "hbl-flowers-of-one-garden",
+          "sourceUrl": "https://hambaanglaang.hk/flowers-of-one-garden/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:74ffe7402bb3c4f2c630fff3aaa5601e900850cd8ba7f236719737f3c1579be7",
+            "document:15-jefvREEpNxE38bIJtceLON-bYgEnMfaJSPIyE7ZXE",
+            "id:hbl-flowers-of-one-garden",
+            "title:1db45902d88ed2dacd02ca58edb68dd253d26c6212a6a6db77cb74f3c3b5c966",
+            "url:https://hambaanglaang.hk/flowers-of-one-garden"
+          ]
+        },
+        {
+          "id": "hbl-breakfast-with-grandparents",
+          "sourceUrl": "https://hambaanglaang.hk/breakfast-with-grandparents/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:2e77d07f5a11a51c6ebd6ceffd1c92065e1d6fb789a762ffbc5d59755bba30df",
+            "document:1VMdaE7XoipKYcX8lQaXY9LbpSM45sfGmEW0A9biM57I",
+            "id:hbl-breakfast-with-grandparents",
+            "title:f92f41211e2e401796008ca362ae2ade154f3a0841e06b901e583ae968871703",
+            "url:https://hambaanglaang.hk/breakfast-with-grandparents"
+          ]
+        },
+        {
+          "id": "hbl-am-i-pretty",
+          "sourceUrl": "https://hambaanglaang.hk/am-i-pretty/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:011261082bf1b2ed7dadac1a95764f8574d0729a0712114b84149abd28ce329b",
+            "document:1p-seGPMOxdndVWyEsN4dKZrucPuD3eyhpNjVBn100xU",
+            "id:hbl-am-i-pretty",
+            "title:4270efc0fbfa947114da82ecab3c6976ede68e88df7496a750318a502f3a8a55",
+            "url:https://hambaanglaang.hk/am-i-pretty"
+          ]
+        },
+        {
+          "id": "hbl-goodbye-my-friend",
+          "sourceUrl": "https://hambaanglaang.hk/goodbye-my-friend/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:0c316f2321c2535727bc8a0dd63a143fcffba87d7ea246dadf476d75ef9613f1",
+            "document:1TAp7NH2qIWIGn_VySPk38SiTN8gMiLhOnbBemkKyaIU",
+            "id:hbl-goodbye-my-friend",
+            "title:d73f892969a483389704bfd188fe1cf4f09addcfdc4ab7d753889ab95a22d4aa",
+            "url:https://hambaanglaang.hk/goodbye-my-friend"
+          ]
+        },
+        {
+          "id": "hbl-my-cap",
+          "sourceUrl": "https://hambaanglaang.hk/my-cap/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:bc963e9c6c36232b71094f1c402d281dd28c3ea7b881201bf0c74d52c1ee3952",
+            "document:14WTSIj8AF5Gnx7nL6gaKYR2QxAwJ2Fcy7nZPyQaERI0",
+            "id:hbl-my-cap",
+            "title:b27b923ab46ef429a70c552c4595ff4a9be3a3b7e3620eb40a1f6295b00af9ff",
+            "url:https://hambaanglaang.hk/my-cap"
+          ]
+        },
+        {
+          "id": "hbl-archie-can-climb",
+          "sourceUrl": "https://hambaanglaang.hk/archie-can-climb/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:a31015e9f2496b6bd000fd53284174c2bf0faf0ef3254e7112346e59e7952954",
+            "document:18V5_1rHKoV5VRgL_CWuZ5nMENq5ppcuN",
+            "id:hbl-archie-can-climb",
+            "title:069b6f84ae59133185c8492083056b55f6bd1c13cdf73ad8ba6d8d357092538f",
+            "url:https://hambaanglaang.hk/archie-can-climb"
+          ]
+        },
+        {
+          "id": "hbl-my-friends",
+          "sourceUrl": "https://hambaanglaang.hk/my-friends/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:a6fc70ad61cef8ccf5389ac389e4b777e381d2b3b4df61bd1e1f38b3ae074f11",
+            "document:1_-W-qei8LvnwyrUpL749WgKhw5wDWSII",
+            "id:hbl-my-friends",
+            "title:70a67e41bba028d125a79a380228189b3c601c84f5d66b15e81c77446caff41f",
+            "url:https://hambaanglaang.hk/my-friends"
+          ]
+        },
+        {
+          "id": "hbl-going-out-for-a-meal",
+          "sourceUrl": "https://hambaanglaang.hk/going-out-for-a-meal/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:dde02fd44e0b32c9210ea9bbe78a4abdc9c820ddca6a5ed6f4fd35867d272d24",
+            "document:1lIBPgDro_xQvRYeDCcysnfnEnUp1tdT8_fzWInyeKhs",
+            "id:hbl-going-out-for-a-meal",
+            "title:04024720ec90c7a15bff3804a1aade20de3f7b9b4eac7f8ea67ca10396875969",
+            "url:https://hambaanglaang.hk/going-out-for-a-meal"
+          ]
+        },
+        {
+          "id": "hbl-a-school-for-everyone",
+          "sourceUrl": "https://hambaanglaang.hk/a-school-for-everyone/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:8f629ac0ee950517f422061084a9cd27ecd69f43f47910f4b6eecce83773ac95",
+            "document:1FJ0i-cUpxI5gcJ-KLufxaJYcviUIyzE08IzBkwhRJbE",
+            "id:hbl-a-school-for-everyone",
+            "title:2ba64ea8d975a144e05ad71a8e8ce9b391e2df3ec999ad177b5672e104b8ec4d",
+            "url:https://hambaanglaang.hk/a-school-for-everyone"
+          ]
+        },
+        {
+          "id": "hbl-bees-are-not-frightening",
+          "sourceUrl": "https://hambaanglaang.hk/bees-are-not-frightening/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:715a1c8d0a4d101bb2ae2196239bbeb887b6bae6db047522dd284a31a0fb7fb0",
+            "document:1wapqGa1MSaCuRlMVOd54uzOZr_EfIi6a2XdpnK3UB1w",
+            "id:hbl-bees-are-not-frightening",
+            "title:d601b89ac3d4f84e1e668d6aed05f05f201f9f78ded23a4ba10922ea4cc12cb4",
+            "url:https://hambaanglaang.hk/bees-are-not-frightening"
+          ]
+        },
+        {
+          "id": "hbl-water-and-rain",
+          "sourceUrl": "https://hambaanglaang.hk/water-and-rain/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:613b033440453adfaeb9af0415a9482fa0454c721c594848fbe6659c216a2059",
+            "document:1enH9hpEVA9-Q7dyzrPO7TxmFvn1Y6j2Y23X_o1ootvI",
+            "id:hbl-water-and-rain",
+            "title:d9485d1a2d01424de9ca3ce2e17ce9cbd8592385cfd8fb8dc985a549902010b1",
+            "url:https://hambaanglaang.hk/water-and-rain"
+          ]
+        },
+        {
+          "id": "hbl-a-trip-downtown",
+          "sourceUrl": "https://hambaanglaang.hk/a-trip-downtown/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:99ee7aa54feec752f1d6af23522887d457735bc11e469fc680c198faee9ae587",
+            "document:1jcVGWvWUra7J_iWCcyRfEdhVU8Buv28ecuiJuv9YTTk",
+            "id:hbl-a-trip-downtown",
+            "title:47ccbb688f2d7c4274076f17fa0b5a772fc9babf08857884c7cbe5f8c9b9d380",
+            "url:https://hambaanglaang.hk/a-trip-downtown"
+          ]
+        },
+        {
+          "id": "hbl-ammas-stories",
+          "sourceUrl": "https://hambaanglaang.hk/ammas-stories/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:02583b9e7160a900af2416cd649b1fbb1b534b38ef1988574d4ba5fa917e135e",
+            "document:1ROJgm3sDHqC331aUw03ysdcmYx1-J2dXeH7Vx4UNFWU",
+            "id:hbl-ammas-stories",
+            "title:bc2f0c6ce78a694447b843736b0ba022996d15baf68d6627befaa4d42802fad2",
+            "url:https://hambaanglaang.hk/ammas-stories"
+          ]
+        },
+        {
+          "id": "hbl-the-rainbow-dinosaur-who-drives-a-bus",
+          "sourceUrl": "https://hambaanglaang.hk/the-rainbow-dinosaur-who-drives-a-bus/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:6b76e65cbcdad0ca801cb3604aa16efedf8001707c60f8863f4ca69544422cc6",
+            "document:1i40tqNBMjQPTVO2dpr8zSmkxfug4amy47mSefA2BlSk",
+            "id:hbl-the-rainbow-dinosaur-who-drives-a-bus",
+            "title:41a8eb86546b75504bbf6d4176f46ec9286f5620405c346fa5d1ce0129dcf13b",
+            "url:https://hambaanglaang.hk/the-rainbow-dinosaur-who-drives-a-bus"
+          ]
+        },
+        {
+          "id": "hbl-funny-stories-of-animal-kingdom",
+          "sourceUrl": "https://hambaanglaang.hk/funny-stories-of-animal-kingdom/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:36fd54f33102b60961bf94e0cbbb2579da5dee1bd3c8d71752b13d2f7aa10635",
+            "document:1PkUPCDRRcGZjDgHwuxBZEvRoibWGBU5WcLsv5qVhal0",
+            "id:hbl-funny-stories-of-animal-kingdom",
+            "title:0dac89957b55d4b440c306c9d5e23c454a6e0641dc85cbd1b545d2c675f15a94",
+            "url:https://hambaanglaang.hk/funny-stories-of-animal-kingdom"
+          ]
+        },
+        {
+          "id": "hbl-weather-girl",
+          "sourceUrl": "https://hambaanglaang.hk/weather-girl/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:8fe3c7829f1c6dd9dec52c1b5057835d6a60da0f60f29d88f2e4ba271a28147a",
+            "document:1HKjtp5N1AbVtXO870QfoIuupN7ENjcgytT9H5qUbITk",
+            "id:hbl-weather-girl",
+            "title:97608ebbba66fed79e9d0925a8fc80e14c2966e9274cf86e4b1254631828a757",
+            "url:https://hambaanglaang.hk/weather-girl"
+          ]
+        },
+        {
+          "id": "hbl-useful-string",
+          "sourceUrl": "https://hambaanglaang.hk/useful-string/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:5951df2a9069de8bb6d643ca7dfa89276807d176f40c5e6703854aa9a0158938",
+            "document:1AHUZ5MqnP9luSkjVCLZKt7JzdrSz3wpCuyi1xPVhP3I",
+            "id:hbl-useful-string",
+            "title:1a4390e1d8023534edee6cc8386f0e4608c8487bcca3daf6b927cb0ed76ea44b",
+            "url:https://hambaanglaang.hk/useful-string"
+          ]
+        },
+        {
+          "id": "hbl-homesick",
+          "sourceUrl": "https://hambaanglaang.hk/homesick/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:2207d63ec3095b35aa355eb07039f388e30d2d28f72bbafe653bf784aa8a692f",
+            "document:1HJimP_CY_-Hkjv8Xp2cZxNl_pV-44xW_fK33FLhZ6yA",
+            "id:hbl-homesick",
+            "title:ae36865dfe019403b8fd620880ffe4ef565e3a03010f02bf111d507db8725188",
+            "url:https://hambaanglaang.hk/homesick"
+          ]
+        },
+        {
+          "id": "hbl-beavers-the-builders",
+          "sourceUrl": "https://hambaanglaang.hk/beavers-the-builders/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:edbe5ea8e772c25e1ca26688b347116c612b27a0628ab57119d4ad00e3b8fa2f",
+            "document:1eY4rwMJ1IKr-4AMj5wUKrqETGhKP-pNl",
+            "id:hbl-beavers-the-builders",
+            "title:a6b6e4557b3f3223465ff7ff82af3a56acb949667123e961bccb744bac408028",
+            "url:https://hambaanglaang.hk/beavers-the-builders"
+          ]
+        },
+        {
+          "id": "hbl-how-old-is-grandma",
+          "sourceUrl": "https://hambaanglaang.hk/how-old-is-grandma/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:bec7e6af111aea75bf6b834bb5ca9f0eb9a55461f791fe82b09e65a3d691f9f8",
+            "document:1Zi8SWHsLJ2pzxbX--Oqonqfy5z3GhExh",
+            "id:hbl-how-old-is-grandma",
+            "title:d907cce99d3ea32482d364096c053cc6922eecaba8af75d13e9c80b16c41ebb6",
+            "url:https://hambaanglaang.hk/how-old-is-grandma"
+          ]
+        },
+        {
+          "id": "hbl-00232-2",
+          "sourceUrl": "https://hambaanglaang.hk/00232-2/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:9687799c8687c4239349d3fc2c8d6d3a0116e2db9e0d0c0d9136a259753eb62e",
+            "document:1Wmk67X0VXiP3ZqHwlENjpE7SGmBS2BEDfAopM77SbNM",
+            "id:hbl-00232-2",
+            "title:ab9eee6ed2921e71ef700d08b2d2f6d8fb4a1e4e783084a01a6e1d7c322133e4",
+            "url:https://hambaanglaang.hk/00232-2"
+          ]
+        },
+        {
+          "id": "hbl-00233p",
+          "sourceUrl": "https://hambaanglaang.hk/00233p/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:a1e64aeabf0ee5702690fb67991ef03f12561edf884caa26b5dc3aa3d92ee772",
+            "document:1WBG5Aoh-g0PFJjPL9LXnf8-uLJ3PGpjVEdIUimqMefE",
+            "id:hbl-00233p",
+            "title:6b5c5feba867f8f8b27a6172c53a9ec7749b819588f8ea438ef8f7598b6205d8",
+            "url:https://hambaanglaang.hk/00233p"
+          ]
+        },
+        {
+          "id": "hbl-00223p",
+          "sourceUrl": "https://hambaanglaang.hk/00223p/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:ea849a8bd0bfcc8e631bf6d83f53ed509ec34a9763112c20b50516dd73798ff0",
+            "document:1M2tZJ7Z_3EUFd9aPUOBuPKDE8jtadb9kIRPF3SubgCQ",
+            "id:hbl-00223p",
+            "title:1d9357ed0587908cc54c40fb67a3f526233c71d8adfc0d785a4ebedb29141ca7",
+            "url:https://hambaanglaang.hk/00223p"
+          ]
+        },
+        {
+          "id": "hbl-00229-2",
+          "sourceUrl": "https://hambaanglaang.hk/00229-2/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:08f294ead2b5b936f2c8bd2793894c76f364a35c044a7d4f0311f205c26fde52",
+            "document:1A1CWKVf6inlLjVRd9UV99j-PGZc69hE2Ad3sD3Lt9ME",
+            "id:hbl-00229-2",
+            "title:d763d3e168f91cd0bc337fda0651d3930ebb08ca5978d0522961f2d883800271",
+            "url:https://hambaanglaang.hk/00229-2"
+          ]
+        },
+        {
+          "id": "hbl-number-8",
+          "sourceUrl": "https://hambaanglaang.hk/number-8/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:ab9f565c4f610e5194e3c73ad13dcb5ff533e98b34af46e3f5e4b5302dc9f381",
+            "document:1KQkxnugYNd6EAUf1dwAE6S7bWrwP7FLp4dJuCP0sK3M",
+            "id:hbl-number-8",
+            "title:ed873c5b20d6f262539a6388158cac27f801be083aa7938747055d888fa6502d",
+            "url:https://hambaanglaang.hk/number-8"
+          ]
+        },
+        {
+          "id": "hbl-00200-2",
+          "sourceUrl": "https://hambaanglaang.hk/00200-2/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:0bee3fa4f774daa90cc92a18223e876f23d6a3bc4b95f5b2e29d03bf6dfd54c0",
+            "document:1bhNg2xvWaI9lLx5Gaf3Ak9iOlOlm11OY",
+            "id:hbl-00200-2",
+            "title:aa318962afd71aa17dd8dd64e1360c84c025026bf3cefb66f5cb48e07312e466",
+            "url:https://hambaanglaang.hk/00200-2"
+          ]
+        },
+        {
+          "id": "hbl-00251p",
+          "sourceUrl": "https://hambaanglaang.hk/00251p/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:489d40b6645d3a04fdaaf9df30493acb3b945ad714be5917891541784511d26a",
+            "document:1oVN-TuBcmPlDmLHllmodGlqcGU3as0LqXdo1PGb_5KY",
+            "id:hbl-00251p",
+            "title:25e149bf4ce2ba488201debc47c55a9bd2128e319c0a7825a1d42f657632cfd2",
+            "url:https://hambaanglaang.hk/00251p"
+          ]
+        },
+        {
+          "id": "hbl-the-dragon-who-ate-the-moon",
+          "sourceUrl": "https://hambaanglaang.hk/the-dragon-who-ate-the-moon/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:71a3190d69353e5d8f2473e77608bb9f0cbb1780b2d902e6cdc030bc5dca428d",
+            "document:1QAOKsGcNzlJbITDdneszfO8qPlomBEvye7ZJs7pK10A",
+            "id:hbl-the-dragon-who-ate-the-moon",
+            "title:647cfc67bb685f3faf0aa0cd188621c997a270974c338483b4cac7d308ef69a4",
+            "url:https://hambaanglaang.hk/the-dragon-who-ate-the-moon"
+          ]
+        },
+        {
+          "id": "hbl-the-box",
+          "sourceUrl": "https://hambaanglaang.hk/the-box/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:ef5f4b57ed0a391ab4b178b177ed2a7b996d5915cf5325ddc1aecd1923caa294",
+            "document:1UCyRTBB9-uq_v4TicAWe45rmkFRm61bdjVbSMZPy8S8",
+            "id:hbl-the-box",
+            "title:d30ff7b77b4daed7e98dbff323743e0661319709157a0e57cdd6f368c64acf6c",
+            "url:https://hambaanglaang.hk/the-box"
+          ]
+        },
+        {
+          "id": "hbl-home-problems",
+          "sourceUrl": "https://hambaanglaang.hk/home-problems/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:d8de7797b8fedf831f39271ec2c7c420e5a2ac9dbfcab7a022ace778ac92510e",
+            "document:13P36Z6719m0kQmKVfk8BeLXhmPqvXO94SMhBY8d9dwk",
+            "id:hbl-home-problems",
+            "title:ab2487442a350f3dcd7db9d11b5340c40bc5763b423882f0026b64eeb55623c3",
+            "url:https://hambaanglaang.hk/home-problems"
+          ]
+        },
+        {
+          "id": "hbl-i-miss-you-nani",
+          "sourceUrl": "https://hambaanglaang.hk/i-miss-you-nani/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:9d8c6a4b58684db6e945858890762fac30b5bc9ad9a264709f5c8403a98dae44",
+            "document:1GcvVp4-PJ5Gz9qfYXIz87jbfnOulD9kfKfBY-oyzL0E",
+            "id:hbl-i-miss-you-nani",
+            "title:d40e7bd576e8a93ae139b2993617c734e51aba98b1abd852e4c9edbf8548cba2",
+            "url:https://hambaanglaang.hk/i-miss-you-nani"
+          ]
+        },
+        {
+          "id": "hbl-taking-the-bus",
+          "sourceUrl": "https://hambaanglaang.hk/taking-the-bus/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:55f95eff07756657672ed657acf65f16197eea6d8a0b056b5e1f1425a93c0262",
+            "document:17HC3Q8wSDyimHUoZsSiBVIw_kaCDFhZEEYcJZ1s69S4",
+            "id:hbl-taking-the-bus",
+            "title:ab787b8af35905e7fc04478aba8ce8f8a69f24d5aeb82d5f041a74136e40ba64",
+            "url:https://hambaanglaang.hk/taking-the-bus"
+          ]
+        },
+        {
+          "id": "hbl-the-puppy-and-the-kitten",
+          "sourceUrl": "https://hambaanglaang.hk/the-puppy-and-the-kitten/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:20225ecd96b6cdfc1d4f39ebbde567743b50ab771f002e10a766a268f58d9014",
+            "document:1FT7A9EzqXPtB_6F-uBW-scD2khISc8yx",
+            "id:hbl-the-puppy-and-the-kitten",
+            "title:8ca6f82d619ab2381ae71c46c83f8fe896a0a382c75e50a8c522d77cb9817715",
+            "url:https://hambaanglaang.hk/the-puppy-and-the-kitten"
+          ]
+        },
+        {
+          "id": "hbl-bee-and-elephant",
+          "sourceUrl": "https://hambaanglaang.hk/bee-and-elephant/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:cb45b03be2b98d74791763ecb982a0696628275d4e4c6dac9868d2145cf8651f",
+            "document:1p9-kLSb6ZkWX5QlndigPLMAPbwtl6dbEBdlbVjV4jLU",
+            "id:hbl-bee-and-elephant",
+            "title:436b081f2df61cc5aaf9f792b248c0a5482ebc360120222d4b0e190ecf0159a5",
+            "url:https://hambaanglaang.hk/bee-and-elephant"
+          ]
+        },
+        {
+          "id": "hbl-i-do-and-i-dont",
+          "sourceUrl": "https://hambaanglaang.hk/i-do-and-i-dont/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:7dd3b69cbfd63e6e2846e14d9eff281e7878778c64d655d23d7a6940b6d93344",
+            "document:1yWZIGi135yxk8vVI-SPHsdtnfRRL6Kr_",
+            "id:hbl-i-do-and-i-dont",
+            "title:381b39a6e5ad7c1eb8749c23cb025ec48cd4416ac5dce31727d5afd729c8bc52",
+            "url:https://hambaanglaang.hk/i-do-and-i-dont"
+          ]
+        },
+        {
+          "id": "hbl-a-big-cake",
+          "sourceUrl": "https://hambaanglaang.hk/a-big-cake/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:620f324fbbbc048e4575621e3d5f3ecb335a6e9e60e94747d76e5ca174138715",
+            "document:12I0PRgeOwmDYWnrQR7xol_BxZuaQn9nh",
+            "id:hbl-a-big-cake",
+            "title:52630b2889b058d2404c313b1030c7495386e7406a017bce52fd462ad156408d",
+            "url:https://hambaanglaang.hk/a-big-cake"
+          ]
+        },
+        {
+          "id": "hbl-123-go",
+          "sourceUrl": "https://hambaanglaang.hk/123-go/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:1032406c66591307d9e46b026cbfe43c7ebb3edf28501eafea1d729d93c3679c",
+            "document:1goJiMd6H14EyafCBewNd6kcYHsYflpTE9JRTe0L9jFY",
+            "id:hbl-123-go",
+            "title:949e636a2f3543c60e8f386ab67bd4a46b9e5935a334bbe8dd206c328fee9331",
+            "url:https://hambaanglaang.hk/123-go"
+          ]
+        },
+        {
+          "id": "hbl-wheres-anand",
+          "sourceUrl": "https://hambaanglaang.hk/wheres-anand/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:f65b028e72fe1dbfebc61cfa950cb6af5a5e24e2bb345328a758e63005a6848e",
+            "document:1pPI49_k7bxOqdmueBgsiwkgzAZID_98PVz8MEPW_lyY",
+            "id:hbl-wheres-anand",
+            "title:f50e753d1361e5af61fc427b2d10edbfb3428e167d9d3df766372b473b6b7a06",
+            "url:https://hambaanglaang.hk/wheres-anand"
+          ]
+        },
+        {
+          "id": "hbl-the-new-raincoat",
+          "sourceUrl": "https://hambaanglaang.hk/the-new-raincoat/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:7e4200a2365d40bc141007d14b2d8bbe33cf8570e19580d2160ac74a1c87d4dd",
+            "document:1RGD0JY1iUs6hZ-JoJgwuBgHxTtOJ6EBdxD5n-CGQ7hE",
+            "id:hbl-the-new-raincoat",
+            "title:c56537564a4c67cdf13cb2899f5cf21068f2203b132185363b9c21b9ad8aaea4",
+            "url:https://hambaanglaang.hk/the-new-raincoat"
+          ]
+        },
+        {
+          "id": "hbl-never-give-up",
+          "sourceUrl": "https://hambaanglaang.hk/never-give-up/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:bd58d98cd326bffbf3a822284a035449f5174fc6aa468e65c907f71b6f81aa66",
+            "document:17X_4Y-6GwIeN36NUnZFrX5SnNt69Ec7H5KYbvCHye5s",
+            "id:hbl-never-give-up",
+            "title:b611c011a589bd4853fd857f2b3422f7178520cf68fc05ef510e7302dc4eaa94",
+            "url:https://hambaanglaang.hk/never-give-up"
+          ]
+        },
+        {
+          "id": "hbl-sringeri-srinivas-learns-to-laugh",
+          "sourceUrl": "https://hambaanglaang.hk/sringeri-srinivas-learns-to-laugh/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:b0e72fa252f93a2a1986ffb97a939bf0c7759397080d6238c915e2f026c750e2",
+            "document:18fiQJQVVdqRqxkkqkairItM1BvKo0ZpZS_V0iTOr8Mo",
+            "id:hbl-sringeri-srinivas-learns-to-laugh",
+            "title:b565c6b5efef4ce248921be3cc71d252a23f80469f8cd51ddadc0b8a5d73780e",
+            "url:https://hambaanglaang.hk/sringeri-srinivas-learns-to-laugh"
+          ]
+        },
+        {
+          "id": "hbl-neinei-goes-to-the-theme-park",
+          "sourceUrl": "https://hambaanglaang.hk/neinei-goes-to-the-theme-park/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:0048758b782894a14bfcf7494612479b67390a8377d64248dd70caa16590d4d3",
+            "document:13GGgfJdrsFF-8rBF_9BDqPol3vKgYXHOv1-H255Hji8",
+            "id:hbl-neinei-goes-to-the-theme-park",
+            "title:c1529922b7a97e0d2a30e9d998ad8d0a5bdc1ff228f2b4b489d3d8c5ec9aab67",
+            "url:https://hambaanglaang.hk/neinei-goes-to-the-theme-park"
+          ]
+        },
+        {
+          "id": "hbl-shopping-for-kindergarten",
+          "sourceUrl": "https://hambaanglaang.hk/shopping-for-kindergarten/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:8a310dd4c3376f52c8d229b08240f5fdd25a3e348ca7be6293221e979d9c5282",
+            "document:1dGHNQQuWCuyJYcPJr3JEafN0fXQy4CLW",
+            "id:hbl-shopping-for-kindergarten",
+            "title:61fb74bcd394d5c14e4207ca5a235a459634b8772204ce34f6feb0cfad153512",
+            "url:https://hambaanglaang.hk/shopping-for-kindergarten"
+          ]
+        },
+        {
+          "id": "hbl-i-wanna-drive-a-bus-to-school",
+          "sourceUrl": "https://hambaanglaang.hk/i-wanna-drive-a-bus-to-school/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:07125d3a7da6e3fd460b0ab4e14613cc8d67f7b5932458b22ae79a14458578dc",
+            "document:1AZgyhH8jI7T_WMFNBw8sTXdOQGuqrnHn",
+            "id:hbl-i-wanna-drive-a-bus-to-school",
+            "title:56952265dad1ccced2defce829a2ddb7b125142a3ce747fa60e472a8ff35763e",
+            "url:https://hambaanglaang.hk/i-wanna-drive-a-bus-to-school"
+          ]
+        },
+        {
+          "id": "hbl-00207-2",
+          "sourceUrl": "https://hambaanglaang.hk/00207-2/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:048938da397819b7a393c19333c27a4b9991de9b3cfb73b213abad2642895f75",
+            "document:1XpUgGK5JWwC-QRLYvlVJfV2uuL9R6TKsoBGqCvBh-BI",
+            "id:hbl-00207-2",
+            "title:da3591323518f43b4512acfa1c0ce1f2e35215bf879dd87d48330bf3cc62eba4",
+            "url:https://hambaanglaang.hk/00207-2"
+          ]
+        },
+        {
+          "id": "hbl-00210-2",
+          "sourceUrl": "https://hambaanglaang.hk/00210-2/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:ac6e910f6dbf61c808c4136dee87c287e9eecbb49522edb812c5a81c7e68954b",
+            "document:1ypnFk8nGb4gCO5cd4RzVSpVLRPwDQy4h3sVarAp9PCw",
+            "id:hbl-00210-2",
+            "title:4a447022c2cdeb95fe519cdc55926f7d48c01c6a74894f6a9d9cab954a697919",
+            "url:https://hambaanglaang.hk/00210-2"
+          ]
+        },
+        {
+          "id": "hbl-00214-2",
+          "sourceUrl": "https://hambaanglaang.hk/00214-2/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:bf2e5f0e81adff40301683a0b77b3ed6e4ffea3ce7a73df5bc05aeea6eed7240",
+            "document:1OkI1ezk9LS_iNdzq95wL3jIj-eADVaG9-760226Y6Xc",
+            "id:hbl-00214-2",
+            "title:0e27f7c4bf8eea877dde2c00e5c72d83f04f7a4c9a1ef1c351f31d2b03d4f443",
+            "url:https://hambaanglaang.hk/00214-2"
+          ]
+        },
+        {
+          "id": "hbl-00202-2",
+          "sourceUrl": "https://hambaanglaang.hk/00202-2/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:b08b061e46b0d5b1831e54da636a447a3efc4aca5e390a24943a2d5566482a8b",
+            "document:1WdBkdZEz5uIL8IRgWL7q5JuczCh3odJF",
+            "id:hbl-00202-2",
+            "title:1346ab57e0c7cf184dc4be6922756b60a7fe138062677c56fe5e3a172c1867c7",
+            "url:https://hambaanglaang.hk/00202-2"
+          ]
+        },
+        {
+          "id": "hbl-00218-2",
+          "sourceUrl": "https://hambaanglaang.hk/00218-2/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:cc3f76ca4fba96ff379773d52099807bda7249a530a05220fba76af9c360806b",
+            "document:15ywm7Y0LEdTAk_iGkvlii8TkdV79mFjkJcQFHo3s804",
+            "id:hbl-00218-2",
+            "title:4948c9fe560219a5efbd9b4293bf4294ec51ddbe861143ac798ab09fe6e46291",
+            "url:https://hambaanglaang.hk/00218-2"
+          ]
+        },
+        {
+          "id": "hbl-00211-2",
+          "sourceUrl": "https://hambaanglaang.hk/00211-2/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:343174ef3d581b88f5cb54eb45af188ed8850d580fd5f66980f61c4e0d5e185c",
+            "document:1h6QKQ2E9YQjbTy72pEAUH3kCcG-qFfHTBux-2O-aqfQ",
+            "id:hbl-00211-2",
+            "title:7f2107fe14da1bfdd16106e66f2fbec8df0a747eb73e05172eb9467209e31004",
+            "url:https://hambaanglaang.hk/00211-2"
+          ]
+        },
+        {
+          "id": "hbl-the-legend-of-dongfang-shuo",
+          "sourceUrl": "https://hambaanglaang.hk/the-legend-of-dongfang-shuo/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:ac5a49663707944c427f0f820f6985651b6e4f72846afb4099e48cdcef75a2a9",
+            "document:163kLjLBP_0Nw_PGsz-1iPu92w7PGrKeXJtkQj9QcdkU",
+            "id:hbl-the-legend-of-dongfang-shuo",
+            "title:2cd162fed006fd30d73262afbd5ba74168d01d331f981f067fcdfa90f4864cdf",
+            "url:https://hambaanglaang.hk/the-legend-of-dongfang-shuo"
+          ]
+        },
+        {
+          "id": "hbl-the-memory-of-a-turtle",
+          "sourceUrl": "https://hambaanglaang.hk/the-memory-of-a-turtle/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:f3252125e1214a8f21a1e264fe2a87249086762ab01413fdb3166cfcdd6bca7e",
+            "document:1VYXoB8C_EOMiqOtCPLxQ4_C3JDADq5vBMfLotmCTNsY",
+            "id:hbl-the-memory-of-a-turtle",
+            "title:ba1ab08c512eb608e71e58c9a002646a2865ed9a48fee6522c868b5fab30d8a2",
+            "url:https://hambaanglaang.hk/the-memory-of-a-turtle"
+          ]
+        },
+        {
+          "id": "hbl-classic-of-mountains-and-seas",
+          "sourceUrl": "https://hambaanglaang.hk/classic-of-mountains-and-seas/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:b4eb72e6b9011eed72f4992215c00c4a202b198cece3d433a69ef108a83ed19a",
+            "document:1qRmlS4FprYl9lFu40_dLhtHJDjEDzypVM0wiSP3JQjI",
+            "id:hbl-classic-of-mountains-and-seas",
+            "title:5fee04eb2949230fe8ed8862f77ef089a67697ca521bf0b2c48d6abf0c9bf62f",
+            "url:https://hambaanglaang.hk/classic-of-mountains-and-seas"
+          ]
+        },
+        {
+          "id": "hbl-the-rumour-of-zeng-shen-and-the-story-of-three-tig",
+          "sourceUrl": "https://hambaanglaang.hk/the-rumour-of-zeng-shen-and-the-story-of-three-tig/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:fdc668778c983153e64fd38a0eb2c7008f1a2d2645d4a36481cb6d9e51caa23c",
+            "document:1X69GrarHG_EjtBmsRQogvI9uR98I5vT1YFAABC5--dM",
+            "id:hbl-the-rumour-of-zeng-shen-and-the-story-of-three-tig",
+            "title:a45340b1b12699be6995d5657c737e6efcb291a7c7ac00cacf50d0020f95c449",
+            "url:https://hambaanglaang.hk/the-rumour-of-zeng-shen-and-the-story-of-three-tig"
+          ]
+        },
+        {
+          "id": "hbl-the-last-day-on-tai-mo-shan",
+          "sourceUrl": "https://hambaanglaang.hk/the-last-day-on-tai-mo-shan/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:f7caf6ef0052bb4034c49fd54a3b4061a4c6ae1f0c82fa1d13557180e409ec97",
+            "document:1SUnldJDjSv_WWJNwH_8fCjjFwfMgR-ekhDvIpdnMcBM",
+            "id:hbl-the-last-day-on-tai-mo-shan",
+            "title:f69381698832de2b20a4cf397f24266a14d7297802e09a844fc3f38aa2377adc",
+            "url:https://hambaanglaang.hk/the-last-day-on-tai-mo-shan"
+          ]
+        },
+        {
+          "id": "hbl-the-treasure-of-varsha",
+          "sourceUrl": "https://hambaanglaang.hk/the-treasure-of-varsha/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:9f5fb158611e9bc8fd9b53c1ed05063c407b5248d2103e8515196da49ed02105",
+            "document:1SQDBm7dO6cER2Ov9IhbEsJoJDe5ezjZ5ogSESFLU47M",
+            "id:hbl-the-treasure-of-varsha",
+            "title:c8b38423f79b17651e7ec3bfbc82c957bd18516b3af97124ac51142220bbe84b",
+            "url:https://hambaanglaang.hk/the-treasure-of-varsha"
+          ]
+        },
+        {
+          "id": "hbl-turtle",
+          "sourceUrl": "https://hambaanglaang.hk/turtle/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:81f7a3c260a1049e56b643ca5479b54f848c21c8e579cb984f6f40e87e66a51e",
+            "document:1iqmhNSYn40LeV25xvFsOptzE3r03SaOo",
+            "id:hbl-turtle",
+            "title:3ed31602fad63c9222ad1722e8544fafe3fa3865053992be70baf9eb099a3742",
+            "url:https://hambaanglaang.hk/turtle"
+          ]
+        },
+        {
+          "id": "hbl-mommy-got-sick",
+          "sourceUrl": "https://hambaanglaang.hk/mommy-got-sick/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:37098d80a4f2d1c1abb0d64738651e8de71f97b08c12a65176e4548f9cab560a",
+            "document:1U9X9xdF8ud3oe5_kxSD577S3BnRB9z9kN8XyYVNH7pE",
+            "id:hbl-mommy-got-sick",
+            "title:2148a9b92b7f3a1e1c72c22b06cc88a30b41263cc6d0ab6022736ce80cf500b1",
+            "url:https://hambaanglaang.hk/mommy-got-sick"
+          ]
+        },
+        {
+          "id": "hbl-shopping",
+          "sourceUrl": "https://hambaanglaang.hk/shopping/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:3f84593ad1105d84aa16cd8e346b4744fa51d21518652e55329cb894eb38872d",
+            "document:1sH6nxSR_3UZMlND-vydpbsOx0MzP4sbN3nSeuU9sqyA",
+            "id:hbl-shopping",
+            "title:c3900bd449413fbfee79532d13336a4fa8c5f934a7d354fcb5c14cbde2147430",
+            "url:https://hambaanglaang.hk/shopping"
+          ]
+        },
+        {
+          "id": "hbl-i-lost-my-cat",
+          "sourceUrl": "https://hambaanglaang.hk/i-lost-my-cat/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:83027ae14fb2c1aa3d0475e640698b4cb52f8e7c070376a0dbedc136ec50a048",
+            "document:1O2FycHL9VdV3_u14ghdMQI7c2UPvLFt5",
+            "id:hbl-i-lost-my-cat",
+            "title:66082dca94299facf49a8068502722fd5779728cc11ede395a4b63007346d6e7",
+            "url:https://hambaanglaang.hk/i-lost-my-cat"
+          ]
+        },
+        {
+          "id": "hbl-smart-kitty",
+          "sourceUrl": "https://hambaanglaang.hk/smart-kitty/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:1513e7e7327b8242c423ac9ef3d9ba1125e5587cead24a30e1b6c033d7ab264b",
+            "document:1pi5-EJYwQi9uT77b18Gqkic6uqKhYxxE",
+            "id:hbl-smart-kitty",
+            "title:1488a743f7a3a11e8e3e15911d2c2de315dc0338a68f72663facda2ec2c57915",
+            "url:https://hambaanglaang.hk/smart-kitty"
+          ]
+        },
+        {
+          "id": "hbl-whats-that-sound",
+          "sourceUrl": "https://hambaanglaang.hk/whats-that-sound/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:00d4e7f5fa6620ca9f6d0e152068186d65ca5a99dc3c6524d8d263d1deca2481",
+            "document:1yiXgYMqcvGiz5ZT_PbsQCYBZEye_FS82Zqgl6UYLu1Y",
+            "id:hbl-whats-that-sound",
+            "title:1044c81d25ea11892aefce0946abaffd6a3729c5dfbc4cdb9ad04284eae87893",
+            "url:https://hambaanglaang.hk/whats-that-sound"
+          ]
+        },
+        {
+          "id": "hbl-goodbye-rabbit",
+          "sourceUrl": "https://hambaanglaang.hk/goodbye-rabbit/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:a8a68222284e0fecd77f831a3bd727dcc1f9c45beb3453320c166bf89326494a",
+            "document:1gl5hjaZEesudYzqx7FKVoy0XFj-wugrE",
+            "id:hbl-goodbye-rabbit",
+            "title:cc0dbae3de146902bf9d5c15878a91a082f29f9a5686d7700211257e5c5d1b94",
+            "url:https://hambaanglaang.hk/goodbye-rabbit"
+          ]
+        },
+        {
+          "id": "hbl-birds",
+          "sourceUrl": "https://hambaanglaang.hk/birds/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:a5ed279cd271d1f3637304909c98f8f52df0aef70ba3df5f81be3d5702f62403",
+            "document:1Oxa80HVnBTq7my7L__3egy-xcddCo1cn",
+            "id:hbl-birds",
+            "title:ee074ed09de76cd18867a42c183503e1a81c68bdc3d4a790d3ce5401b9636e45",
+            "url:https://hambaanglaang.hk/birds"
+          ]
+        },
+        {
+          "id": "hbl-i-have-a-puppy",
+          "sourceUrl": "https://hambaanglaang.hk/i-have-a-puppy/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:54d6532cd13089abc3461c6b6166e5122937fb8c7d8e6556c6412152750ee3c2",
+            "document:14W0NzmtJXmIpqTtHFDibW_DdbhfqcJzxRrRtU7FhRGo",
+            "id:hbl-i-have-a-puppy",
+            "title:cf4311b40abdde343ed1b2000ff18f5d4b747dcd6f29c023b5e9b199e5b7785c",
+            "url:https://hambaanglaang.hk/i-have-a-puppy"
+          ]
+        },
+        {
+          "id": "hbl-vegetable-and-pork-bun",
+          "sourceUrl": "https://hambaanglaang.hk/vegetable-and-pork-bun/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:8cc5c56f6d1ae25307197af63bab05778ab21c0c8e7236b8a06e31a8f8751d13",
+            "document:13IUTsl99itESj6c7XdhFyro7kyKvNLKCd9pMQmHeo44",
+            "id:hbl-vegetable-and-pork-bun",
+            "title:bdacdf882c19a01906878142bb5a194007a37a53c3ac55c501616b87f7f1ac9e",
+            "url:https://hambaanglaang.hk/vegetable-and-pork-bun"
+          ]
+        },
+        {
+          "id": "hbl-this-is-my-elder-brother",
+          "sourceUrl": "https://hambaanglaang.hk/this-is-my-elder-brother/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:cd6c74ac2a53e5d9ea5adb88b922ebed0d280fc91770e7b8557a7bfa46ae8777",
+            "document:1a6yV6fdJJNq0ooSDd6NEjDSW1ht3lREZ9GbOpBrchrs",
+            "id:hbl-this-is-my-elder-brother",
+            "title:9a3811eef45ba09c2a956a5db03236dd0487a348f84bf093e7f5fdbef601d3c2",
+            "url:https://hambaanglaang.hk/this-is-my-elder-brother"
+          ]
+        },
+        {
+          "id": "hbl-little-brothers-birthday-gift",
+          "sourceUrl": "https://hambaanglaang.hk/little-brothers-birthday-gift/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:0f64e136a356670f202bfbadc9956b0f8864ff0b755161fe1ddcbdff9660af60",
+            "document:1c0jyRLt9MR9Cszotpi2kriUXFbnUlLx2",
+            "id:hbl-little-brothers-birthday-gift",
+            "title:90aca4d55b4d230b11918936f4b7e931c51b8b461b214200b97f49425e46baa9",
+            "url:https://hambaanglaang.hk/little-brothers-birthday-gift"
+          ]
+        },
+        {
+          "id": "hbl-lets-compete",
+          "sourceUrl": "https://hambaanglaang.hk/lets-compete/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:aa6986d342e016b858837314ccc9ca2965f09461c25c9a802caeb828a25e9ae1",
+            "document:1rMG2k2J2Qfi_UwD7V2UYV32LpoADUtc9",
+            "id:hbl-lets-compete",
+            "title:74aa5224a7af5f9d4dbdd3a11de6cb5d1645a61cae1b30842ed8b746ad10a138",
+            "url:https://hambaanglaang.hk/lets-compete"
+          ]
+        },
+        {
+          "id": "hbl-wasnt-me",
+          "sourceUrl": "https://hambaanglaang.hk/wasnt-me/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:ff27f7b860601d58331579e14a372d72bca7766bcda96dc065cfcc0082e1f23e",
+            "document:1uLsMOGrpvT9jqZX9k-8mWWCdzbRTbu9t",
+            "id:hbl-wasnt-me",
+            "title:81ce46b460e0e06b110cca15fa8c749f1aa4926846dcf05fe1c73b6e4f85480a",
+            "url:https://hambaanglaang.hk/wasnt-me"
+          ]
+        },
+        {
+          "id": "hbl-who-can-help",
+          "sourceUrl": "https://hambaanglaang.hk/who-can-help/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:5128933aad6a1b421ecfc782cf61f446f26f5272ba9e701e135c4c54bb74d00c",
+            "document:1TRgwE4TQCmkurs3Goc0XjgEolZ7Gxhpe",
+            "id:hbl-who-can-help",
+            "title:f7a932c198a4e34c424483ac7bb70522c553c7e67d61ea2bebc9fd495d296209",
+            "url:https://hambaanglaang.hk/who-can-help"
+          ]
+        },
+        {
+          "id": "hbl-family-members",
+          "sourceUrl": "https://hambaanglaang.hk/family-members/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:0f0c51d0ae78c82c26ba378754eceb9a70303838e91c245eb92cfdb507f1e748",
+            "document:1CIg_K3XObYfHH5-yIUkt1x7XHRZh9rXeIex_36wF438",
+            "id:hbl-family-members",
+            "title:97356689ecaea364db17767c150302d8505cff15f8b342ecfe4236b92839b630",
+            "url:https://hambaanglaang.hk/family-members"
+          ]
+        },
+        {
+          "id": "hbl-the-naughty-dog",
+          "sourceUrl": "https://hambaanglaang.hk/the-naughty-dog/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:ff0823457d771b665ac28848a52ad5e6adc0a60efb381dd7faabbae0ba71bd55",
+            "document:1UhjHdUW3HzO10FO3dTXwuFn1L-9j8U5A",
+            "id:hbl-the-naughty-dog",
+            "title:6911b043ad8a90607495e5961425125d98a34b2307ba70225fbbc89942125927",
+            "url:https://hambaanglaang.hk/the-naughty-dog"
+          ]
+        },
+        {
+          "id": "hbl-what-if",
+          "sourceUrl": "https://hambaanglaang.hk/what-if/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:c708bffba8deb5d85b2a57811ac65bbeda35151fab2c62d17324ec7c321191fa",
+            "document:17N7m1tdiN_jGpeUk2R1QKcSqysKNJoBt",
+            "id:hbl-what-if",
+            "title:aaf54a0c687627a8c8ce26dd9fe540a22a0d6e006cd52f4fca2b42be2c91a7fd",
+            "url:https://hambaanglaang.hk/what-if"
+          ]
+        },
+        {
+          "id": "hbl-the-one-that-got-away",
+          "sourceUrl": "https://hambaanglaang.hk/the-one-that-got-away/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:8150cff94447c3f60287586b14da3c7e49a98f868e046018d913bfb63c36e863",
+            "document:1K__QIhd0KpvDzfH-qPiEiusgkRfd0E-KxkTH33vKIyM",
+            "id:hbl-the-one-that-got-away",
+            "title:569cc1145d6d4503f0e99f0de2d84ccdfb6af8a14911e6d8182ab9c25861b6a8",
+            "url:https://hambaanglaang.hk/the-one-that-got-away"
+          ]
+        },
+        {
+          "id": "hbl-looking-for-a-new-home",
+          "sourceUrl": "https://hambaanglaang.hk/looking-for-a-new-home/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:0da17f76fd8176bda752489676c7c5679d7979abe5080906a4203231a8c9d2bd",
+            "document:1LqJfyy-QRsDOW4G3tIUGz5xBMyZv6YSv",
+            "id:hbl-looking-for-a-new-home",
+            "title:b8a74c678a86803bbc77259eabae330c377f8ddcfebfbf29ff8f7df0c5ba7072",
+            "url:https://hambaanglaang.hk/looking-for-a-new-home"
+          ]
+        },
+        {
+          "id": "hbl-pigs-can-fly",
+          "sourceUrl": "https://hambaanglaang.hk/pigs-can-fly/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:ba09d5624dd663764f6438f0dac9b3a3ba86ed052a5b900e6cebb7fe887170b2",
+            "document:14XQp1GCnrATqDtJmo5fZpHxdevJ8D-ai",
+            "id:hbl-pigs-can-fly",
+            "title:477862181487ac1a8739566b8492855c65c6d51a7c685f0f797be31485c8d6f7",
+            "url:https://hambaanglaang.hk/pigs-can-fly"
+          ]
+        },
+        {
+          "id": "hbl-stronger-together",
+          "sourceUrl": "https://hambaanglaang.hk/stronger-together/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:50de515ae46f2181138f62fd07c208e25951b336c356a3407fb8803bb85b2a6a",
+            "document:14Rf1FURUWtksHnIzG_4I4BEsd4AL_2ITAn4AIjKwJ8Y",
+            "id:hbl-stronger-together",
+            "title:44ca871f3d2c5607d40263daf442923b6acfcc7e6aeae0a716e5e1bf60abbe2f",
+            "url:https://hambaanglaang.hk/stronger-together"
+          ]
+        },
+        {
+          "id": "hbl-getting-a-cat",
+          "sourceUrl": "https://hambaanglaang.hk/getting-a-cat/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:373ac566b9d3798f3a260dec51ff5bf8dd32c3bcc6654230eb932d386ff61567",
+            "document:1JzPstpaXhBbzq71FayB4_qgAr9_oC6nmJumuYQM5rC0",
+            "id:hbl-getting-a-cat",
+            "title:1327dd1eb4d47a9f7d480021457400c117210b43ad88e78164ba04aa40cb21b2",
+            "url:https://hambaanglaang.hk/getting-a-cat"
+          ]
+        },
+        {
+          "id": "hbl-who-can-wake-him-up",
+          "sourceUrl": "https://hambaanglaang.hk/who-can-wake-him-up/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:16194cec0907722948d4beb2828ebee19d9b1bfd8db5ff7c38adfe107aae2b12",
+            "document:1B1diTvckHbx5s7wVJmndsZ6o3lQF9z4d8xat7OHeHEE",
+            "id:hbl-who-can-wake-him-up",
+            "title:d9d69f62b80d95d5f616f923d49faa897bf82073f556d28c20241477278fbc63",
+            "url:https://hambaanglaang.hk/who-can-wake-him-up"
+          ]
+        },
+        {
+          "id": "hbl-that-one-please",
+          "sourceUrl": "https://hambaanglaang.hk/that-one-please/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:a27211ed61eb21cfba188546b787762cf2beb265371344ab39f6c0a101e3b868",
+            "document:1Kkz-Tz1nEbX2j4RfJ0pMUluSe1RDrJbUUEyYWdhQYjQ",
+            "id:hbl-that-one-please",
+            "title:77adb1a3340e416b7884d16da80d7c79d61c68ab8e77abbdc2127d344c87ca93",
+            "url:https://hambaanglaang.hk/that-one-please"
+          ]
+        },
+        {
+          "id": "hbl-where-are-the-potatoes",
+          "sourceUrl": "https://hambaanglaang.hk/where-are-the-potatoes/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:dd784f9ebfc22d201714aaee9ccebae7aeab3ff0f0beb10e48aff8da2ed6f7da",
+            "document:1dNLuor6AFAp4tWjYSL0QPwP1lMYW5LOagmRvsZ4xggw",
+            "id:hbl-where-are-the-potatoes",
+            "title:39a94af68f6433f929e018a103aa2bb24aa5a890674d26b7fcde063328f52128",
+            "url:https://hambaanglaang.hk/where-are-the-potatoes"
+          ]
+        },
+        {
+          "id": "hbl-colours-of-rainbow",
+          "sourceUrl": "https://hambaanglaang.hk/colours-of-rainbow/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:4594bb862992475e0da231fe7ab52f4ec0ca7c8c773d38ebbb3ad250f61e038f",
+            "document:1gceQ3hvH1PJ_8D7llqdv8oMNnDHBVEp3eiEhkIXvT7A",
+            "id:hbl-colours-of-rainbow",
+            "title:7c664642f0a491a684f596a3b1d6efeba8d55908174e5f0dfbe59b27ba7973ed",
+            "url:https://hambaanglaang.hk/colours-of-rainbow"
+          ]
+        },
+        {
+          "id": "hbl-asking-for-direction",
+          "sourceUrl": "https://hambaanglaang.hk/asking-for-direction/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:53f57c67b6ffe8a636636978cb79cedd92bf9209dfd89f6f39003db3832aa084",
+            "document:1GiSEFahFdPW7LcEEapmSEUxsXCVZTgCUW5bRCvm-LPg",
+            "id:hbl-asking-for-direction",
+            "title:41fd446b255583908ae5e85d21e6402a00721419846540f30e4fe681b73309ad",
+            "url:https://hambaanglaang.hk/asking-for-direction"
+          ]
+        },
+        {
+          "id": "hbl-lets-play",
+          "sourceUrl": "https://hambaanglaang.hk/lets-play/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:4f5707173beda7a00f0589b55db61e3c99fbd5bed866a97f7c95a277c4168468",
+            "document:1HVRy5IgEXfoZzi4Pw39MDqSqVm0263eanSyF0m55KZE",
+            "id:hbl-lets-play",
+            "title:2a6e75cf78c15c6e74fe6905342075ca4bfbb7c6d3eb06d18b091bd4040111a4",
+            "url:https://hambaanglaang.hk/lets-play"
+          ]
+        },
+        {
+          "id": "hbl-counting-animals",
+          "sourceUrl": "https://hambaanglaang.hk/counting-animals/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:94e46c3748740d88552c72f3d6f310b4413d93292bc7ededf2eb36557a1ee35a",
+            "document:1Dl8IRkGdd68yKrQRdkvJuENVhuzIzYvQ_K35M3Rj-2A",
+            "id:hbl-counting-animals",
+            "title:1ba838232062f0d37a4971562dbcdbb35e80e987608143f549080a06b7dc86e8",
+            "url:https://hambaanglaang.hk/counting-animals"
+          ]
+        },
+        {
+          "id": "hbl-jump-into-space",
+          "sourceUrl": "https://hambaanglaang.hk/jump-into-space/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:d079fce2f4d40284da9436b658cb86a397e6b90c052967a6e2a07db41fdd5d44",
+            "document:1yVu9UfS6LA39w8ORXFR6N3DDfKbeuvfbOz2m_9bMJ4s",
+            "id:hbl-jump-into-space",
+            "title:8edb96fad2a07dcc58a4b311628378fae816dfba4e889745e8ba62a763742b83",
+            "url:https://hambaanglaang.hk/jump-into-space"
+          ]
+        },
+        {
+          "id": "hbl-i-do-not-understand",
+          "sourceUrl": "https://hambaanglaang.hk/i-do-not-understand/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:3e0879f0574872fd265abf2dfd27b8b4fb28bdecbb0ef6616f6f390a5b363ddc",
+            "document:1UftNoAlXiFOD79BgYenhMLV5I9WD4pDmz4rntwSAbsg",
+            "id:hbl-i-do-not-understand",
+            "title:09cdeefb9a36ae074376d3b9d681bfc19441b59f1934f272d9f09243e0d700d5",
+            "url:https://hambaanglaang.hk/i-do-not-understand"
+          ]
+        },
+        {
+          "id": "hbl-hide-and-seek",
+          "sourceUrl": "https://hambaanglaang.hk/hide-and-seek/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:821fa9a0732c67023966d4d0d01f0d412e7c7423fac931c1f3c3a2a63059c783",
+            "document:1kD-88C1jX-j3T-XaPlQ695Qyd8VKORMYBF2wEfbHa-w",
+            "id:hbl-hide-and-seek",
+            "title:f932ce1d30600fcb3b29dae5ad779447e4e23a8942a87c5c7eefe39c8ba68cf7",
+            "url:https://hambaanglaang.hk/hide-and-seek"
+          ]
+        },
+        {
+          "id": "hbl-hands",
+          "sourceUrl": "https://hambaanglaang.hk/hands/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:05f86bf0b39fc04a3f39aaaddb3f08de9b6e9e45b41de437e5ba9dd953365de7",
+            "document:1vIfbHb5EcGjb6HWxHbtKhqQ6uIOslS42mOEw7dwjndk",
+            "id:hbl-hands",
+            "title:0e562b020b4f08d08e56c01db36417aa23eb5018b8c6382cc593241777e45e78",
+            "url:https://hambaanglaang.hk/hands"
+          ]
+        },
+        {
+          "id": "hbl-christmas-love",
+          "sourceUrl": "https://hambaanglaang.hk/christmas-love/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:53d77923af9bf246bfdb629d355bd5c95b7d7b4f7095c0e4070df8d0443ea034",
+            "document:1R9cn3kdPKlacKsmjy-Cr3glJdmjdyp1LSvgPMbsYPBI",
+            "id:hbl-christmas-love",
+            "title:b59032a10ac68227ef29dd46443ae5cf7a2de4417da15f916d7977fdd71789c1",
+            "url:https://hambaanglaang.hk/christmas-love"
+          ]
+        },
+        {
+          "id": "hbl-my-aunt-and-i",
+          "sourceUrl": "https://hambaanglaang.hk/my-aunt-and-i/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:966f84d544d9043c886cede9b8225cd97449c968a82166c18ddc187321092a48",
+            "document:1iVdNukRNUzQ0Jc40QyBF04CXIAd3CdI1eEO9Av380eU",
+            "id:hbl-my-aunt-and-i",
+            "title:a0840007efeb77ad379f70d50bb55efbf8ec772fc2375c0ce89425154e96022d",
+            "url:https://hambaanglaang.hk/my-aunt-and-i"
+          ]
+        },
+        {
+          "id": "hbl-magical-machine",
+          "sourceUrl": "https://hambaanglaang.hk/magical-machine/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:bc5236ba9408a6aae69ab6b943ad34d5e4409be81484f8f87a2a7e573ada6e9a",
+            "document:14gUuUgdUj2CfBdgnf8OF6bTICcKMqYjV",
+            "id:hbl-magical-machine",
+            "title:06603c48340459d38bf4254081bb9cbb8cd8f34169c351a37869dc57fb06c127",
+            "url:https://hambaanglaang.hk/magical-machine"
+          ]
+        },
+        {
+          "id": "hbl-arms-and-legs",
+          "sourceUrl": "https://hambaanglaang.hk/arms-and-legs/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:bc0109f170e17df03c522c9ad9dee66c99fca105ce0b957a7696b9872648b32f",
+            "document:1MxtLgS9DkhW-RIR0E4zSsgKoOOdAQxbPXkA_3DFxmCk",
+            "id:hbl-arms-and-legs",
+            "title:f5e09893f6fa8ab998bea7727a6336aaa7ffff5a5d527201ddecfdd6c5985966",
+            "url:https://hambaanglaang.hk/arms-and-legs"
+          ]
+        },
+        {
+          "id": "hbl-mouse-in-my-house",
+          "sourceUrl": "https://hambaanglaang.hk/mouse-in-my-house/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:9a0eb9e86ab02f5f8beb9e3e4c054a87a8928e161a38b132f606448429982422",
+            "document:1OFVmWLJ3DWib3teqbfafigvgN5qvxUpqrNXbXnSGHa0",
+            "id:hbl-mouse-in-my-house",
+            "title:63b1be5c24ce3874e8a887ca2d42f4eb913f5eb5097df299e70f7ad16240dc5f",
+            "url:https://hambaanglaang.hk/mouse-in-my-house"
+          ]
+        },
+        {
+          "id": "hbl-magic-block",
+          "sourceUrl": "https://hambaanglaang.hk/magic-block/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:511fa3f12e759dcc47f2ce80cb6e68eece0a9e38a36aba1513a27f1376e10d57",
+            "document:1x9aKw-hnsNvFNMXiugN30OQ9FnbfE2L39oxPZUki0P4",
+            "id:hbl-magic-block",
+            "title:0ce9c1dcd1e70a2658a86bc9a975a474ccfd7a71eb1ac3ef95dae639a8460216",
+            "url:https://hambaanglaang.hk/magic-block"
+          ]
+        },
+        {
+          "id": "hbl-kowloon",
+          "sourceUrl": "https://hambaanglaang.hk/kowloon/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:1805eaabfbadbb5bd49a6ffa4aca575a3a344a7fa16869bb9fe22546f43e2810",
+            "document:1_V66pURQvsL2kGy23xPTJQ6jFDSENB4c2O9AP5KxEuE",
+            "id:hbl-kowloon",
+            "title:b2c7d31ecbf781c7f05eaf532f7a468b54e4d9a2196c65f42912d0b48bc10ffe",
+            "url:https://hambaanglaang.hk/kowloon"
+          ]
+        },
+        {
+          "id": "hbl-milly-and-the-rabbit-king",
+          "sourceUrl": "https://hambaanglaang.hk/milly-and-the-rabbit-king/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:7131d2b74b73a8938e05eac979e0373319de9fa9413a21897457e819cb7d79c7",
+            "document:1bhvdC5GIgnsg9drF_Op4i-As_p_85mfW-N03SdKDLQg",
+            "id:hbl-milly-and-the-rabbit-king",
+            "title:4c2f450c0b22ec38b52a93ad9bebc6ec42a60af72db0b0b660d76c3d7e49248e",
+            "url:https://hambaanglaang.hk/milly-and-the-rabbit-king"
+          ]
+        },
+        {
+          "id": "hbl-dinosaur-paradise",
+          "sourceUrl": "https://hambaanglaang.hk/dinosaur-paradise/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:513d2556b176d0dbc951d0e7373cd52b7b3f4580aced6617885e5065fdd758a9",
+            "document:1ZllMuoC4fWImvq0_OOAttHvxTwefSzSP",
+            "id:hbl-dinosaur-paradise",
+            "title:a604e829fc3be3d1aa6d7da12ce5aae9971efb04049c19db546059574c3034ce",
+            "url:https://hambaanglaang.hk/dinosaur-paradise"
+          ]
+        },
+        {
+          "id": "hbl-i-love-reading-books",
+          "sourceUrl": "https://hambaanglaang.hk/i-love-reading-books/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:6d9e2a84cf5f68376f167f91fc567076d7f18677c1f03d163e2fe3f577e9609d",
+            "document:1qwi6rDgX-eB_t4rgqe7a5QKw-FAuMQXK",
+            "id:hbl-i-love-reading-books",
+            "title:3780ad894c3f7a3d51348a9975eee9b4a891ea3c56605dc423b6668e46b4f4ab",
+            "url:https://hambaanglaang.hk/i-love-reading-books"
+          ]
+        },
+        {
+          "id": "hbl-learning-through-play",
+          "sourceUrl": "https://hambaanglaang.hk/learning-through-play/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:1e2b9ce68e3d7c9aee647454343127665f86e3ecda7fa2cce05a18d959184b29",
+            "document:12VgAsYAqyiqfempIKzmV3oFD_nZLLDiI",
+            "id:hbl-learning-through-play",
+            "title:dc543646471ac0adde634cf128fa82dfab74f76e1d82335bdcff2460cc452934",
+            "url:https://hambaanglaang.hk/learning-through-play"
+          ]
+        },
+        {
+          "id": "hbl-i-want-to-be-a-superman",
+          "sourceUrl": "https://hambaanglaang.hk/i-want-to-be-a-superman/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:f4e4dc83861476a536defe967490561e652ab9d41a59446ada4b7bf19bf02b9b",
+            "document:15aQV_pTBLQpShkGJzzv20RHw0bsJcgSx",
+            "id:hbl-i-want-to-be-a-superman",
+            "title:cc0f111fa93d177d35f259dfa4a7de07cc9ccfc34ef8a7e564b7db992a3f5371",
+            "url:https://hambaanglaang.hk/i-want-to-be-a-superman"
+          ]
+        },
+        {
+          "id": "hbl-a-whale-in-the-sky",
+          "sourceUrl": "https://hambaanglaang.hk/a-whale-in-the-sky/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:0399db26763e9faf5ae833743530338aca58e13d0e3172c47e32cf0c6ddcc825",
+            "document:1VfQ4r7YUyeLqk5v8Tc129AVR_7bn5vvu",
+            "id:hbl-a-whale-in-the-sky",
+            "title:24a34b0cfa475da0269fe5c98ca39d43aa6c5ac38971173245f72b95cf21c387",
+            "url:https://hambaanglaang.hk/a-whale-in-the-sky"
+          ]
+        },
+        {
+          "id": "hbl-the-night-the-moon-went-missing",
+          "sourceUrl": "https://hambaanglaang.hk/the-night-the-moon-went-missing/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:1b54ebfcf5ee17809710c00437b09e8fbbcd39629cf1f9b9c268b2e4453226bd",
+            "document:1W74Ow_s-YpGrosl9gk_i69tGji_m3nAQ",
+            "id:hbl-the-night-the-moon-went-missing",
+            "title:ba4066ae579abfdf00bf75bbc680be70dcaaae219725985992b5a71169b25e97",
+            "url:https://hambaanglaang.hk/the-night-the-moon-went-missing"
+          ]
+        },
+        {
+          "id": "hbl-the-bear-who-loves-colour",
+          "sourceUrl": "https://hambaanglaang.hk/the-bear-who-loves-colour/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:ce54872e90fb1b7f3980d4c0c5f986f2f08ed3597eaae6f8e41bd85e99392876",
+            "document:1fgPrCc6pcQp46LHRSXt3hovlNYPgdZ_eZE9kEtzP6F4",
+            "id:hbl-the-bear-who-loves-colour",
+            "title:498237c7437451096bd3ceded1b06e39b5052a53ff60cf8e29c5746411c5fa01",
+            "url:https://hambaanglaang.hk/the-bear-who-loves-colour"
+          ]
+        },
+        {
+          "id": "hbl-what-is-that-smell",
+          "sourceUrl": "https://hambaanglaang.hk/what-is-that-smell/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:981c6202154db4bb4abf61dc584524be1c304af950a945dd0133b1f8468f9157",
+            "document:12iMVJvzce7b7Wa3Ifqip13F8FKeE42Em",
+            "id:hbl-what-is-that-smell",
+            "title:28078846369ebce606b9120d3c5b702ef991a8350a167e26ce4a23f1da1358f1",
+            "url:https://hambaanglaang.hk/what-is-that-smell"
+          ]
+        },
+        {
+          "id": "hbl-what-can-i-do",
+          "sourceUrl": "https://hambaanglaang.hk/what-can-i-do/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:227e7cdb873f38611b1edaee4b6b204ba09c2b1bb6f9667bc8ea585241f1a20c",
+            "document:1djom184uqePTelBElRgzP_rXG68wrBpCG8M8LZm_9hA",
+            "id:hbl-what-can-i-do",
+            "title:0e07d7a9ced5ef32be7c28b7bcf9728968170eca533832d153d5feaab3e01d43",
+            "url:https://hambaanglaang.hk/what-can-i-do"
+          ]
+        },
+        {
+          "id": "hbl-i-am-an-engineer",
+          "sourceUrl": "https://hambaanglaang.hk/i-am-an-engineer/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:14007e8f4bde1a000ba05be7b7aef33b4833317d05dbf22a4e4360c263caf1ed",
+            "document:1Xej0q-WZWkwotbDCsvvP6qzyeHYqwvSB",
+            "id:hbl-i-am-an-engineer",
+            "title:8772ccff9deac4dd7d6c427035559fc640b6dcd4711448b2cb1f352dfd65ed64",
+            "url:https://hambaanglaang.hk/i-am-an-engineer"
+          ]
+        },
+        {
+          "id": "hbl-come-together-to-help-choi",
+          "sourceUrl": "https://hambaanglaang.hk/come-together-to-help-choi/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:ac6eb0a43816bbba8414da7dbdb9b7a311bae36dc43e049a27ea2c005cab6705",
+            "document:1pUIWrptQPnU1nQ43JgUmTx0Q7OQ9Oz9c",
+            "id:hbl-come-together-to-help-choi",
+            "title:2dab61066e95e022388f376d627d2e795ad0b00ecf42188b4e71bdd24fcd3951",
+            "url:https://hambaanglaang.hk/come-together-to-help-choi"
+          ]
+        },
+        {
+          "id": "hbl-annual-haircut-once-again",
+          "sourceUrl": "https://hambaanglaang.hk/annual-haircut-once-again/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:ed5f60ad161977ac25156b3beb1b32849a25131cd49acc618a88d86d00790b89",
+            "document:1SgVTgH3T9XBbJv2WUf78ZuFoMCnO_jQw",
+            "id:hbl-annual-haircut-once-again",
+            "title:0c2638c68e1709d6e14712af6bc598220cff8ae94e6ad16072ddacc2cd663309",
+            "url:https://hambaanglaang.hk/annual-haircut-once-again"
+          ]
+        },
+        {
+          "id": "hbl-the-little-swallow",
+          "sourceUrl": "https://hambaanglaang.hk/the-little-swallow/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:1796c0ccdcaa4efed97c933a14e32d7e9178cf660231b2b2bfcf9b100cc5d985",
+            "document:1oKovkVLYEo90a-px0XrR6tTY9dv5wpzg",
+            "id:hbl-the-little-swallow",
+            "title:b0ead88e8ee0031e5501b685fe578e1fc857cf35c98add63c9c036ee7ae66608",
+            "url:https://hambaanglaang.hk/the-little-swallow"
+          ]
+        },
+        {
+          "id": "hbl-lollipop",
+          "sourceUrl": "https://hambaanglaang.hk/lollipop/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:ae1173715306c5035ebaba09474e10def4269dd776aac382d5b5e6398037c4ff",
+            "document:1M0zFb_S_-ow8n7NioHG63C0SQm8QHGaWb3JAP24VGHw",
+            "id:hbl-lollipop",
+            "title:78ee99b5962007c5aa7177a1b8c50b4ee08e7b158d24924b60f6db01576ee1d5",
+            "url:https://hambaanglaang.hk/lollipop"
+          ]
+        },
+        {
+          "id": "hbl-are-we-same-or-different",
+          "sourceUrl": "https://hambaanglaang.hk/are-we-same-or-different/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:869283f6076fac3a82ed78cd0f320bd395ad7a9a051ad00359ad1d5e778f3b3b",
+            "document:1zmZ19XoWdlJk5pJPpv4rMVOzszIYC_Mc",
+            "id:hbl-are-we-same-or-different",
+            "title:a280804bb7ee7c556dea72cec1881bfc1c376abb6cab3f277421727e7a10871e",
+            "url:https://hambaanglaang.hk/are-we-same-or-different"
+          ]
+        },
+        {
+          "id": "hbl-the-paper-boats-secret",
+          "sourceUrl": "https://hambaanglaang.hk/the-paper-boats-secret/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:3e268645e5733db2b223562931efbfbe2c0e348fd8006f35e998f135b1c69e6a",
+            "document:1qtaib4-7ukBnyzkFeEdR9vxlhgoRBaH8",
+            "id:hbl-the-paper-boats-secret",
+            "title:fc4951192d6cb34c61184c3cb8bdc31dcf028c2014ec2cb351ed71d50263352b",
+            "url:https://hambaanglaang.hk/the-paper-boats-secret"
+          ]
+        },
+        {
+          "id": "hbl-my-super-grandma",
+          "sourceUrl": "https://hambaanglaang.hk/my-super-grandma/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:0aa4b8a294cd243fd3ed6177a6ab1841c348a401d2cf62ab2e68838c5868f83b",
+            "document:17TDPOvEpEd8ozULnOErsVY3fIaTk7hwU",
+            "id:hbl-my-super-grandma",
+            "title:aa9ed0fe06983c8e7bd272a9fd085711136d48f504148d4a2ff88141e7600999",
+            "url:https://hambaanglaang.hk/my-super-grandma"
+          ]
+        },
+        {
+          "id": "hbl-lazy-uncle",
+          "sourceUrl": "https://hambaanglaang.hk/lazy-uncle/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:f81810f7d23760f1790cf788e726458b214999933066f118b151bdcceac1badb",
+            "document:1NHtAUOgnazkkycJ7QxY18q8Ct7Xtq-5T",
+            "id:hbl-lazy-uncle",
+            "title:350321a05f43b463cb6f64cf9368b3bc1feeecfd202403e2ca8ca1d6403c39db",
+            "url:https://hambaanglaang.hk/lazy-uncle"
+          ]
+        },
+        {
+          "id": "hbl-i-am-chan-hoi-kei",
+          "sourceUrl": "https://hambaanglaang.hk/i-am-chan-hoi-kei/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:ebd3147daef10a522990fecb2af1ce8ad94225be9a54cf4e89cbfc3132545f9c",
+            "document:1nLAtSh_UrnLREuT-YuKdpDsUC86z7dke",
+            "id:hbl-i-am-chan-hoi-kei",
+            "title:0e7dab632cb52e1ec1f371f15d5b6f37da01e3ba7717ed19926c66a19bdb4e28",
+            "url:https://hambaanglaang.hk/i-am-chan-hoi-kei"
+          ]
+        },
+        {
+          "id": "hbl-too-young",
+          "sourceUrl": "https://hambaanglaang.hk/too-young/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:6ef76e544fe3529d0b8b55f84b41ec1c20461b8477cc3e91512d400bea032d5c",
+            "document:1NiVs8b3CVzxNda0PVawG2WeN8NCM8yBZ50gYbBkGFFw",
+            "id:hbl-too-young",
+            "title:232c72b24105f6e663dc6009dcc39ae95b2db724f53997541131229b3b5a32f5",
+            "url:https://hambaanglaang.hk/too-young"
+          ]
+        },
+        {
+          "id": "hbl-dayus-flood-control",
+          "sourceUrl": "https://hambaanglaang.hk/dayus-flood-control/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:1ed35cbe16520bdf0febdeb13fd9e5c1817c196b63d410bd54c2573890eba66f",
+            "document:1SRcqizZ4xG--GzOiBiatOF2eXxccaACPjg8yHHe1g9I",
+            "id:hbl-dayus-flood-control",
+            "title:867330b4b395faaf1d10606f3d708c8e82c0bc61b1fa3315d24d4301b92641ed",
+            "url:https://hambaanglaang.hk/dayus-flood-control"
+          ]
+        },
+        {
+          "id": "hbl-fly",
+          "sourceUrl": "https://hambaanglaang.hk/fly/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:502520a986d9c2080889e76d52830726fe8403a176968364c27b68db01925ec0",
+            "document:1wiFxjIGMzCya5RsEad08ZJCmQXv5B_E-TtIZKo1U5Xg",
+            "id:hbl-fly",
+            "title:e075e7af5301d06ca6f0b211c615e1da4c070cacfe738c0a83e726e2da05e6fc",
+            "url:https://hambaanglaang.hk/fly"
+          ]
+        },
+        {
+          "id": "hbl-drinking-tea",
+          "sourceUrl": "https://hambaanglaang.hk/drinking-tea/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:7885e96e61a8511f0e85b8127549972268eb65f1812e9ff6794a1a3f3bd309ef",
+            "document:1gZMRStQiEodvXlB8nUrwkGeZqK8Asxyx",
+            "id:hbl-drinking-tea",
+            "title:950af88b16dc1e2808c277aaf38311082995398e415259831fd874d40b11d0c7",
+            "url:https://hambaanglaang.hk/drinking-tea"
+          ]
+        },
+        {
+          "id": "hbl-tian-jis-horse-race",
+          "sourceUrl": "https://hambaanglaang.hk/tian-jis-horse-race/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:087730e85341ae9d6d33ef85d4b9276a0d4ff916f94217238bd829ba278638dd",
+            "document:1MDE_XAtnZD5S7aonn4QE_5B_6ttO12Kzb5PNAr_dy1w",
+            "id:hbl-tian-jis-horse-race",
+            "title:5740b4408cc1975d1e4c5a863405505444f72d03eb5a6d0cc3ccfabd50d2e531",
+            "url:https://hambaanglaang.hk/tian-jis-horse-race"
+          ]
+        },
+        {
+          "id": "hbl-class-monitor",
+          "sourceUrl": "https://hambaanglaang.hk/class-monitor/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:d760f80276e25ae3ff4391042ea5cbab9bfd5842b200d6addc41f71beb8eb267",
+            "document:1fDmTHmppl2_d17VjANiRiGGvbGfU7N25OLl8ljTklXk",
+            "id:hbl-class-monitor",
+            "title:9fff86311afe0c0eeb4b96415fd0c299c74560e74da18db3b66be2f88f356dd8",
+            "url:https://hambaanglaang.hk/class-monitor"
+          ]
+        },
+        {
+          "id": "hbl-worrywart",
+          "sourceUrl": "https://hambaanglaang.hk/worrywart/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:907132be26b94f4c536840543182997a3b8a55e67df33b0b251ab06b7a6c60c3",
+            "document:1STh2fitBEuKDPlawVgIXdYMK_ZGuobnrRKMPKjfMaSA",
+            "id:hbl-worrywart",
+            "title:5ff30c486fcb94cd14c4567401770137e7ba3e23c24b11cbb9121ae30ad61d09",
+            "url:https://hambaanglaang.hk/worrywart"
+          ]
+        },
+        {
+          "id": "hbl-karlys-purple-friend",
+          "sourceUrl": "https://hambaanglaang.hk/karlys-purple-friend/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:fd543b3dd9702a3eebbb425f0d579e08813ac391562d969aca59b1e6ddda3e00",
+            "document:1l9xthGU9DUjinWBZpfjP3kLk_7gdf_9emFbKFnfZPYk",
+            "id:hbl-karlys-purple-friend",
+            "title:e30ab91ed654ed1fd75d115be1adcc182d2b5b968ef069d5f8a40847222e8efd",
+            "url:https://hambaanglaang.hk/karlys-purple-friend"
+          ]
+        },
+        {
+          "id": "hbl-the-kite-of-love",
+          "sourceUrl": "https://hambaanglaang.hk/the-kite-of-love/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:e2ae5402b258d28c4362f68916827c651c856cc8aef473558ea8ca27951134b6",
+            "document:1RNt0Rp87LZztKRa8KvTcHiNo9DTSKh9W4BXuOr6W4us",
+            "id:hbl-the-kite-of-love",
+            "title:7d8d4ebf1def579f30ecbab87fda2ef7a52f6f01a00e4728ae54b3174f4d532f",
+            "url:https://hambaanglaang.hk/the-kite-of-love"
+          ]
+        },
+        {
+          "id": "hbl-together-forever",
+          "sourceUrl": "https://hambaanglaang.hk/together-forever/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:7114984a0560c433f6b508259318c26d62cf775a1e93aeeea7e5917c1c5c61cd",
+            "document:1QSajKQiL1FYo3ms2KYwEJcDsuqRxBq707DW5_8jbyRU",
+            "id:hbl-together-forever",
+            "title:bc2ef1b2f2be7892b3a47260df692f8dd21cb780848b0d65d1f338f6cb6e1dfa",
+            "url:https://hambaanglaang.hk/together-forever"
+          ]
+        },
+        {
+          "id": "hbl-kingdom-of-plants",
+          "sourceUrl": "https://hambaanglaang.hk/kingdom-of-plants/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:7a16d143d6274d87d927a33633f434c41052b7f4684c0ba97ca03dcaecb34361",
+            "document:1_l9lOrTWVz6Rxx9gux_AVWI_pXgZlnujLMHET_LPLh4",
+            "id:hbl-kingdom-of-plants",
+            "title:f8d7cf995ab7ea16d47a8a7f84b646bff657827d62416b5c188dc9c1527fe959",
+            "url:https://hambaanglaang.hk/kingdom-of-plants"
+          ]
+        },
+        {
+          "id": "hbl-where-does-the-time-go",
+          "sourceUrl": "https://hambaanglaang.hk/where-does-the-time-go/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:5d37c9ddf532fd6e48bce4474026ddc074a04eeb73e6c1801bd6380771a93d7c",
+            "document:1f5sQzLoqPYrlACatb3EIllKcN-URN2TM",
+            "id:hbl-where-does-the-time-go",
+            "title:66143fe737a64fcebd009a030cad2db7171bf025fa6201c240627efb653dd84c",
+            "url:https://hambaanglaang.hk/where-does-the-time-go"
+          ]
+        },
+        {
+          "id": "hbl-what-is-money",
+          "sourceUrl": "https://hambaanglaang.hk/what-is-money/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:7a63b415e83d553f68fbce108d8ffc128d59609cce803ee1690cde11fff245da",
+            "document:1oRQJNzR84PHMGVRtIF1SquDSh-hLA4XKh6fFqIpx0eQ",
+            "id:hbl-what-is-money",
+            "title:7e4b5f7b0ececc04f0303eca9ef42ddc7ea1b3aac8bf047553efd661a522ad59",
+            "url:https://hambaanglaang.hk/what-is-money"
+          ]
+        },
+        {
+          "id": "hbl-water-rationing",
+          "sourceUrl": "https://hambaanglaang.hk/water-rationing/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:b26d75549cb0f81a629ad81fe3bb8c52083c700bd66739a881b001af2c172c1e",
+            "document:1CuiHRdQ16MnaWdmjYfJPrlI9UZNLJDEsXimR7vyRNw8",
+            "id:hbl-water-rationing",
+            "title:d1ad5ff982e6266c533fd85c623e27bd57a08b48fecbd81547187d9af9e4a35d",
+            "url:https://hambaanglaang.hk/water-rationing"
+          ]
+        },
+        {
+          "id": "hbl-no-one-believes-me",
+          "sourceUrl": "https://hambaanglaang.hk/no-one-believes-me/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:d7ac42fb2e8985c007e46848131d906b6c8afb126db8592e95481876ffd11380",
+            "document:1gQ6e9VkW3JoieIaj6f2Nn6PNOK8u-nAYfzLs3mKNhnw",
+            "id:hbl-no-one-believes-me",
+            "title:50444f54d9faf78881b995ab94eb03bf4ca7f25f8107dc5cea1088302236b2d3",
+            "url:https://hambaanglaang.hk/no-one-believes-me"
+          ]
+        },
+        {
+          "id": "hbl-the-bird-out-of-control",
+          "sourceUrl": "https://hambaanglaang.hk/the-bird-out-of-control/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:496579bebe3bac05d9cbab06623116cabb74d8e1d44e8e5fbd0b385050d5e36d",
+            "document:1COnD8W6BC1ql70ysGem60xnAW-uGw0S6slZKWHqminU",
+            "id:hbl-the-bird-out-of-control",
+            "title:071a4345665c02456280833463a4cb52e8003d373fd8b181c3c5979ea3d8c64b",
+            "url:https://hambaanglaang.hk/the-bird-out-of-control"
+          ]
+        },
+        {
+          "id": "hbl-fatima-and-the-moon",
+          "sourceUrl": "https://hambaanglaang.hk/fatima-and-the-moon/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:f8ba36c2c44091e6f29f0c185144cddf82533e2a02fac531d58eca18532d281e",
+            "document:1kZQ-zp-_YLPWBT5ATYhGP_L_fC_5s4qxWFGqu-w0A2g",
+            "id:hbl-fatima-and-the-moon",
+            "title:a0e5baaf33376afb164232780cc09c4e31f7029b73efba2e3a4ddcf92407fc27",
+            "url:https://hambaanglaang.hk/fatima-and-the-moon"
+          ]
+        },
+        {
+          "id": "hbl-a-meal-worths-a-thousand-taels-of-gold",
+          "sourceUrl": "https://hambaanglaang.hk/a-meal-worths-a-thousand-taels-of-gold/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:977713762c7d4c7f6959a6371b30148c7cb2daf1952c7f03a1d755cef8e2ebd6",
+            "document:14kP6Dwkg4kVcxXu1dyxqL2mLdaZtkW1f6iWEssTIkzU",
+            "id:hbl-a-meal-worths-a-thousand-taels-of-gold",
+            "title:62f1c9415e6b4aa2b74fceb0457ad4088e497e546212c86e0c28771d1d6fefdd",
+            "url:https://hambaanglaang.hk/a-meal-worths-a-thousand-taels-of-gold"
+          ]
+        },
+        {
+          "id": "hbl-jingwei-fills-the-ocean",
+          "sourceUrl": "https://hambaanglaang.hk/jingwei-fills-the-ocean/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:44f2512fd53ac9e73c45411d835c13c82c4348e470db1f8a1fefc4a4fbfaec89",
+            "document:1J-sVVwXjcJkJvijK7_lMxdFS4GX_3RXC2hwjgoznHeI",
+            "id:hbl-jingwei-fills-the-ocean",
+            "title:f729968ee893f368b384e96a596d4db4e68ee9a7ed7b8fcb08708b2c9c0bc0c2",
+            "url:https://hambaanglaang.hk/jingwei-fills-the-ocean"
+          ]
+        },
+        {
+          "id": "hbl-little-mouse-bandi",
+          "sourceUrl": "https://hambaanglaang.hk/little-mouse-bandi/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:67129b3dc5a92b19a1eceb9f7f32d54827812d6e8fcba857159a89d72a2d5759",
+            "document:1YoihWiynPvuuNDnRBdpnPPDphhD5gB_kTx2ERsyjAZg",
+            "id:hbl-little-mouse-bandi",
+            "title:8d99902136a8f117532d7e350633ae299cda80ce286b70dd0d757c9a102a398e",
+            "url:https://hambaanglaang.hk/little-mouse-bandi"
+          ]
+        },
+        {
+          "id": "hbl-transforming-the-fishing-village",
+          "sourceUrl": "https://hambaanglaang.hk/transforming-the-fishing-village/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:331479c23cb5770de98902c48dc75ff4eee474a16addc46da23e364a58f9b0ee",
+            "document:1-_r_frNaQ922GBLCsgEBMo5Ja4WfrBRDzHf6hT4cQtU",
+            "id:hbl-transforming-the-fishing-village",
+            "title:03282c9401d977165822f34256a9312b710a4e6bd17aad2e3de758a4fec7c9dc",
+            "url:https://hambaanglaang.hk/transforming-the-fishing-village"
+          ]
+        },
+        {
+          "id": "hbl-invisible-cloak",
+          "sourceUrl": "https://hambaanglaang.hk/invisible-cloak/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:9692868455b02fe265e478bbed99fc59c4730215afef60ecb51708a1872eb053",
+            "document:1bVEgYoBgVioPqPK5rwOeaeyFhwJXPEi3HvBJrwOuPpk",
+            "id:hbl-invisible-cloak",
+            "title:32d68fe290e505458b0c5ab7d5f2f035b40790c85017104bf6f46c9a7eb94ad3",
+            "url:https://hambaanglaang.hk/invisible-cloak"
+          ]
+        },
+        {
+          "id": "hbl-the-haunted-mansion",
+          "sourceUrl": "https://hambaanglaang.hk/the-haunted-mansion/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:bb6ab195568546060cd3447e596e8e89baab8bfc330183f2c3a48b441dd22cde",
+            "document:1HWISF4I0S-kGZJVqjeyeR7yGf-b-iujTGLEe3u-o6SM",
+            "id:hbl-the-haunted-mansion",
+            "title:b84144e384b301aa3fd020215a59cb8527637e9d5ab58afee8b493684172f802",
+            "url:https://hambaanglaang.hk/the-haunted-mansion"
+          ]
+        },
+        {
+          "id": "hbl-a-friend-of-my-brother",
+          "sourceUrl": "https://hambaanglaang.hk/a-friend-of-my-brother/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:76aef395b34d8390a9bfd12b671cea018190e898281ba6184f12fca322ecf736",
+            "document:1wH1k3wsqK3yPzvwztTWXZKfwS2nYC7QU",
+            "id:hbl-a-friend-of-my-brother",
+            "title:5461f713a4539a2d35cf7c38a229242946a946d6d1447b51c7b33e916e6259af",
+            "url:https://hambaanglaang.hk/a-friend-of-my-brother"
+          ]
+        },
+        {
+          "id": "hbl-a-life-full-of-numbers",
+          "sourceUrl": "https://hambaanglaang.hk/a-life-full-of-numbers/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:c410949e0c9594fee018dde8a9757092c1bc6fd026b71db720057243cf80f765",
+            "document:18GMVbVAeEGONXGUHFPoIOBBoPEa9S0qd5h0Yujs82fo",
+            "id:hbl-a-life-full-of-numbers",
+            "title:2d69a8111e773803101051c06186bd79eef018e441f84bd563add57c84220a5e",
+            "url:https://hambaanglaang.hk/a-life-full-of-numbers"
+          ]
+        },
+        {
+          "id": "hbl-our-singing-voice",
+          "sourceUrl": "https://hambaanglaang.hk/our-singing-voice/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:6db2df5142f72403cce2d5835539a0cbc146b3a03fd3b4d00a9efad4b03541b7",
+            "document:1-T8up0RRYEnLMd9Uui4dLkR51VDPMUNAFvbLaD3s90o",
+            "id:hbl-our-singing-voice",
+            "title:ee5468a3adfd9f2cd4307b4e7e46b4f088b6390bf4c8e6eed11590720702db3f",
+            "url:https://hambaanglaang.hk/our-singing-voice"
+          ]
+        },
+        {
+          "id": "hbl-my-best-friend-bonda",
+          "sourceUrl": "https://hambaanglaang.hk/my-best-friend-bonda/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:3482dbb624855d53790dfc40f43097144d589caa93a31dbf712073d6d057449d",
+            "document:1BW-0ZKXRd--AbKCFV1jVfvCLeyVkVGdQlZlg0-6zBos",
+            "id:hbl-my-best-friend-bonda",
+            "title:a6a9b8463439f7eb09bf46c9b6be2455813ab8d99f4ff538540e66bfa3ba48c2",
+            "url:https://hambaanglaang.hk/my-best-friend-bonda"
+          ]
+        },
+        {
+          "id": "hbl-the-world-wide-web",
+          "sourceUrl": "https://hambaanglaang.hk/the-world-wide-web/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:95283e9449893d9083428cad5e9d526a9548581f6da8e1c52f2fada7e94b09a6",
+            "document:1CXAIEDCw4V5yNmikp3_TtgNVxDiDjU38nsN4PGeg_Cs",
+            "id:hbl-the-world-wide-web",
+            "title:3cef5e3e23fa0ae3273d8b27a9b1e110dab52d9eb9a2aaa6b9d6821deba4c6dc",
+            "url:https://hambaanglaang.hk/the-world-wide-web"
+          ]
+        },
+        {
+          "id": "hbl-outside-of-technology",
+          "sourceUrl": "https://hambaanglaang.hk/outside-of-technology/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:9417c50cf7e97935b310b486acdc98b3d0eda92837aa0acce68e29f4a59ed51a",
+            "document:1_iVEK-bEPP8qj4S7yEQibiqW56J_Ku2YdiPzW8SwBf8",
+            "id:hbl-outside-of-technology",
+            "title:e7a50f9cbd260f53e94b0659f687df4ec4f696389915803c0d9ddf2d14cee687",
+            "url:https://hambaanglaang.hk/outside-of-technology"
+          ]
+        },
+        {
+          "id": "hbl-the-modern-magic-carpet",
+          "sourceUrl": "https://hambaanglaang.hk/the-modern-magic-carpet/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:1e8e74fed7d39c2e723ea90bcfbebbbcb389a430a4ee08ef8a7e6b82cbfcbcd2",
+            "document:1sVqEzoIcqrCXF9Q-YrHRYz-JqtQEB3s-P6_dJvGpvvk",
+            "id:hbl-the-modern-magic-carpet",
+            "title:3dba58a753ddbfa9b45470cd967679a428e73aec539770024c06861f132f7408",
+            "url:https://hambaanglaang.hk/the-modern-magic-carpet"
+          ]
+        },
+        {
+          "id": "hbl-the-foolish-old-man-removes-the-mountains-and-the-old-oil-merchant",
+          "sourceUrl": "https://hambaanglaang.hk/the-foolish-old-man-removes-the-mountains-and-the-old-oil-merchant/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:6671a575fa5f3788358beba9eeb7e8ce79ba918d00e26d75440abea95d4ce8e4",
+            "document:12qfMFabfwKo_QXFT7dZMMmBT2fmyGUrDUt9IdOoKrBs",
+            "id:hbl-the-foolish-old-man-removes-the-mountains-and-the-old-oil-merchant",
+            "title:716ee9c42ea49d14997a5360a416d224ba490fed240a3984ae7c5ad85598ac0e",
+            "url:https://hambaanglaang.hk/the-foolish-old-man-removes-the-mountains-and-the-old-oil-merchant"
+          ]
+        },
+        {
+          "id": "hbl-looking-for-snow-leopard",
+          "sourceUrl": "https://hambaanglaang.hk/looking-for-snow-leopard/",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:d510c93e0971aeb5d41ec8150c365e4766d5251759603df7f34e3335c1cf2a0b",
+            "document:1RqN268B1PwJ1OEKIIXpKyUN1dq6lOhGCnsoAbMrTyK8",
+            "id:hbl-looking-for-snow-leopard",
+            "title:1e4b89db748e30d20cd4dd9ad4620bed16d810956cd165a96f6e46c87d779ecc",
+            "url:https://hambaanglaang.hk/looking-for-snow-leopard"
+          ]
+        },
+        {
+          "id": "spice-vf19a-family-language",
+          "sourceUrl": "https://doi.org/10.5683/SP2/MJOXP3",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:245be8ea508f2dc181f9cf6359a3a47fa7a0539d84788d17b01f48033c42d2a6",
+            "body:359d6727c88f2cb9d802f75dc2c786ac310d68362732c8c6e074a5df662ce291",
+            "body:372f5199cbf571d7af619a363ebcf96912f3ea99455a6b32ac964beb6a64b3f2",
+            "body:3a96be87cdd51121c475942f4e680a98a615c05df332b9150db388a0d6128cfb",
+            "body:5e7bb97f7c0a41a49cc5d2ff2e58cc04c648f50f536efc0924c6aacc44c7322f",
+            "body:62a0d95b64b079da6c5103710bb705592602ec5225417d72870562d94d483562",
+            "body:63457c0b2b347a3b3879a2bbc23cd447feb79da3fb7ddd2e51c9c764b6342ab0",
+            "body:acb66aa8d6e8f03b05771e6214801320633caa49281ae4b7a2d3bb085b65cddb",
+            "body:af8aa2864dbd07a16df5c5415157bf2e0987c0968ed04e08cc77641bcc71025d",
+            "body:b1464b1f34584f04ac2c93aa696d0473b61b4fddf585b4ef4766b80223bf19aa",
+            "body:c3471ea4a6179d3ea68a9569f3d3b2041603acd15e4155d13c1211795340ab42",
+            "body:d3142353ee7a492fb1cbd838ce245286b9864fed2327bbe1c6b2248c102b03f2",
+            "id:spice-vf19a-family-language",
+            "id:spice-vf19b-written-code-switching",
+            "id:spice-vf20a-festival-food",
+            "id:spice-vf21a-study-notes",
+            "id:spice-vf23b-explaining-linguistics",
+            "id:spice-vf26a-part-time-work",
+            "id:spice-vf32a-travel-planning",
+            "id:spice-vm19a-parents-english",
+            "id:spice-vm20b-family-schooling",
+            "id:spice-vm21a-lecture-size",
+            "id:spice-vm22a-taiwan-trip",
+            "id:spice-vm24a-pet-allergy",
+            "title:0e9fec91a65fef38e92cc1b7b9b93d77ad12e0f3d9b80fd5f93a28e5ef1033cb",
+            "title:2b51740864172cd5994eaac33aef26e1011cc9638c10532b25441278a6c1ecad",
+            "title:470bb5dfdddcea278a40c7bafd9ebfb25a301e066256d4b8510e8fd977091dd1",
+            "title:72b10bec8e52720f3e4e1911a1a1987baddcb2e6cbf28d10e2be34b0f3e3a1ef",
+            "title:744500876dbe2b7ec21aa74892a28f2c6321f2a97c52df4a79e3fe268944f314",
+            "title:7a1bf75c6856ba26bb57e61677cbd183a50c7168138741d61c4b97fbff275c64",
+            "title:8148569f989a5a8fa161f52a1fac3e6a9520074f7525390b169635860af9603d",
+            "title:97b28fe8961db8c245b80fb3afcad6d9778f07893ad5b23a7e3c5c323a6c1815",
+            "title:9c35928286371199565f3621ddc96588a3dafb5be1b93e6620a62d9804d2c19f",
+            "title:b2401f018ae2080677d0c80051e2f69107cc4af6624a0134b0055e0354342039",
+            "title:d617c41d920dd871627a8216f92e7858cc0723b83bbba8027279ca26aac232e1",
+            "title:d995130cb433adb31992872b54d548b90990b9d0522461aa0ac106940c770833",
+            "url:https://doi.org/10.5683/SP2/MJOXP3"
+          ]
+        },
+        {
+          "id": "city-rain",
+          "sourceUrl": "",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:a6db65efc9eac1496f32205af318d4d2a2054593f123e07dbee554554f38572c",
+            "id:city-rain",
+            "title:bb54b5c19fbe7bd442fcc91bc4552ee3a91a70ec7406c7dd0969453ccb64bc1a"
+          ]
+        },
+        {
+          "id": "tea-afternoon",
+          "sourceUrl": "",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:4810573a18f992c193ec92b4ea8a377b7e65cfa60eb6b4527bbd1c60d1bdfbf2",
+            "id:tea-afternoon",
+            "title:337ac0e70ad71437cb9848949f89e967978ec91d0c0bddde7a2618daa25fc851"
+          ]
+        },
+        {
+          "id": "ferry-wind",
+          "sourceUrl": "",
+          "firstSeenWeek": null,
+          "keys": [
+            "body:8595e931dd5c08482f69a9d13f18f67f9640f23794c90c70d1f719bdf16dbed5",
+            "id:ferry-wind",
+            "title:41f8d918779a9e9c1a6a19ceb04c879a775af89ad208e85fd0dd9cedb32338fc"
+          ]
+        },
+        {
+          "id": "hbl-whitey-the-cat",
+          "sourceUrl": "https://hambaanglaang.hk/whitey-the-cat/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:de0ce1741dcc2dc6d9bbd10092f25c17a81fb52814dfc6a2ea5fdd4d469c20bf",
+            "document:1r1kGjGckKBANcSEKx7TwZQbv7-7FNpG8UbvxhFAcvF8",
+            "id:hbl-whitey-the-cat",
+            "title:eefa2ee81caa590cc9a0e84bd2a8738aecc184f510bf6c663cce6cdf684ce15f",
+            "url:https://hambaanglaang.hk/whitey-the-cat"
+          ]
+        },
+        {
+          "id": "hbl-we-are-grown-up-now",
+          "sourceUrl": "https://hambaanglaang.hk/we-are-grown-up-now/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:63fcd688e2f9ee9bb54abc2b16196cda8a045e6754475e2859f5078d4df1e83c",
+            "document:11SdMUFSw-aa5oLAWbHLqWj2hCXVYpTRA",
+            "id:hbl-we-are-grown-up-now",
+            "title:f690e6c54b8da830b3c78309abb9faa0df8a49a0ebb71fe52da84ed053c4f6d9",
+            "url:https://hambaanglaang.hk/we-are-grown-up-now"
+          ]
+        },
+        {
+          "id": "hbl-saru-and-her-secret",
+          "sourceUrl": "https://hambaanglaang.hk/saru-and-her-secret/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:abdc7c0a3921093f3d4b115f666676f5339c113b92e6c48df488b62ddfff7df3",
+            "document:1yM2amRkv_wWTfTdJZKJcWE5POAdwk3TROo4lnyAxMBA",
+            "id:hbl-saru-and-her-secret",
+            "title:d2703844e49a898df23ff623dbba08f006763fa07ae1cb2c2220e75e7e7b78ee",
+            "url:https://hambaanglaang.hk/saru-and-her-secret"
+          ]
+        },
+        {
+          "id": "hbl-lost-found",
+          "sourceUrl": "https://hambaanglaang.hk/lost-found/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:37e8112f984a5340af4c22c68801655298b8b8b11cf22e9492b0f71505f652cf",
+            "document:12nZTawzzKvx93-fHB1QWLZnyp9oUzN-L",
+            "id:hbl-lost-found",
+            "title:28df5998e1d295f1a65c452a459f4afcea98bac3d8c54fb4a9128a37fcc3786d",
+            "url:https://hambaanglaang.hk/lost-found"
+          ]
+        },
+        {
+          "id": "hbl-storyteller",
+          "sourceUrl": "https://hambaanglaang.hk/storyteller/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:ff045c72bd5a6862ba4993b450a43d933117329fecb7c947b9504a881d4b7300",
+            "document:1ttBGWtsUQ5Wxl6hy7hG7iPiwIAnlNp8I",
+            "id:hbl-storyteller",
+            "title:93bdb4718d832ea089806a7cc6f66142c1e81c48cdd681cc89d80b08a652aeb5",
+            "url:https://hambaanglaang.hk/storyteller"
+          ]
+        },
+        {
+          "id": "hbl-i-am-not-a-lustful-guy",
+          "sourceUrl": "https://hambaanglaang.hk/i-am-not-a-lustful-guy/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:2351912bc50e3e1becce5fd1227d2f445eba676703c8e7ed7d9c320e182e6d52",
+            "document:1X9mBpLpO2rhLhwpbat127YD0a_Pj6j7f",
+            "id:hbl-i-am-not-a-lustful-guy",
+            "title:6963a07941fcf1bde82331522388dad18fa30bf7dac3d888aee3998f751c1b56",
+            "url:https://hambaanglaang.hk/i-am-not-a-lustful-guy"
+          ]
+        },
+        {
+          "id": "hbl-dinner-with-grandparents",
+          "sourceUrl": "https://hambaanglaang.hk/dinner-with-grandparents/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:eba4ec5e2845f1d8815284031b4b8148f9ce26ff438eb689601caad5e6dfd032",
+            "document:1YsO8d5sw1ug2MdLk9ufOcjkJNle-0ghx",
+            "id:hbl-dinner-with-grandparents",
+            "title:1273535b19d64ce5e03344549496a000a3c8749660b69adcc98a8a9a8efe7ddb",
+            "url:https://hambaanglaang.hk/dinner-with-grandparents"
+          ]
+        },
+        {
+          "id": "hbl-wendy-and-katy",
+          "sourceUrl": "https://hambaanglaang.hk/wendy-and-katy/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:bf27428dbdf5a2d0d834bee9f6f50a2737571c965a8c538f5d9628a9de0c2133",
+            "document:1EUgonEuqWmjtwFRafdvEItj69P3cSRTz",
+            "id:hbl-wendy-and-katy",
+            "title:6766a6b120af58268948847d4c19d0ac8b7c9c9c7a7b7978629489109206cd70",
+            "url:https://hambaanglaang.hk/wendy-and-katy"
+          ]
+        },
+        {
+          "id": "hbl-ten-princesses",
+          "sourceUrl": "https://hambaanglaang.hk/ten-princesses/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:92b7c8326f3bad584f85edd1bfffe254eb34eca52191b765a2b4a806d7d13a08",
+            "document:1u38oohmCWxsxJeLMgJ7eYhyH4lEDOeVw",
+            "id:hbl-ten-princesses",
+            "title:742f03a635a14ef11e8fc28d06dd22a1be90bca4e3a88b80033168751b13226c",
+            "url:https://hambaanglaang.hk/ten-princesses"
+          ]
+        },
+        {
+          "id": "hbl-its-fun-with-friends",
+          "sourceUrl": "https://hambaanglaang.hk/its-fun-with-friends/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:ad46059e67ec0ac458a1dc8548d790c7132ad85069803dc8e041b9dcb6c113ab",
+            "document:1sLHzs7K1Cs00gt3vRJGVM5XtwfZh8lDxsMSeY9spF1w",
+            "id:hbl-its-fun-with-friends",
+            "title:43c3732a3f42144d286e2ef8a901d0bd58ea5acd1814f0816663110eb2c1bd36",
+            "url:https://hambaanglaang.hk/its-fun-with-friends"
+          ]
+        },
+        {
+          "id": "hbl-brilliant-ying",
+          "sourceUrl": "https://hambaanglaang.hk/brilliant-ying/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:44078c825cd3ff654e66a6b578d0d6fe0966230b1b7dc6ff60e2570cb44116a5",
+            "document:1_2p50yE6kkLtEE27w5_4c8wj8HyRsFwR",
+            "id:hbl-brilliant-ying",
+            "title:59456978464013870bfb53905ecb61dd775191b310c7669dc36f7b83bc6d37aa",
+            "url:https://hambaanglaang.hk/brilliant-ying"
+          ]
+        },
+        {
+          "id": "hbl-counting-little-legs",
+          "sourceUrl": "https://hambaanglaang.hk/counting-little-legs/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:106c5cce61de792f62c8d34a8e569388bb23a6c7ad987d0f24ef1f501a776372",
+            "document:1QBA-_1sqZBgTRx9148E7HEpEtq-uH54vLWPW2FEu9kw",
+            "id:hbl-counting-little-legs",
+            "title:75ded75eedb98e88ed9f7cf474bc06688783f4bf4e6f6d528536367289a8a67f",
+            "url:https://hambaanglaang.hk/counting-little-legs"
+          ]
+        },
+        {
+          "id": "hbl-the-money-saving-plan",
+          "sourceUrl": "https://hambaanglaang.hk/the-money-saving-plan/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:27f02b6e092e257e2e457d4220fe0f1aaeca88f424d7177ea5d1feee5654128c",
+            "document:1F2TZ7g0n2frPPKkj-RGQ-nE-bKu9rMre",
+            "id:hbl-the-money-saving-plan",
+            "title:2fb1d52a1cc349c03caeae2ce14e15c81a98922afca7d1b975061fd628e344b6",
+            "url:https://hambaanglaang.hk/the-money-saving-plan"
+          ]
+        },
+        {
+          "id": "hbl-come-here-cat",
+          "sourceUrl": "https://hambaanglaang.hk/come-here-cat/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:1b3823575a555853e654bf8cb8fcead7f6c1bff47fbfb23552cc5937d920d8ae",
+            "document:1mhpbL1Q3FVgQx91fW0uiTxUUJhNp69oq",
+            "id:hbl-come-here-cat",
+            "title:5edc1d1bb05fed54b27e0100749561e2d3b24ab3da92672d46133838f0d5750e",
+            "url:https://hambaanglaang.hk/come-here-cat"
+          ]
+        },
+        {
+          "id": "hbl-our-secret",
+          "sourceUrl": "https://hambaanglaang.hk/our-secret/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:74f22338d80f1405c1729afb289598e633c646f0e663a0d19d7e0a44f739c53b",
+            "document:11kI9y5EUkzyJ7UB2bm34rstCew6kUXik",
+            "id:hbl-our-secret",
+            "title:62e1e937ef8bde92054bd3262ed9c891f03999023e8b72c2478145eedac186c8",
+            "url:https://hambaanglaang.hk/our-secret"
+          ]
+        },
+        {
+          "id": "hbl-its-noisy",
+          "sourceUrl": "https://hambaanglaang.hk/its-noisy/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:755b33d9042358c7b9077ebd9314818994d4a090451f3e2f6412f6f89fc615de",
+            "document:13kNFJypi8o--UYkn7tlVH5sr69NVRzfWhLUrBwmE5J0",
+            "id:hbl-its-noisy",
+            "title:3664d6b4ae81686bf767c468b7bc939080838a29dbe73859dadc33bd95ea4362",
+            "url:https://hambaanglaang.hk/its-noisy"
+          ]
+        },
+        {
+          "id": "hbl-bone-puzzle",
+          "sourceUrl": "https://hambaanglaang.hk/bone-puzzle/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:d85a0a2db760f5aed0352fa7ec43067b53b09f9048123201c88a3750388dd97f",
+            "document:1UG2IH_gw_VPHXWFM2-zQUT9C-Pm0-L9W",
+            "id:hbl-bone-puzzle",
+            "title:f1fdbe7e0fcdd1faa2b3dc10387fe1c6f0dbd9a2dd7925afd50c03c7fdf759d6",
+            "url:https://hambaanglaang.hk/bone-puzzle"
+          ]
+        },
+        {
+          "id": "hbl-who-can-i-tell",
+          "sourceUrl": "https://hambaanglaang.hk/who-can-i-tell/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:d6dfd0e55cc73961ee35962fd8fe50d38eba7d811dfac90708d8143bdcd40962",
+            "document:1-hSLv1UDNLmYXA8vq5BL8fYDAq5J_8untYafaH9rEWQ",
+            "id:hbl-who-can-i-tell",
+            "title:d4332f8063189b688367a4d72f32426740051e4b3d41554b2051a64b6552f3d8",
+            "url:https://hambaanglaang.hk/who-can-i-tell"
+          ]
+        },
+        {
+          "id": "hbl-the-right-angle",
+          "sourceUrl": "https://hambaanglaang.hk/the-right-angle/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:3a077774d8f4a4f821ec5ca2f12d12084e65a7fed1d8d2a47da532d53def26a0",
+            "document:1tkN9PJPDLUcCyLYUpVmIbFqw2uUE1aDs",
+            "id:hbl-the-right-angle",
+            "title:9681c081a38819883fb30f4b35a26dfdd3cf5644929582d076518a219c34a550",
+            "url:https://hambaanglaang.hk/the-right-angle"
+          ]
+        },
+        {
+          "id": "hbl-taller-shorter",
+          "sourceUrl": "https://hambaanglaang.hk/taller-shorter/",
+          "firstSeenWeek": "2026-09-07",
+          "keys": [
+            "body:d2e224a58b5743ec715c8d53e13ceb35d259da0ca55aeb6e41971f7ba5552dd4",
+            "document:1hhbnkvxiR3r4sVd-S-CdfccWeQzoIvGYRo0LMSB2haU",
+            "id:hbl-taller-shorter",
+            "title:68931c67f4fea0c5e31a8dd8ad405a63c7ad433bdecb6a9205da28b47b0652ad",
+            "url:https://hambaanglaang.hk/taller-shorter"
+          ]
+        }
+      ],
+      "weeks": {
+        "2026-09-07": {
+          "articleIds": [
+            "hbl-whitey-the-cat",
+            "hbl-we-are-grown-up-now",
+            "hbl-saru-and-her-secret",
+            "hbl-lost-found",
+            "hbl-storyteller",
+            "hbl-i-am-not-a-lustful-guy",
+            "hbl-dinner-with-grandparents",
+            "hbl-wendy-and-katy",
+            "hbl-ten-princesses",
+            "hbl-its-fun-with-friends",
+            "hbl-brilliant-ying",
+            "hbl-counting-little-legs",
+            "hbl-the-money-saving-plan",
+            "hbl-come-here-cat",
+            "hbl-our-secret",
+            "hbl-its-noisy",
+            "hbl-bone-puzzle",
+            "hbl-who-can-i-tell",
+            "hbl-the-right-angle",
+            "hbl-taller-shorter"
+          ],
+          "checkedAt": "2026-09-11T12:08:05.585Z",
+          "sourceErrors": []
+        }
+      }
+    }
+  }
+}

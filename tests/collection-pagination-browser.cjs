@@ -19,6 +19,8 @@ const browserCandidates = [
 const executablePath = browserCandidates.find((candidate) => fs.existsSync(candidate));
 
 (async () => {
+  const { openCantoneseEpisodes } = await import("../src/open-cantonese.js");
+  const expectedStartCount = openCantoneseEpisodes.filter((episode) => episode.sourceId === "hbl" && [1, 2].includes(episode.level)).length;
   const browser = await chromium.launch({ executablePath, headless: true });
   const errors = [];
 
@@ -80,13 +82,15 @@ const executablePath = browserCandidates.find((candidate) => fs.existsSync(candi
     assert.equal(await cantonese.locator(".episode-row").count(), 24, "A changed Cantonese filter should reset the list limit");
     await cantonese.reload({ waitUntil: "networkidle" });
     assert.equal(await cantonese.locator('[data-cantonese-level="start"]').getAttribute("aria-pressed"), "true", "Cantonese level filter should survive reload");
-    await cantonese.locator("[data-load-more-cantonese]").click();
-    assert.equal(await cantonese.locator(".episode-row").count(), 44, "The final Cantonese batch should reveal only remaining rows");
+    while (await cantonese.locator("[data-load-more-cantonese]").count()) {
+      await cantonese.locator("[data-load-more-cantonese]").click();
+    }
+    assert.equal(await cantonese.locator(".episode-row").count(), expectedStartCount, "The final Cantonese batch should reveal only remaining rows");
     assert.equal(await cantonese.locator("[data-load-more-cantonese]").count(), 0, "Cantonese load-more action should disappear at the end");
     await cantoneseContext.close();
 
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ english: "24 -> 48 and restored", cantonese: "24 -> 44 filtered", errors }, null, 2));
+    console.log(JSON.stringify({ english: "24 -> 48 and restored", cantonese: `24 -> ${expectedStartCount} filtered`, errors }, null, 2));
   } finally {
     await browser.close();
   }

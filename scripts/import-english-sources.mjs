@@ -1,5 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { load } from "cheerio";
+import { englishDiscoveries as previousDiscoveries } from "../src/open-english.js";
+import { createWeeklyIntake, loadContentHistory, saveContentHistory } from "./content-history.mjs";
 import {
   readGeneratedExport,
   stableSnapshot,
@@ -7,6 +9,9 @@ import {
 } from "./generated-content-utils.mjs";
 
 const outputUrl = new URL("../src/open-english.js", import.meta.url);
+if (process.env.LEAFBOUND_CONTENT_UPDATE !== "1") throw new Error("Use npm run content:update:english so content and history are verified and rolled back together");
+const history = await loadContentHistory();
+const intake = createWeeklyIntake(history, "english", previousDiscoveries);
 
 const VOA_FEEDS = [
   {
@@ -36,14 +41,14 @@ const STANDARD_EBOOKS_FEED = "https://standardebooks.org/feeds/atom/new-releases
 const GLOBAL_VOICES_FEED = "https://globalvoices.org/feed/?cat=-28";
 const VOA_WIRE_PATTERN = /\b(?:AP|AFP|Reuters|Associated Press|Agence France-Presse)\b/i;
 const GLOBAL_VOICES_PARTNER_PATTERN = /\b(?:content-sharing agreement|content sharing agreement|republished (?:from|with permission)|originally (?:published|appeared) (?:at|by|on) (?!Global Voices\b))\b/i;
-const VOA_ITEMS_PER_FEED = 10;
-const VOA_CANDIDATES_PER_FEED = 40;
-const NASA_ITEM_LIMIT = 12;
-const NASA_CANDIDATE_LIMIT = 24;
-const STANDARD_EBOOK_ITEM_LIMIT = 12;
-const STANDARD_EBOOK_CANDIDATE_LIMIT = 24;
-const GLOBAL_VOICES_ITEM_LIMIT = 14;
-const GLOBAL_VOICES_CANDIDATE_LIMIT = 24;
+const VOA_ITEMS_PER_FEED = 20;
+const VOA_CANDIDATES_PER_FEED = 80;
+const NASA_ITEM_LIMIT = 20;
+const NASA_CANDIDATE_LIMIT = 60;
+const STANDARD_EBOOK_ITEM_LIMIT = 20;
+const STANDARD_EBOOK_CANDIDATE_LIMIT = 60;
+const GLOBAL_VOICES_ITEM_LIMIT = 20;
+const GLOBAL_VOICES_CANDIDATE_LIMIT = 60;
 
 const sourceCatalog = [
   {
@@ -386,7 +391,7 @@ async function importVoa() {
           contentNote: "官方自製文章全文已轉為純文字，未複製音訊、圖片或第三方通訊社材料。"
         };
       })
-      .filter((item) => item.title && item.sourceUrl)
+      .filter((item) => item.title && item.sourceUrl && !intake.hasSeen(item))
       .slice(0, VOA_CANDIDATES_PER_FEED);
 
     const imported = [];
@@ -425,7 +430,7 @@ async function importNasa() {
         contentNote: "只匯入 NASA 官方頁面的純文字正文；圖片、標誌、下載附件與標示的第三方材料均不在 App 內。"
       };
     })
-    .filter((item) => item.title && item.sourceUrl)
+    .filter((item) => item.title && item.sourceUrl && !intake.hasSeen(item))
     .slice(0, NASA_CANDIDATE_LIMIT);
 
   const imported = [];
@@ -464,7 +469,7 @@ async function importStandardEbooks() {
         contentNote: "站內收錄首章純文字，方便逐詞精讀；完整公共領域版本可由出處連結查閱。"
       };
     })
-    .filter((item) => item.title && item.sourceUrl)
+    .filter((item) => item.title && item.sourceUrl && !intake.hasSeen(item))
     .slice(0, STANDARD_EBOOK_CANDIDATE_LIMIT);
 
   const imported = [];
@@ -480,8 +485,26 @@ async function importStandardEbooks() {
 }
 
 async function importGlobalVoices() {
-  const xml = await fetchText(GLOBAL_VOICES_FEED, "application/rss+xml,application/xml,text/xml;q=0.9,*/*;q=0.5");
-  const candidates = blocks(xml, "item")
+  const imported = [];
+  const seenPages = new Set();
+  // The official WordPress RSS supports paged archives. Look beyond the latest
+  // fifteen items, which may all have appeared in earlier Leafbound releases.
+  for (let page = 1; page <= 10 && imported.length < GLOBAL_VOICES_ITEM_LIMIT; page += 1) {
+    const feedUrl = new URL(GLOBAL_VOICES_FEED);
+    if (page > 1) feedUrl.searchParams.set("paged", String(page));
+    let xml;
+    try {
+      xml = await fetchText(feedUrl.href, "application/rss+xml,application/xml,text/xml;q=0.9,*/*;q=0.5");
+    } catch (error) {
+      if (page === 1) throw error;
+      intake.sourceFailed(`Global Voices archive page ${page}`, error);
+      break;
+    }
+    const pageItems = blocks(xml, "item");
+    const signature = pageItems.map((item) => tag(item, "link") || tag(item, "guid")).join("\n");
+    if (!pageItems.length || seenPages.has(signature)) break;
+    seenPages.add(signature);
+    const candidates = pageItems
     .map((item, index) => {
       const sourceUrl = tag(item, "link") || tag(item, "guid");
       const itemCategories = categories(item);
@@ -495,7 +518,7 @@ async function importGlobalVoices() {
           source: "Global Voices",
           sourceId: "global-voices",
           sourceUrl,
-          sourceFeed: GLOBAL_VOICES_FEED,
+          sourceFeed: feedUrl.href,
           category: globalVoicesCategory(itemCategories),
           topic: itemCategories.filter((value) => !/^(?:English|Weblog|Feature)$/i.test(value)).slice(0, 3).join(" · ") || "World perspectives",
           publishedAt: isoDate(tag(item, "pubDate")),
@@ -505,10 +528,9 @@ async function importGlobalVoices() {
         }
       };
     })
-    .filter(({ item }) => item.title && item.sourceUrl)
+    .filter(({ item }) => item.title && item.sourceUrl && !intake.hasSeen(item))
     .slice(0, GLOBAL_VOICES_CANDIDATE_LIMIT);
 
-  const imported = [];
   for (const candidate of candidates) {
     if (imported.length >= GLOBAL_VOICES_ITEM_LIMIT) break;
     try {
@@ -521,6 +543,7 @@ async function importGlobalVoices() {
       console.warn(`Skipped Global Voices item "${candidate.item.title}": ${error.message}`);
     }
   }
+  }
   return imported;
 }
 
@@ -528,14 +551,27 @@ function serialize(name, value) {
   return `export const ${name} = Object.freeze(${JSON.stringify(value, null, 2)});`;
 }
 
-const [voa, nasa, standardEbooks, globalVoices] = await Promise.all([
-  importVoa(),
-  importNasa(),
-  importStandardEbooks(),
-  importGlobalVoices()
-]);
-
-const discoveries = [...voa, ...nasa, ...standardEbooks, ...globalVoices];
+const sources = [["VOA", importVoa], ["NASA", importNasa], ["Standard Ebooks", importStandardEbooks], ["Global Voices", importGlobalVoices]];
+const results = intake.remaining ? await Promise.allSettled(sources.map(([, fetchArticles]) => fetchArticles())) : [];
+if (results.length && results.every((result) => result.status === "rejected")) {
+  throw new AggregateError(results.map((result) => result.reason), "All English sources failed; retaining the previous release");
+}
+const candidates = [];
+results.forEach((result, index) => {
+  if (result.status === "fulfilled") candidates.push(...result.value);
+  else {
+    intake.sourceFailed(sources[index][0], result.reason);
+    console.warn(`${sources[index][0]} could not be refreshed: ${result.reason.message}`);
+  }
+});
+// Prefer recent publication dates, with a stable tie-breaker for reproducible runs.
+candidates.sort((a, b) => (b.publishedAt || "").localeCompare(a.publishedAt || "") || a.id.localeCompare(b.id));
+for (const candidate of candidates) {
+  if (candidate.paragraphs.length < 3 || candidate.paragraphs.join(" ").length < 350) continue;
+  if (/\p{Script=Han}/u.test(candidate.paragraphs.join(" "))) continue;
+  intake.accept(candidate);
+}
+const discoveries = [...intake.additions, ...previousDiscoveries];
 const previousSnapshot = await readGeneratedExport(outputUrl, "englishSourceSnapshot");
 const snapshotPayload = {
   feeds: [...VOA_FEEDS.map((feed) => feed.url), NASA_FEED, STANDARD_EBOOKS_FEED, GLOBAL_VOICES_FEED],
@@ -550,4 +586,7 @@ const snapshot = stableSnapshot(previousSnapshot, snapshotPayload, {
 const output = `// Generated by scripts/import-english-sources.mjs. Do not edit by hand.\n\n${serialize("englishSourceSnapshot", snapshot)}\n\n${serialize("englishSourceCatalog", sourceCatalog)}\n\n${serialize("englishDiscoveries", discoveries)}\n`;
 
 const changed = await writeTextIfChanged(outputUrl, output);
+const weeklyReport = intake.finish();
+await saveContentHistory(history);
 console.log(`${changed ? "Updated" : "No content changes in"} ${fileURLToPath(outputUrl)} (${discoveries.length} readable English items)`);
+console.log(`LEAFBOUND_WEEKLY_ENGLISH=${JSON.stringify(weeklyReport)}`);

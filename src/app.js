@@ -31,6 +31,8 @@ import { cantoneseSourceCatalog as openCantoneseSourceCatalog, cantoneseSourceSn
 import { cantoneseInterviewSource } from "./cantonese-interviews.js";
 import { englishDiscoveries, englishSourceCatalog, englishSourceSnapshot } from "./open-english.js";
 import { englishNewsDesks } from "./english-news-sources.js";
+import { weeklyContentRelease } from "./content-release.js";
+import { contentWeekKey } from "./content-schedule.js";
 import {
   classicalTranslationSnapshot,
   getClassicalTranslation,
@@ -1748,6 +1750,43 @@ function renderPoemReader(id) {
     </article>`;
 }
 
+function renderWeeklyContent(language) {
+  const release = weeklyContentRelease[language];
+  const isEnglish = language === "english";
+  const isCurrent = weeklyContentRelease.week === contentWeekKey();
+  const pool = isEnglish ? englishDiscoveries : episodes;
+  const items = release.articleIds.map((id) => pool.find((item) => item.id === id)).filter(Boolean);
+  const dateFormat = new Intl.DateTimeFormat(isEnglish ? "en-GB" : "zh-Hant", {
+    timeZone: "Asia/Shanghai", year: "numeric", month: "short", day: "numeric"
+  });
+  const weekLabel = dateFormat.format(new Date(`${weeklyContentRelease.week}T01:00:00Z`));
+  const title = isEnglish
+    ? isCurrent ? "This week's new texts" : "Last published issue"
+    : isCurrent ? "本週上新" : "最近一期上新";
+  const schedule = isEnglish ? "Mondays, 09:00 Beijing time" : "每週一 09:00（北京時間）";
+  const status = !release.checkedAt
+    ? isEnglish ? "Waiting for this week's update." : "等待本週更新。"
+    : release.shortfall
+      ? isEnglish ? `${release.count} new texts found; ${release.shortfall} places unfilled. Previously collected texts are never repeated.`
+        : `本期找到 ${release.count} 篇新文章，尚缺 ${release.shortfall} 篇；已收錄的文章不會重複計入。`
+      : isEnglish ? "20 texts added to Leafbound for the first time." : "20 篇首次收錄到 Leafbound 的文章。";
+  return `
+    <details class="weekly-release ${isEnglish ? "is-english" : ""}" data-weekly-release="${language}">
+      <summary>
+        <span class="weekly-release-heading"><strong>${title}</strong><small>${isEnglish ? "Week of " : "週期始於 "}${escapeHtml(weekLabel)} · ${schedule}</small></span>
+        <span class="weekly-release-count">${release.count}<small> / ${weeklyContentRelease.targetPerLanguage}</small></span>
+        <span class="weekly-release-toggle">${isEnglish ? "View texts" : "查看文章"} ${icon("arrow")}</span>
+      </summary>
+      <div class="weekly-release-body">
+        <p>${status}${release.checkedAt ? ` ${isEnglish ? "Checked " : "已於 "}${escapeHtml(dateFormat.format(new Date(release.checkedAt)))}${isEnglish ? "." : "檢查。"}` : ""}</p>
+        ${release.sourceErrorCount ? `<p>${isEnglish ? "Some sources could not be reached during this update." : "本次更新有部分來源暫時無法讀取。"}</p>` : ""}
+        ${items.length ? `<ol>${items.map((item) => `<li>
+          <a href="#${language}/${escapeHtml(item.id)}"><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.source)}</small></a>
+        </li>`).join("")}</ol>` : ""}
+      </div>
+    </details>`;
+}
+
 function renderCantoneseFeed() {
   const state = appStore.getState();
   const levelCounts = cantoneseSourceSnapshot.levelCounts || {};
@@ -1771,6 +1810,8 @@ function renderCantoneseFeed() {
         </div>
         <p>香港口語原聲、1997–1998 雙人訪談式對話、研究訪談口述與七級粵文故事，全部可以在 Leafbound 閱讀文字。只有受訪者對齊稿的資料會明確標記，不冒充雙方文稿。</p>
       </header>
+
+      ${renderWeeklyContent("cantonese")}
 
       <section class="cantonese-source-shelf" aria-labelledby="cantonese-shelf-title">
         <header>
@@ -2047,13 +2088,15 @@ function renderEpisodePlayer(id) {
   const hasSourceRecordingReference = episode.audioKind === "source-reference" && Boolean(episode.sourceUrl);
   const canUseTransport = hasLocalRecording || speechReady;
   const voiceMessage = cantoneseVoiceMessage();
-  const playbackLabel = hasLocalRecording ? "真人粵語原聲" : speechReady ? "粵語合成示範" : "僅粵語逐字稿";
+  const playbackLabel = hasLocalRecording ? "真人粵語原聲" : speechReady ? "粵語合成示範" : episode.sourceId === "yue-wikipedia" ? "粵文閱讀" : "僅粵語逐字稿";
   const playbackStatus = hasLocalRecording || hasRemoteRecording ? "recording" : cantoneseSpeech.status;
   const soundcloudEmbed = hasRemoteRecording
     ? `https://w.soundcloud.com/player/?url=${encodeURIComponent(episode.audioUrl)}&color=%23183f38&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&visual=false`
     : "";
   const transcriptEyebrow = episode.sourceId === "hbl"
     ? `HBL Level ${episode.level}`
+    : episode.sourceId === "yue-wikipedia"
+      ? "Cantonese encyclopedia · CC BY-SA 4.0"
     : episode.transcriptScope === "two-party"
       ? "Two-party transcript · 1997–1998"
       : episode.transcriptScope === "participant-only"
@@ -2061,6 +2104,8 @@ function renderEpisodePlayer(id) {
         : "Transcript";
   const transcriptTitle = episode.sourceId === "hbl"
     ? "故事全文"
+    : episode.sourceId === "yue-wikipedia"
+      ? "粵文百科 · 純文字"
     : episode.transcriptScope === "two-party"
       ? "雙方訪談式文稿"
       : episode.transcriptScope === "participant-only"
@@ -2194,6 +2239,14 @@ function renderEpisodePlayer(id) {
             <div class="transcript-list" data-transcript-list>
               ${episode.transcript.map((segment, index) => transcriptSegmentHtml(segment, index, mode, episode.id, showTranscriptJyutping)).join("")}
             </div>`}
+          ${episode.sourceId === "yue-wikipedia" ? `<aside class="article-source-note">
+            <span>原文與授權</span>
+            <p>${escapeHtml(episode.attribution)}</p>
+            <p>${escapeHtml(episode.editorialChanges)}</p>
+            <a href="${safeExternalHref(episode.sourceUrl)}" target="_blank" rel="noreferrer">原文及作者記錄</a>
+            · <a href="${safeExternalHref(episode.sourceRevisionUrl)}" target="_blank" rel="noreferrer">收錄版本</a>
+            · <a href="${safeExternalHref(episode.licenseUrl)}" target="_blank" rel="noreferrer">CC BY-SA 4.0</a>
+          </aside>` : ""}
         </section>
       </div>
     </section>`;
@@ -2260,6 +2313,8 @@ function renderEnglishIndex() {
         </div>
         <p>Save the phrases, collocations, and full contexts that make you pause.</p>
       </header>
+
+      ${renderWeeklyContent("english")}
 
       <section class="english-source-ledger" aria-labelledby="english-source-title">
         <header>

@@ -1,0 +1,12 @@
+Cantonese Wikipedia contributors
+Original articles: https://zh-yue.wikipedia.org/
+License: Creative Commons Attribution-ShareAlike 4.0 International
+License text: https://creativecommons.org/licenses/by-sa/4.0/legalcode
+Reuse terms: https://foundation.wikimedia.org/wiki/Policy:Terms_of_Use#7._Licensing_of_Content
+
+Each imported record identifies its original article, contributors, and revision.
+The original article's page history lists the contributors.
+Leafbound normalizes the headings and reading segments of the plain text returned
+by the official TextExtracts API and adds estimated speech timings. TextExtracts
+omits images, tables, and some annotations. Leafbound does not import media from
+Wikipedia. These text adaptations remain licensed under CC BY-SA 4.0.

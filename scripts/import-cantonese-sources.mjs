@@ -5,6 +5,9 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { load } from "cheerio";
 import iconv from "iconv-lite";
+import { openCantoneseEpisodes as previousEpisodes, cantoneseSourceSnapshot as previousSourceSnapshot } from "../src/open-cantonese.js";
+import { createWeeklyIntake, loadContentHistory, saveContentHistory } from "./content-history.mjs";
+import { importWikipediaArticles } from "./cantonese-wikipedia.mjs";
 import {
   readGeneratedExport,
   stableSnapshot,
@@ -17,12 +20,14 @@ const hblPageCache = join(cacheRoot, "hbl-pages");
 const hblTextCache = join(cacheRoot, "hbl-text");
 const assetRoot = join(projectRoot, "assets", "audio", "cantonese");
 const outputUrl = new URL("../src/open-cantonese.js", import.meta.url);
+if (process.env.LEAFBOUND_CONTENT_UPDATE !== "1") throw new Error("Use npm run content:update:cantonese so content and history are verified and rolled back together");
+const history = await loadContentHistory();
+const intake = createWeeklyIntake(history, "cantonese", previousEpisodes);
+const wordEntries = JSON.parse(await readFile(new URL("../data/words-hk-wordslist.json", import.meta.url), "utf8")).entries;
+const characterEntries = JSON.parse(await readFile(new URL("../data/rime-cantonese-chars.json", import.meta.url), "utf8")).entries;
 
 const HBL_CATALOG_URL = "https://hambaanglaang.hk/all-levels/";
 const HBL_HOMEPAGE = "https://hambaanglaang.hk/";
-// Keep the public shelf broad enough to feel useful while preserving an even
-// spread across every Hambaanglaang reading level.
-const HBL_STORIES_PER_LEVEL = 24;
 const HKCANCOR_HOME = "https://github.com/fcbond/hkcancor";
 const HKCANCOR_RAW = "https://raw.githubusercontent.com/fcbond/hkcancor/master";
 const CC_BY_4_URL = "https://creativecommons.org/licenses/by/4.0/";
@@ -264,6 +269,7 @@ async function importHblStory(candidate) {
 }
 
 async function importHblStories() {
+  if (!intake.remaining) return { catalogCount: previousSourceSnapshot.catalogCount, imported: [] };
   const catalogHtml = await cachedText(
     HBL_CATALOG_URL,
     join(cacheRoot, "hbl-all-levels.html"),
@@ -271,23 +277,27 @@ async function importHblStories() {
     { refresh: true }
   );
   const catalog = parseHblCatalog(catalogHtml);
-  const imported = [];
-
-  for (let level = 1; level <= 7; level += 1) {
-    const candidates = catalog.filter((story) => story.level === level);
-    let levelCount = 0;
-    for (const candidate of candidates) {
-      if (levelCount >= HBL_STORIES_PER_LEVEL) break;
-      try {
-        imported.push(await importHblStory(candidate));
-        levelCount += 1;
-      } catch (error) {
-        console.warn(`Skipped HBL Level ${level} story “${candidate.title}”: ${error.message}`);
-      }
+  if (catalog.length < 200) throw new Error("HBL catalog is incomplete; retaining the previous release");
+  const groups = Array.from({ length: 7 }, (_, index) => catalog.filter((story) => story.level === index + 1));
+  const candidates = [];
+  for (let index = 0; index < Math.max(...groups.map((group) => group.length)); index += 1) {
+    for (const group of groups) if (group[index]) candidates.push(group[index]);
+  }
+  for (const candidate of candidates) {
+    if (!intake.remaining) break;
+    if (intake.hasSeen({ id: `hbl-${slugFromUrl(candidate.url)}`, sourceUrl: candidate.url, title: candidate.title, sourceId: "hbl" })) continue;
+    try {
+      const story = await importHblStory(candidate);
+      const missing = [...new Set(story.transcript.flatMap((segment) => [...segment.text]).filter((character) =>
+        /\p{Script=Han}/u.test(character) && !wordEntries[character]?.length && !characterEntries[character]?.length
+      ))];
+      if (missing.length) throw new Error(`pronunciation is unavailable for ${missing.join("")}`);
+      intake.accept(story);
+    } catch (error) {
+      console.warn(`Skipped HBL Level ${candidate.level} story “${candidate.title}”: ${error.message}`);
     }
   }
-
-  return { catalog, imported };
+  return { catalogCount: catalog.length, imported: intake.additions };
 }
 
 function parseTaggedTranscript(text) {
@@ -376,11 +386,31 @@ function serialize(name, value) {
 }
 
 await mkdir(cacheRoot, { recursive: true });
-const [{ catalog, imported: hblStories }, hkcancor] = await Promise.all([
-  importHblStories(),
-  importHkcancorSamples()
-]);
-const episodes = [...hkcancor, ...hblStories];
+let catalogCount = previousSourceSnapshot.catalogCount;
+let availableSources = 0;
+try {
+  ({ catalogCount } = await importHblStories());
+  availableSources += 1;
+} catch (error) {
+  intake.sourceFailed("冚唪唥", error);
+  console.warn(error.message);
+}
+if (intake.remaining) {
+  try {
+    await importWikipediaArticles(intake, { hasPronunciation: (character) =>
+      Boolean(wordEntries[character]?.length || characterEntries[character]?.length)
+    });
+    availableSources += 1;
+  } catch (error) {
+    intake.sourceFailed("粵語維基百科", error);
+    console.warn(error.message);
+  }
+}
+if (!availableSources) throw new Error("All Cantonese article sources failed; retaining the previous release");
+const episodes = [...intake.additions, ...previousEpisodes];
+const hblStories = episodes.filter((episode) => episode.sourceId === "hbl");
+const hkcancor = episodes.filter((episode) => episode.sourceId === "hkcancor");
+const encyclopediaArticles = episodes.filter((episode) => episode.sourceId === "yue-wikipedia");
 const levelCounts = Object.fromEntries(Array.from({ length: 7 }, (_, index) => {
   const level = index + 1;
   return [level, hblStories.filter((story) => story.level === level).length];
@@ -388,7 +418,7 @@ const levelCounts = Object.fromEntries(Array.from({ length: 7 }, (_, index) => {
 
 const snapshotPayload = {
   catalogUrl: HBL_CATALOG_URL,
-  catalogCount: catalog.length,
+  catalogCount,
   importedStoryCount: hblStories.length,
   authenticSampleCount: hkcancor.length,
   itemCount: episodes.length,
@@ -414,6 +444,15 @@ const sourceCatalog = [
     homepage: HBL_HOMEPAGE,
     license: "逐篇保留 CC BY 署名"
   },
+  ...(encyclopediaArticles.length ? [{
+    id: "yue-wikipedia",
+    shortName: "粵文百科",
+    mark: "知",
+    mode: "本機合成朗讀",
+    description: `${encyclopediaArticles.length} 篇粵文百科純文字，保留來源版本及作者署名。`,
+    homepage: "https://zh-yue.wikipedia.org/",
+    license: "CC BY-SA 4.0"
+  }] : []),
   {
     id: "local",
     shortName: "本地示範",
@@ -432,13 +471,16 @@ const snapshot = stableSnapshot(previousSnapshot, snapshotPayload, {
 });
 const output = `// Generated by scripts/import-cantonese-sources.mjs. Do not edit by hand.\n\n${serialize("cantoneseSourceSnapshot", snapshot)}\n\n${serialize("cantoneseSourceCatalog", sourceCatalog)}\n\n${serialize("openCantoneseEpisodes", episodes)}\n`;
 const changed = await writeTextIfChanged(outputUrl, output);
+const weeklyReport = intake.finish();
+await saveContentHistory(history);
 
 console.log(JSON.stringify({
   output: fileURLToPath(outputUrl),
   changed,
-  hblCatalog: catalog.length,
+  hblCatalog: catalogCount,
   hblImported: hblStories.length,
   levelCounts,
   hkcancorSamples: hkcancor.length,
   total: episodes.length
 }, null, 2));
+console.log(`LEAFBOUND_WEEKLY_CANTONESE=${JSON.stringify(weeklyReport)}`);

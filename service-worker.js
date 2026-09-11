@@ -1,6 +1,6 @@
 const CACHE_PREFIX = "leafbound-local";
-const SHELL_CACHE = `${CACHE_PREFIX}-shell-v1`;
-const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-v1`;
+const SHELL_CACHE = `${CACHE_PREFIX}-shell-v2`;
+const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-v2`;
 
 // These are same-origin application files only. Audio is deliberately absent:
 // Leafbound never copies or caches an external station/SoundCloud response, and
@@ -33,12 +33,22 @@ const APP_SHELL = [
   "./src/cantonese-grading.js",
   "./src/voice.js",
   "./src/poetry-taxonomy.js",
-  "./src/english-news-sources.js"
+  "./src/english-news-sources.js",
+  "./src/content-release.js",
+  "./src/content-schedule.js"
 ];
 
 function scopedUrl(relativePath) {
   return new URL(relativePath, self.registration.scope).href;
 }
+
+const WEEKLY_CONTENT_URLS = new Set([
+  "./src/content-release.js",
+  "./src/open-english.js",
+  "./src/open-cantonese.js",
+  "./src/open-english-dictionary.js",
+  "./src/open-english-dictionary-meta.js"
+].map(scopedUrl));
 
 function isCacheable(response) {
   return Boolean(response && response.ok && response.type === "basic");
@@ -81,6 +91,25 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin || isMediaRequest(request, url)) return;
+
+  // Weekly releases should be visible on the first online visit after publishing.
+  // Keep the last downloaded articles available when the device is offline.
+  if (WEEKLY_CONTENT_URLS.has(url.href)) {
+    event.respondWith((async () => {
+      try {
+        const response = await fetch(request);
+        if (isCacheable(response)) {
+          const cache = await caches.open(RUNTIME_CACHE);
+          await cache.put(request, response.clone());
+        }
+        return response;
+      } catch {
+        const cache = await caches.open(RUNTIME_CACHE);
+        return (await cache.match(request)) || (await caches.match(request)) || new Response("Offline", { status: 503 });
+      }
+    })());
+    return;
+  }
 
   if (request.mode === "navigate") {
     event.respondWith((async () => {

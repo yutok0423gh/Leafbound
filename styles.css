@@ -35,6 +35,43 @@
   --topbar-height: 78px;
 }
 
+.weekly-release {
+  margin: 0 0 28px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--jade);
+  background: var(--paper-blue);
+}
+
+.weekly-release.is-english { border-left-color: var(--english-blue); }
+.weekly-release > summary { display: flex; align-items: center; gap: 24px; padding: 20px 24px; cursor: pointer; list-style: none; }
+.weekly-release > summary::-webkit-details-marker { display: none; }
+.weekly-release > summary:focus-visible, .weekly-release a:focus-visible { outline: 2px solid var(--jade); outline-offset: 3px; }
+.weekly-release-heading { flex: 1; min-width: 0; }
+.weekly-release-heading strong { display: block; font-family: var(--serif); font-size: 23px; font-weight: 600; }
+.weekly-release-heading small { display: block; margin-top: 5px; color: var(--muted); font-size: 12px; }
+.weekly-release-count { font-family: var(--mono); font-size: 28px; color: var(--jade-deep); white-space: nowrap; }
+.weekly-release-count small { font-size: 13px; color: var(--muted); }
+.weekly-release-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; white-space: nowrap; }
+.weekly-release-toggle svg { width: 16px; height: 16px; }
+.weekly-release[open] .weekly-release-toggle svg { transform: rotate(90deg); }
+.weekly-release-body { padding: 0 24px 20px; }
+.weekly-release-body > p { margin: 0 0 16px; color: var(--ink-soft); font-size: 13px; line-height: 1.7; }
+.weekly-release-body ol { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px; margin: 0; padding: 0; list-style: none; }
+.weekly-release-body li { border-top: 1px solid var(--line); }
+.weekly-release-body a { display: block; padding: 13px 0; color: var(--ink); text-decoration: none; }
+.weekly-release-body a:hover strong { text-decoration: underline; text-underline-offset: 4px; }
+.weekly-release-body a strong { display: block; font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
+.weekly-release-body a small { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
+
+@media (max-width: 600px) {
+  .weekly-release > summary { flex-wrap: wrap; gap: 12px; padding: 16px; }
+  .weekly-release-heading { flex-basis: calc(100% - 90px); }
+  .weekly-release-heading strong { font-size: 21px; }
+  .weekly-release-toggle { width: 100%; justify-content: flex-end; }
+  .weekly-release-body { padding: 0 16px 16px; }
+  .weekly-release-body ol { grid-template-columns: 1fr; }
+}
+
 * {
   box-sizing: border-box;
 }
