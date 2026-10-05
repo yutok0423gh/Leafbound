@@ -16,6 +16,7 @@ import {
 import {
   alignClassicalReadingUnits,
   classicalReadingModes,
+  classicalTranslationParagraphs,
   classicalTranslationReviewMeta
 } from "./classical-reading.js";
 import { icon } from "./icons.js";
@@ -1545,7 +1546,7 @@ function renderPoemSourceLines(poem, lines, savedLineIds, showJyutping, parallel
 
 function renderPoemBody(poem, savedLineIds, showJyutping, mode = "original", translation = null) {
   if (mode === "translation") {
-    const paragraphs = translation?.paragraphs || [];
+    const paragraphs = classicalTranslationParagraphs(translation);
     return `
       <div class="classical-translation-only" lang="zh-Hant">
         ${paragraphs.map((paragraph, index) => `<p><span aria-hidden="true">${String(index + 1).padStart(2, "0")}</span>${escapeHtml(paragraph)}</p>`).join("")}
@@ -1563,10 +1564,10 @@ function renderPoemBody(poem, savedLineIds, showJyutping, mode = "original", tra
     <div class="classical-reading-flow ${poem.kind === "古文" ? "is-prose" : "is-verse"}" data-classical-alignment-count="${units.length}">
       ${units.map((unit, unitIndex) => {
         const isFocused = ui.classicalFocusIndex === unitIndex;
-        const alignmentNote = unit.alignment === "structural"
-          ? "原文與今譯段數不同，按篇章順序相鄰展示，不作逐句對應。"
-          : unit.alignment === "whole-work"
-            ? "此今譯按全篇相鄰展示，並非逐句對譯。"
+        const alignmentNote = unit.alignment === "whole-work"
+          ? "分段對應尚未確認，暫按全篇展示。"
+          : unit.alignment === "model-checked" && unitIndex === 0
+            ? "本機模型已核對分段對應；譯文校訂狀態見上方標示。"
             : "";
         return `
           <section class="classical-reading-unit ${isFocused ? "is-focused" : ""} ${focusActive && !isFocused ? "is-muted" : ""}"

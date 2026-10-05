@@ -1,3 +1,5 @@
+import { isTranslationPlaceholder, sourceSegmentId, validateClassicalAlignment } from "./classical-alignment.js";
+
 const REVIEW_STATUS_META = Object.freeze({
   "machine-draft": Object.freeze({ id: "machine-draft", label: "機器初譯", tone: "draft", publicReady: false }),
   "pending-review": Object.freeze({ id: "pending-review", label: "待校對", tone: "pending", publicReady: false }),
@@ -45,7 +47,9 @@ export function classicalTranslationParagraphs(translation) {
   const values = Array.isArray(translation.paragraphs)
     ? translation.paragraphs
     : [translation];
-  return values.map(cleanText).filter(Boolean);
+  return values.map(cleanText).filter(Boolean).map((text) => (
+    isTranslationPlaceholder(text) ? "此段今譯待修復。" : text
+  ));
 }
 
 function sourceLines(lines) {
@@ -58,16 +62,9 @@ function sourceLines(lines) {
     .filter((line) => line.text);
 }
 
-function groupedRange(items, groupIndex, groupCount) {
-  const start = Math.floor((groupIndex * items.length) / groupCount);
-  const end = Math.floor(((groupIndex + 1) * items.length) / groupCount);
-  return items.slice(start, Math.max(start + 1, end));
-}
-
 /**
- * Keeps translations physically beside their source without inventing semantic
- * sentence alignment. Equal paragraph counts are exact; unequal counts are
- * grouped proportionally and explicitly marked as structural/approximate.
+ * Only explicit, complete mappings against the current source may be paired.
+ * Legacy arrays (including equal-sized ones) carry no semantic alignment proof.
  */
 export function alignClassicalReadingUnits(lines, translation) {
   const sources = sourceLines(lines);
@@ -82,31 +79,17 @@ export function alignClassicalReadingUnits(lines, translation) {
     }));
   }
 
-  if (sources.length === translations.length) {
-    return sources.map((line, index) => ({
+  const alignment = translation?.alignment;
+  if (validateClassicalAlignment(lines, translation?.paragraphs, alignment).valid) {
+    const byId = new Map(sources.map((line) => [sourceSegmentId(line.sourceIndex), line]));
+    return alignment.groups.map((group, index) => ({
       id: index,
-      sourceLines: [line],
-      translations: [translations[index]],
-      alignment: "exact"
+      sourceLines: group.sourceIds.map((id) => byId.get(id)).filter(Boolean),
+      translations: group.translationIndexes.map((position) => translations[position]),
+      alignment: "model-checked"
     }));
   }
-
-  const groupCount = Math.min(sources.length, translations.length);
-  if (groupCount === 1) {
-    return [{
-      id: 0,
-      sourceLines: sources,
-      translations,
-      alignment: "whole-work"
-    }];
-  }
-
-  return Array.from({ length: groupCount }, (_, index) => ({
-    id: index,
-    sourceLines: groupedRange(sources, index, groupCount),
-    translations: groupedRange(translations, index, groupCount),
-    alignment: "structural"
-  }));
+  return [{ id: 0, sourceLines: sources, translations, alignment: "whole-work" }];
 }
 
 export const classicalReadingModes = Object.freeze([

@@ -599,6 +599,8 @@ function normalizeAiTranslation(record, fallbackKind) {
   return Object.freeze({
     ...(kind ? { kind } : {}),
     paragraphs: Object.freeze(paragraphs),
+    ...(metadata.alignment && ["pass", "revised"].includes(metadata.critique?.verdict)
+      ? { alignment: metadata.alignment } : {}),
     source,
     ...(record.sourceHash ? { sourceHash: String(record.sourceHash) } : {})
   });

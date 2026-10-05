@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { createClassicalAlignment, validateClassicalAlignment } from "../src/classical-alignment.js";
 
 import {
   alignClassicalReadingUnits,
@@ -7,24 +8,52 @@ import {
   classicalTranslationReviewMeta
 } from "../src/classical-reading.js";
 
-test("classical reading units align equal source and translation paragraphs exactly", () => {
+test("equal paragraph counts without a mapping never claim semantic alignment", () => {
   const units = alignClassicalReadingUnits(
     [{ text: "甲" }, { text: "乙" }],
     { paragraphs: ["第一段", "第二段"] }
   );
-  assert.deepEqual(units.map((unit) => unit.alignment), ["exact", "exact"]);
-  assert.equal(units[1].sourceLines[0].sourceIndex, 1);
-  assert.deepEqual(units[1].translations, ["第二段"]);
+  assert.equal(units.length, 1);
+  assert.equal(units[0].alignment, "whole-work");
+  assert.equal(units[0].sourceLines[1].sourceIndex, 1);
+  assert.deepEqual(units[0].translations, ["第一段", "第二段"]);
 });
 
-test("mismatched paragraphs stay adjacent but are marked as structural rather than exact", () => {
+test("unequal paragraph counts stay whole instead of being proportionally paired", () => {
   const units = alignClassicalReadingUnits(
     [{ text: "甲" }, { text: "乙" }, { text: "丙" }, { text: "丁" }],
     { paragraphs: ["前半", "後半"] }
   );
+  assert.equal(units.length, 1);
+  assert.deepEqual(units[0].sourceLines.map((line) => line.text), ["甲", "乙", "丙", "丁"]);
+  assert.equal(units[0].alignment, "whole-work");
+});
+
+test("explicit mappings support groups while rejecting gaps, repeats, stale sources and swapped order", () => {
+  const lines = ["甲", "乙", "丙"].map((text) => ({ text }));
+  const paragraphs = ["合譯前兩句", "第三句前半", "第三句後半"];
+  const alignment = createClassicalAlignment(lines, [
+    { sourceIds: ["s00001", "s00002"], translationIndexes: [0] },
+    { sourceIds: ["s00003"], translationIndexes: [1, 2] }
+  ]);
+  const units = alignClassicalReadingUnits(lines, { paragraphs, alignment });
   assert.equal(units.length, 2);
-  assert.deepEqual(units.map((unit) => unit.sourceLines.map((line) => line.text)), [["甲", "乙"], ["丙", "丁"]]);
-  assert.ok(units.every((unit) => unit.alignment === "structural"));
+  assert.deepEqual(units[0].sourceLines.map((line) => line.text), ["甲", "乙"]);
+  assert.deepEqual(units[1].translations, paragraphs.slice(1));
+  assert.ok(units.every((unit) => unit.alignment === "model-checked"));
+  const stale = structuredClone(alignment); stale.sourceTexts[0] = "改";
+  const missing = structuredClone(alignment); missing.groups[0].sourceIds.pop();
+  const duplicate = structuredClone(alignment); duplicate.groups[0].sourceIds[1] = "s00001";
+  const swapped = structuredClone(alignment); swapped.groups[1].translationIndexes = [2, 1];
+  for (const bad of [stale, missing, duplicate, swapped]) {
+    assert.equal(validateClassicalAlignment(lines, paragraphs, bad).valid, false);
+    assert.equal(alignClassicalReadingUnits(lines, { paragraphs, alignment: bad })[0].alignment, "whole-work");
+  }
+});
+
+test("meaningless legacy placeholders are shown as repair notices", () => {
+  const [unit] = alignClassicalReadingUnits([{ text: "九枝燈" }], { paragraphs: ["專名或提示。"] });
+  assert.deepEqual(unit.translations, ["此段今譯待修復。"]);
 });
 
 test("a whole-work translation never pretends to be line aligned", () => {

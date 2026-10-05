@@ -31,7 +31,7 @@ test("the PWA client is registered and its cache excludes media and cross-origin
   assert.doesNotMatch(serviceWorker.match(/const APP_SHELL = \[[\s\S]*?\];/)?.[0] || "", /assets\/audio/);
 });
 
-test("weekly content uses the newest online response and keeps that same version offline", async () => {
+test("weekly content and repaired translations refresh online and keep the corrected version offline", async () => {
   const listeners = {};
   const stored = new Map();
   let offline = false;
@@ -57,13 +57,16 @@ test("weekly content uses the newest online response and keeps that same version
       return response;
     }
   });
-  const request = new Request("https://example.org/Leafbound/src/content-release.js");
-  const dispatch = async () => {
+  const dispatch = async (request) => {
     let result;
     listeners.fetch({ request, respondWith: (promise) => { result = promise; } });
     return (await result).text();
   };
-  assert.equal(await dispatch(), "latest weekly content");
-  offline = true;
-  assert.equal(await dispatch(), "latest weekly content");
+  for (const path of ["src/content-release.js", "data/classical-translations/manifest.json", "data/classical-translations/shards/ab.json"]) {
+    const request = new Request(`https://example.org/Leafbound/${path}`);
+    offline = false;
+    assert.equal(await dispatch(request), "latest weekly content");
+    offline = true;
+    assert.equal(await dispatch(request), "latest weekly content");
+  }
 });

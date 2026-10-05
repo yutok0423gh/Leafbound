@@ -1,6 +1,6 @@
 const CACHE_PREFIX = "leafbound-local";
-const SHELL_CACHE = `${CACHE_PREFIX}-shell-v2`;
-const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-v2`;
+const SHELL_CACHE = `${CACHE_PREFIX}-shell-v3`;
+const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-v3`;
 
 // These are same-origin application files only. Audio is deliberately absent:
 // Leafbound never copies or caches an external station/SoundCloud response, and
@@ -27,6 +27,7 @@ const APP_SHELL = [
   "./src/open-cantonese.js",
   "./src/cantonese-interviews.js",
   "./src/classical-reading.js",
+  "./src/classical-alignment.js",
   "./src/classical-translations.js",
   "./src/open-classical-translations.js",
   "./src/cantonese-lexicon.js",
@@ -49,6 +50,7 @@ const WEEKLY_CONTENT_URLS = new Set([
   "./src/open-english-dictionary.js",
   "./src/open-english-dictionary-meta.js"
 ].map(scopedUrl));
+const CLASSICAL_TRANSLATION_ROOT = scopedUrl("./data/classical-translations/");
 
 function isCacheable(response) {
   return Boolean(response && response.ok && response.type === "basic");
@@ -94,7 +96,7 @@ self.addEventListener("fetch", (event) => {
 
   // Weekly releases should be visible on the first online visit after publishing.
   // Keep the last downloaded articles available when the device is offline.
-  if (WEEKLY_CONTENT_URLS.has(url.href)) {
+  if (WEEKLY_CONTENT_URLS.has(url.href) || url.href.startsWith(CLASSICAL_TRANSLATION_ROOT)) {
     event.respondWith((async () => {
       try {
         const response = await fetch(request);

@@ -17,6 +17,7 @@ import OpenCC from "opencc-js";
 import { poems as catalogPoems } from "../src/data.js";
 import { openPoems } from "../src/open-poems.js";
 import { getClassicalTranslation } from "../src/classical-translations.js";
+import { isTranslationPlaceholder, validateClassicalAlignment } from "../src/classical-alignment.js";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const defaultPlanPath = resolve(projectRoot, ".tmp-data", "classical-translations", "plan.jsonl");
@@ -54,6 +55,7 @@ const reviewStatusLabels = Object.freeze({
   [TRANSLATION_REVIEW_STATUSES.REJECTED]: "已退回"
 });
 const productionBlockingWarnings = new Set([
+  "invalid-placeholder",
   "paragraph-count-mismatch",
   "critique-rejected",
   "critique-pending",
@@ -392,6 +394,7 @@ function draftMetadata(record) {
   if (glossary) metadata.glossary = glossary;
   if (critique) metadata.critique = critique;
   if (review) metadata.review = review;
+  if (record.alignment) metadata.alignment = structuredClone(record.alignment);
   return metadata;
 }
 
@@ -411,12 +414,12 @@ function validStringArray(value) {
 
 function validateOptionalProvenance(record) {
   if (record.pipelineVersion !== undefined
-    && (!Number.isSafeInteger(record.pipelineVersion) || ![2, 3].includes(record.pipelineVersion))) {
-    return "pipelineVersion must be 2 or 3 when provided.";
+    && (!Number.isSafeInteger(record.pipelineVersion) || ![2, 3, 4].includes(record.pipelineVersion))) {
+    return "pipelineVersion must be 2, 3, or 4 when provided.";
   }
   if (record.generationMode !== undefined
-    && !["full", "draft-only"].includes(normalizedField(record.generationMode))) {
-    return "generationMode must be full or draft-only when provided.";
+    && !["full", "draft-only", "alignment-repair"].includes(normalizedField(record.generationMode))) {
+    return "generationMode must be full, draft-only, or alignment-repair when provided.";
   }
   for (const field of ["promptSha256", "critiquePromptSha256"]) {
     if (record[field] !== undefined && !validSha256(record[field])) {
@@ -465,9 +468,10 @@ function validateOptionalProvenance(record) {
       return "review must contain reviewer and reviewedAt; note is optional.";
     }
   }
-  if (record.pipelineVersion === 2) {
-    if (record.generationMode !== undefined && normalizedField(record.generationMode) !== "full") {
-      return "pipelineVersion 2 records may only use full generation mode.";
+  if (record.pipelineVersion === 2 || record.pipelineVersion === 4) {
+    const expectedMode = record.pipelineVersion === 4 ? "alignment-repair" : "full";
+    if (record.generationMode !== undefined && normalizedField(record.generationMode) !== expectedMode) {
+      return `pipelineVersion ${record.pipelineVersion} requires ${expectedMode} generation mode.`;
     }
     if (!validSha256(record.promptSha256)
       || !validSha256(record.critiquePromptSha256)
@@ -475,10 +479,13 @@ function validateOptionalProvenance(record) {
       || !record.glossary
       || !validSha256(record.glossary.selectionSha256)
       || !record.critique) {
-      return "pipelineVersion 2 records require both prompt hashes, generation parameters, a versioned glossary selection, and second-pass critique metadata.";
+      return `pipelineVersion ${record.pipelineVersion} records require both prompt hashes, generation parameters, a versioned glossary selection, and second-pass critique metadata.`;
     }
     if (record.critique.promptSha256 !== record.critiquePromptSha256) {
       return "critique.promptSha256 must match critiquePromptSha256.";
+    }
+    if (record.pipelineVersion === 4 && (!record.alignment || record.critique.verdict === "reject" || record.generationMode !== "alignment-repair")) {
+      return "Alignment repairs require an explicit source mapping and a successful second-pass critique.";
     }
   }
   if (record.pipelineVersion === 3) {
@@ -599,8 +606,22 @@ export function validateDraftRecords(records, plan, { initialErrors = [] } = {})
     const paragraphs = cleanParagraphs(record.paragraphs);
     const warningCodes = new Set(record.warnings.map((warning) => normalizedField(warning)));
     const paragraphCountMismatch = paragraphs.length !== job.lines.length;
+    if (paragraphs.some(isTranslationPlaceholder) && !warningCodes.has("invalid-placeholder")) {
+      errors.push(recordError(record, "invalid-placeholder", "Placeholder text cannot be accepted as a translation."));
+      continue;
+    }
+    const alignmentCheck = validateClassicalAlignment(job.lines, paragraphs, record.alignment);
+    if (record.alignment && !alignmentCheck.valid) {
+      errors.push(recordError(record, "invalid-alignment", alignmentCheck.reason));
+      continue;
+    }
+    if (record.alignment && (!record.critique || record.critique.verdict === "reject")) {
+      errors.push(recordError(record, "unverified-alignment", "A mapping must include successful model critique provenance."));
+      continue;
+    }
     if (record.pipelineVersion >= 2
       && paragraphCountMismatch
+      && !alignmentCheck.valid
       && !warningCodes.has("paragraph-count-mismatch")) {
       errors.push(recordError(
         record,
@@ -610,7 +631,7 @@ export function validateDraftRecords(records, plan, { initialErrors = [] } = {})
       continue;
     }
     if (reviewStatus === TRANSLATION_REVIEW_STATUSES.REVIEWED
-      && (paragraphCountMismatch
+      && ((paragraphCountMismatch && !alignmentCheck.valid)
         || [...warningCodes].some((warning) => productionBlockingWarnings.has(warning)))) {
       errors.push(recordError(
         record,
@@ -745,6 +766,7 @@ function parseBuiltRecord(value, location) {
     critique: metadata.critique,
     review: metadata.review,
     editorialTriage: metadata.editorialTriage,
+    alignment: metadata.alignment,
     _location: location
   };
 }
@@ -839,6 +861,7 @@ function buildInMemoryArtifacts(records, plan) {
       productionReadyCoveredCount: builtInCount + productionReadyGeneratedCount,
       productionReadyRemainingCount: Math.max(0, plan.missingCount - productionReadyGeneratedCount),
       blockedGeneratedCount,
+      modelAlignedGeneratedCount: records.filter((record) => record.metadata.alignment).length,
       statusCounts,
       editorialTriageCounts,
       generatedByKind
@@ -902,7 +925,13 @@ export async function buildTranslationArtifacts({
   requireComplete = false
 } = {}) {
   const existingRaw = await readBuiltRecords(dataRoot);
-  const existingValidation = validateDraftRecords(existingRaw, plan);
+  // Legacy placeholders remain visible as repair notices, never as valid text.
+  // New drafts must either be real translations or explicitly quarantined.
+  const existingValidation = validateDraftRecords(existingRaw.map((record) => (
+    record.paragraphs?.some(isTranslationPlaceholder)
+      ? { ...record, warnings: [...new Set([...record.warnings, "invalid-placeholder"])] }
+      : record
+  )), plan);
   if (!existingValidation.valid) {
     return Object.freeze({ ok: false, stage: "existing", validation: existingValidation });
   }
@@ -932,7 +961,8 @@ export async function buildTranslationArtifacts({
     glossary: record.metadata.glossary,
     critique: record.metadata.critique,
     review: record.metadata.review,
-    editorialTriage: record.metadata.editorialTriage
+    editorialTriage: record.metadata.editorialTriage,
+    alignment: record.metadata.alignment
   })), plan);
   if (!combinedValidation.valid) {
     return Object.freeze({ ok: false, stage: "combined", validation: combinedValidation });
