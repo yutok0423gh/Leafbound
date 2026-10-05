@@ -15,6 +15,19 @@ import { buildCantonesePronunciationLine } from "../src/cantonese-lexicon.js";
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 
+function assertTranscriptPronunciation(episode, wordEntries, characterEntries, maxWordLength) {
+  episode.transcript.forEach((segment, index) => {
+    // Plain-text encyclopedia equations can put '=', '{', or '≥' on their own
+    // line. Preserve those lines; they have no Cantonese reading to require.
+    // Han text, Latin words, and numbers still require the existing lookup.
+    if (!/[\p{Script=Han}A-Za-z0-9]/u.test(segment.text)) return;
+    assert.ok(
+      segment.jyutping || buildCantonesePronunciationLine(segment.text, wordEntries, characterEntries, maxWordLength),
+      `${episode.id} segment ${index + 1} has no corpus or generated Jyutping`
+    );
+  });
+}
+
 test("Cantonese shelves include authentic Hong Kong speech and seven graded levels", () => {
   assert.equal(episodes.length, openCantoneseEpisodes.length + cantoneseInterviewEpisodes.length + 3);
   assert.equal(cantoneseSourceSnapshot.authenticSampleCount, 5);
@@ -140,7 +153,7 @@ test("SpiCE shelf offers multiple participant-only interview transcripts without
   });
 });
 
-test("every Cantonese transcript segment has a usable pronunciation line", () => {
+test("every Cantonese transcript segment containing readable text has a usable pronunciation line", () => {
   const wordPayload = JSON.parse(readFileSync(new URL("../data/words-hk-wordslist.json", import.meta.url), "utf8"));
   const characterPayload = JSON.parse(readFileSync(new URL("../data/rime-cantonese-chars.json", import.meta.url), "utf8"));
   const maxWordLength = Math.min(
@@ -149,16 +162,16 @@ test("every Cantonese transcript segment has a usable pronunciation line", () =>
   );
 
   episodes.forEach((episode) => {
-    episode.transcript.forEach((segment, index) => {
-      assert.ok(
-        segment.jyutping || buildCantonesePronunciationLine(
-          segment.text,
-          wordPayload.entries,
-          characterPayload.entries,
-          maxWordLength
-        ),
-        `${episode.id} segment ${index + 1} has no corpus or generated Jyutping`
-      );
-    });
+    assertTranscriptPronunciation(episode, wordPayload.entries, characterPayload.entries, maxWordLength);
   });
+});
+
+test("equation-only lines do not reject an article, while missing Han pronunciation still fails", () => {
+  // Regression for the Ipsative article (page 355402, revision 2443888), whose
+  // eighteenth segment was a standalone '=' and stopped the 2026-10-05 release.
+  const transcript = ["總數", "y", "=", "{", "1", "if", "t", "≥", "0", ",", ">", ".", "}", "β"]
+    .map((text) => ({ text }));
+  const episode = { id: "equation-regression", transcript };
+  assertTranscriptPronunciation(episode, { "總數": ["zung2 sou3"] }, {}, 2);
+  assert.throws(() => assertTranscriptPronunciation(episode, {}, {}, 2), /segment 1 has no corpus or generated Jyutping/);
 });

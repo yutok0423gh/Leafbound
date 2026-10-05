@@ -62,3 +62,12 @@ test("encyclopedia fallback fails closed when the source language or reuse licen
     assert.equal(intake.additions.length, 0);
   }
 });
+
+test("encyclopedia equations retain standalone operators without inventing Jyutping", () => {
+  const sourcePage = page();
+  const formula = ["y", "=", "{", "1", "if", "t", "≥", "0", ",", "}"];
+  const article = wikipediaArticle({ ...sourcePage, extract: `${sourcePage.extract}\n${formula.join("\n")}` });
+  assert.ok(article);
+  assert.deepEqual(article.transcript.slice(-formula.length).map((segment) => segment.text), formula);
+  assert.ok(article.transcript.every((segment) => !segment.jyutping));
+});
