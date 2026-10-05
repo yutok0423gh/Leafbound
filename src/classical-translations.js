@@ -460,7 +460,9 @@ async function translationShardId(id) {
 
 async function fetchTranslationJson(url, label, { unavailableWhenMissing = false, unavailableWhenInvalid = false } = {}) {
   const response = await globalThis.fetch(url.href, {
-    cache: "force-cache",
+    // Published repairs replace these URLs. Revalidate the HTTP cache even
+    // before a service worker has taken control of a returning visitor's tab.
+    cache: "no-cache",
     headers: { Accept: "application/json" }
   });
   if (!response.ok) {

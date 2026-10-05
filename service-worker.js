@@ -1,6 +1,6 @@
 const CACHE_PREFIX = "leafbound-local";
-const SHELL_CACHE = `${CACHE_PREFIX}-shell-v3`;
-const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-v3`;
+const SHELL_CACHE = `${CACHE_PREFIX}-shell-v4`;
+const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-v4`;
 
 // These are same-origin application files only. Audio is deliberately absent:
 // Leafbound never copies or caches an external station/SoundCloud response, and
@@ -99,7 +99,9 @@ self.addEventListener("fetch", (event) => {
   if (WEEKLY_CONTENT_URLS.has(url.href) || url.href.startsWith(CLASSICAL_TRANSLATION_ROOT)) {
     event.respondWith((async () => {
       try {
-        const response = await fetch(request);
+        // Older tabs can still request force-cache. A network-first policy
+        // must also revalidate the browser's HTTP cache, not only CacheStorage.
+        const response = await fetch(request, { cache: "no-cache" });
         if (isCacheable(response)) {
           const cache = await caches.open(RUNTIME_CACHE);
           await cache.put(request, response.clone());

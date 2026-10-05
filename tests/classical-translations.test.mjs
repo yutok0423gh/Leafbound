@@ -83,6 +83,23 @@ test("open translations only attach to exact existing ci records and retain prov
   }
 });
 
+test("classical translation loader revalidates an outdated browser cache before reading repairs", async (context) => {
+  const originalFetch = globalThis.fetch;
+  context.after(() => { globalThis.fetch = originalFetch; });
+  const id = "open-song-ci-54ac1bc59a84faaee750";
+  const shard = shardIdFor(id);
+  globalThis.fetch = async (url, options) => {
+    const revalidates = options?.cache === "no-cache";
+    if (String(url).endsWith("manifest.json")) {
+      return Response.json({ shardStrategy: { algorithm: "sha256-id-prefix", prefixLength: 2 },
+        shards: revalidates ? [{ id: shard }] : [] });
+    }
+    return Response.json({ schemaVersion: 1, records: [[id, "詞", [revalidates ? "已修復的今譯" : "舊的錯配今譯"], "source-hash", {}]] });
+  };
+  const runtime = await import("../src/classical-translations.js?http-cache-regression");
+  assert.deepEqual((await runtime.loadClassicalTranslation(id)).paragraphs, ["已修復的今譯"]);
+});
+
 test("classical translation loader distinguishes unavailable catalogs from retryable shard failures", async (context) => {
   const originalFetch = globalThis.fetch;
   const dataRoot = await mkdtemp(join(tmpdir(), "leafbound-loader-artifacts-"));

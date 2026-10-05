@@ -50,9 +50,10 @@ test("weekly content and repaired translations refresh online and keep the corre
       }),
       match: async () => new Response("old installation snapshot")
     },
-    fetch: async () => {
+    fetch: async (request, options) => {
       if (offline) throw new Error("offline");
-      const response = new Response("latest weekly content");
+      const usesStaleHttpCache = request.cache === "force-cache" && options?.cache !== "no-cache";
+      const response = new Response(usesStaleHttpCache ? "old HTTP cache snapshot" : "latest weekly content");
       Object.defineProperty(response, "type", { value: "basic" });
       return response;
     }
@@ -63,7 +64,7 @@ test("weekly content and repaired translations refresh online and keep the corre
     return (await result).text();
   };
   for (const path of ["src/content-release.js", "data/classical-translations/manifest.json", "data/classical-translations/shards/ab.json"]) {
-    const request = new Request(`https://example.org/Leafbound/${path}`);
+    const request = new Request(`https://example.org/Leafbound/${path}`, { cache: "force-cache" });
     offline = false;
     assert.equal(await dispatch(request), "latest weekly content");
     offline = true;
