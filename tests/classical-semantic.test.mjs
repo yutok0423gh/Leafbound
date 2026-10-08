@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseSemanticResponse, parseContentReview, reconcileSemanticGroups, repairSemanticTranslation, createSemanticPlan, sourceIntegrityIssue, semanticRegressionIssues } from "../scripts/semantic-classical-translations.mjs";
+import { parseSemanticResponse, parseContentReview, reconcileSemanticGroups, repairSemanticTranslation, createSemanticPlan, sourceIntegrityIssue, semanticRegressionIssues, createSemanticRequest } from "../scripts/semantic-classical-translations.mjs";
+import { sourceFragments } from "../scripts/repair-classical-alignment.mjs";
 import { sourceHashFor, validateDraftRecords, readBuiltRecords } from "../scripts/classical-translation-pipeline.mjs";
 import { alignClassicalReadingUnits } from "../src/classical-reading.js";
 
@@ -54,7 +55,7 @@ test("machine drafts are regenerated without exposing the old mistaken translati
       if(input.groups)return response({checks:Object.fromEntries(input.groups.map(group=>[group.id,{
         sourceMeaning:"朋友邀我做客，舉杯談農事",translationMeaning:"朋友邀我做客，舉杯談農事",accurate:true,complete:true,noAddedMeaning:true,uncertain:false,issues:[]
       }]))});
-      return response({verdict:"pass",issues:[],groups:groups.map(group=>({sourceIds:group.sourceIds,sourceQuotes:group.sourceQuotes,
+      return response({groups:groups.map(group=>({sourceIds:group.sourceIds,sourceQuotes:group.sourceQuotes,
         paragraphs:group.translationIds.map(id=>paragraphs[Number(id.slice(1))-1]),meaning:group.meaning,uncertain:false}))});
     }
   });
@@ -71,6 +72,15 @@ test("observed semantic mistakes cannot be approved again by the same model",()=
   const du={kind:"詩",lines:["陰陽割昏曉","盪胷生曾雲"]};
   assert.equal(semanticRegressionIssues(du,["陰陽兩界，雲氣從胸中升起。"]).length,2);
   assert.deepEqual(semanticRegressionIssues(du,["山的南北明暗分明；層雲湧起，使人胸懷激蕩。"]),[]);
+});
+
+test("long prose keeps all requested source text while bounding surrounding context",()=>{
+  const long={...job,kind:"古文",lines:["山川秀麗，賓客往來。".repeat(1000)]};
+  const parts=sourceFragments(long).slice(5,7);
+  const input=JSON.parse(createSemanticRequest(long,parts,[],{entries:[]},config,{generate:true}).messages[1].content);
+  assert.deepEqual(input.sources,parts.map(({id,text})=>({id,text})));
+  assert.ok(JSON.stringify(input.context).length<1100);
+  assert.ok(input.context.before.length&&input.context.after.length);
 });
 
 test("an independent audit cannot bless crossed meanings by merging the whole poem",()=>{
