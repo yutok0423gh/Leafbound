@@ -42,7 +42,7 @@
     "productionReadyRemainingCount": 17189,
     "blockedGeneratedCount": 17082,
     "modelAlignedGeneratedCount": 51,
-    "semanticAlignedGeneratedCount": 4,
+    "semanticAlignedGeneratedCount": 5,
     "statusCounts": {
       "machine-draft": 17038,
       "pending-review": 151,
@@ -59,7 +59,7 @@
       "古文": 451
     }
   },
-  "recordsSha256": "fe795dae4e209e5680dfe2a3dc5cca22b75bfe20c90e43f08dc9c6da7da091b1",
+  "recordsSha256": "1f1c66d81a91f973bb65f943e1aaaf502767bc7eec2da2cf47357ebf7ccab714",
   "shards": [
     {
       "id": "00",
@@ -70,8 +70,8 @@
     {
       "id": "01",
       "count": 76,
-      "bytes": 125355,
-      "sha256": "84bffb77feffbf173c507b4c36911617d07de3abfb9efddbb300b8d289d3d6ab"
+      "bytes": 125478,
+      "sha256": "1617a9e484113744cd9a563ba41d1e503d26d2b5a8a79fd38ba2f3b20cf8e10e"
     },
     {
       "id": "02",
