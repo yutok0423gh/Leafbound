@@ -15,6 +15,7 @@
     "classical-translations:review": "node scripts/build-classical-translation-review.mjs",
     "classical-translations:triage": "node scripts/triage-classical-translation-batch.mjs",
     "classical-translations:alignment": "node scripts/repair-classical-alignment.mjs",
+    "classical-translations:semantic": "node scripts/run-semantic-translation-batch.mjs",
     "import:cantonese": "node scripts/import-cantonese-pronunciation.mjs",
     "import:cantonese-content": "node scripts/import-cantonese-sources.mjs",
     "import:cantonese-interviews": "node scripts/import-spice-interview-audio.mjs",

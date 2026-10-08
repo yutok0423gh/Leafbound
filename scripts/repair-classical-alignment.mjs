@@ -80,7 +80,7 @@ export function alignmentResponseSchema(fragments, critique = false) {
   return { type: "object", properties, required: Object.keys(properties), additionalProperties: false };
 }
 
-function parseUniqueKeyJson(text) {
+export function parseUniqueKeyJson(text) {
   const result = JSON.parse(text);
   // JSON.parse silently keeps the last duplicate key. Check the original token
   // stream too, including escaped keys, before trusting per-source bindings.

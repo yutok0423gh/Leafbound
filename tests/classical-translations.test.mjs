@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { createSemanticAlignment } from "../src/classical-alignment.js";
 import {
   classicalTranslationErrorCodes,
   classicalTranslationSnapshot,
@@ -81,6 +82,37 @@ test("open translations only attach to exact existing ci records and retain prov
     assert.match(translation.source.status, /未經 Leafbound 人工校訂/);
     assert.doesNotMatch(translation.source.sourceUrl, /gushiwen\.cn/);
   }
+});
+
+test("editorial semantic groups bind both snapshots and known failures block translation", async (context) => {
+  const originalFetch = globalThis.fetch;
+  context.after(() => { globalThis.fetch = originalFetch; });
+  const poem = { id: "inline-semantic-fixture", lines: [{ text: "故人具雞黍" }, { text: "邀我至田家" }],
+    translation: "老友備好雞肉和黃米飯，邀我到鄉下家中做客。" };
+  const alignment = createSemanticAlignment(poem.lines, [poem.translation], [
+    { sourceIds: ["s00001", "s00002"], translationIndexes: [0] }
+  ], { method: "independent-semantic-audit", verdict: "pass", model: "fixture", modelRevision: "fixture-v1",
+    promptSha256s: ["a".repeat(64), "b".repeat(64)], completedAt: "2026-10-08T00:00:00Z" });
+  const metadata = { schemaVersion: 1, holds: {}, editorial: { [poem.id]: { alignment } } };
+  globalThis.fetch = async (url, options) => {
+    assert.match(String(url), /semantic-status\.json$/);
+    assert.equal(options.cache, "no-cache");
+    return Response.json(metadata);
+  };
+  const runtime = await import("../src/classical-translations.js?semantic-editorial");
+  const loaded = await runtime.loadClassicalTranslation(poem);
+  assert.deepEqual(loaded.alignment.groups[0].sourceIds, ["s00001", "s00002"]);
+  assert.deepEqual(loaded.paragraphs, [poem.translation]);
+  assert.strictEqual(runtime.getClassicalTranslation(poem), loaded);
+
+  const changedRuntime = await import("../src/classical-translations.js?semantic-editorial-changed");
+  assert.equal((await changedRuntime.loadClassicalTranslation({ ...poem, translation: "這是別的意思。" })).alignment, undefined);
+  metadata.holds[poem.id] = "source-missing-glyphs";
+  const blockedRuntime = await import("../src/classical-translations.js?semantic-editorial-blocked");
+  assert.equal((await blockedRuntime.loadClassicalTranslation(poem)).source.semanticBlocked, true);
+  globalThis.fetch = async () => new Response("unavailable", { status: 503 });
+  const offlineRuntime = await import("../src/classical-translations.js?semantic-editorial-offline");
+  assert.deepEqual((await offlineRuntime.loadClassicalTranslation(poem)).paragraphs, [poem.translation]);
 });
 
 test("classical translation loader revalidates an outdated browser cache before reading repairs", async (context) => {

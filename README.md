@@ -77,7 +77,19 @@ npm run classical-translations:build -- --drafts .tmp-data/classical-translation
 
 ### 本機模型修復原文／今譯錯配
 
-對照閱讀只使用綁定當前原文快照的明確句段編號；原文或映射失效、沒有映射的舊譯文，即使段數相同，也按全篇展示並標示待校對。段數不同不再按比例猜配。模型校對與人工校訂分開標示，無意義的舊占位文字顯示為待修復提示。
+對照閱讀以完整意思分組：多句原文可合譯成一段，也可對應多段今譯；候選譯文順序有誤時依語義重新配對。映射同時綁定原文及譯文快照，任何一方改動都使舊映射失效。只有經獨立內容復核的 `semantic-groups` v2 映射用於分組閱讀；舊 v1 編號檢查或沒有映射的譯文，即使段數相同，也按全篇展示並標示待校對。
+
+全量隊列包括全部 17,373 篇，含編輯稿與人工審閱稿。這些受保護稿件只核對分組，不改寫字句或人工審閱記錄。其他機器稿只依原文及辭典重新翻譯，不讓舊錯譯引導新稿；開啟本機推理後獨立復核，未通過時最多重試三輪，以具體審校意見修正。仍有疑義則保留檢查點並暫停顯示該今譯。缺字、難以可靠解讀的文字遊戲，以及元曲來源把開頭正文混進標題的情況，另標為原文待核實，不讓模型猜補。`semantic-status.json` 記錄待核實作品及編輯稿的分組。
+
+`classical-translations:semantic` 是目前的全量入口。它核對本地 GGUF 校驗值，啟動只監聽本機的模型，每 10 篇通過稿運行全庫驗證及測試後發布，並等待 Pages 部署及公開資料驗證。只有指定的獨立分支、倉庫和翻譯資料路徑可自動發布；遇到其他提交或衝突會停止並保留檢查點。呼叫範例（在 `codex/semantic-alignment-all` 獨立工作目錄中）：
+
+```powershell
+npm run classical-translations:semantic -- --publish --state-dir D:/Project/personal_poetry_language_app_prd/.tmp-data/classical-translations/semantic-run --progress-html D:/Project/personal_poetry_language_app_prd/artifacts/classical-alignment-progress.html --model-file D:/AI/models/Qwen3.5-9B-Q4_K_M.gguf --server-binary D:/AI/llama.cpp/b10679/llama-server.exe --model-sha256 03b74727a860a56338e042c4420bb3f04b2fec5734175f4cb9fa853daf52b7e8
+```
+
+Windows 的 `scripts/install-semantic-task.ps1` 可用上述路徑註冊 `Leafbound-Classical-Semantic` 計劃任務：登入及每 10 分鐘檢查續跑，單實例、接通電源時執行，已接受稿件不重做。工作狀態在 `progress.json`，候選在 `accepted.jsonl`，失敗原因在 `journal.jsonl`；建立任務目錄中的 `STOP` 文件會在本篇結束後停止，移走後可續跑。進度頁每 15 秒刷新，超過三分鐘無心跳會明確標示中斷；已處理、模型通過、公開上線和待核實數量分開顯示。仍有疑義時，結束狀態是 `needs_review`，不宣稱全部譯文已修好。
+
+以下 `classical-translations:alignment` 命令保留作舊 v1 資料檢查與兼容；它產生的逐句映射不再直接用於分組閱讀：
 
 `classical-translations:alignment` 只連接本機端點，使用 llama.cpp 的 JSON schema 約束。每個原文編號必須完整且唯一；長篇按標點分塊，保留前後文，最後按原編號合併。第一輪獨立依據原文翻譯，避免舊錯譯誤導模型；第二輪核對詞義、漏譯和對應關係。缺號、重號、截斷、空話、模型不確定或拒絕的輸出不會作為修復稿發布。短小且疑似殘缺的來源先留待核實。
 

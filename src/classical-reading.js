@@ -25,6 +25,7 @@ export function classicalTranslationReviewMeta(translation, { inline = false } =
     publicReady: false
   });
 
+  if (translation.source?.semanticBlocked) return Object.freeze({id:"pending-review",label:"今譯待修復",tone:"pending",publicReady:false});
   if (inline) return REVIEW_STATUS_META.reviewed;
   const source = translation.source || {};
   const declared = cleanText(source.reviewStatus || translation.reviewStatus).toLowerCase();
@@ -80,13 +81,13 @@ export function alignClassicalReadingUnits(lines, translation) {
   }
 
   const alignment = translation?.alignment;
-  if (validateClassicalAlignment(lines, translation?.paragraphs, alignment).valid) {
+  if (validateClassicalAlignment(lines, translation?.paragraphs, alignment, { requireSemantic: true }).valid) {
     const byId = new Map(sources.map((line) => [sourceSegmentId(line.sourceIndex), line]));
     return alignment.groups.map((group, index) => ({
       id: index,
       sourceLines: group.sourceIds.map((id) => byId.get(id)).filter(Boolean),
       translations: group.translationIndexes.map((position) => translations[position]),
-      alignment: "model-checked"
+      alignment: "semantic-groups"
     }));
   }
   return [{ id: 0, sourceLines: sources, translations, alignment: "whole-work" }];

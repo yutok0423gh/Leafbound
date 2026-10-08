@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createClassicalAlignment, validateClassicalAlignment } from "../src/classical-alignment.js";
+import { createClassicalAlignment, createSemanticAlignment, validateClassicalAlignment } from "../src/classical-alignment.js";
+const verification = { method: "independent-semantic-audit", verdict: "pass", model: "test", modelRevision: "test",
+  promptSha256s: ["a".repeat(64), "b".repeat(64)], completedAt: "2026-10-08T00:00:00Z" };
 
 import {
   alignClassicalReadingUnits,
@@ -32,23 +34,34 @@ test("unequal paragraph counts stay whole instead of being proportionally paired
 test("explicit mappings support groups while rejecting gaps, repeats, stale sources and swapped order", () => {
   const lines = ["甲", "乙", "丙"].map((text) => ({ text }));
   const paragraphs = ["合譯前兩句", "第三句前半", "第三句後半"];
-  const alignment = createClassicalAlignment(lines, [
+  const alignment = createSemanticAlignment(lines, paragraphs, [
     { sourceIds: ["s00001", "s00002"], translationIndexes: [0] },
     { sourceIds: ["s00003"], translationIndexes: [1, 2] }
-  ]);
+  ], verification);
   const units = alignClassicalReadingUnits(lines, { paragraphs, alignment });
   assert.equal(units.length, 2);
   assert.deepEqual(units[0].sourceLines.map((line) => line.text), ["甲", "乙"]);
   assert.deepEqual(units[1].translations, paragraphs.slice(1));
-  assert.ok(units.every((unit) => unit.alignment === "model-checked"));
+  assert.ok(units.every((unit) => unit.alignment === "semantic-groups"));
   const stale = structuredClone(alignment); stale.sourceTexts[0] = "改";
   const missing = structuredClone(alignment); missing.groups[0].sourceIds.pop();
   const duplicate = structuredClone(alignment); duplicate.groups[0].sourceIds[1] = "s00001";
-  const swapped = structuredClone(alignment); swapped.groups[1].translationIndexes = [2, 1];
+  const swapped = structuredClone(alignment); swapped.groups[1].translationIndexes = [2, 2];
   for (const bad of [stale, missing, duplicate, swapped]) {
     assert.equal(validateClassicalAlignment(lines, paragraphs, bad).valid, false);
     assert.equal(alignClassicalReadingUnits(lines, { paragraphs, alignment: bad })[0].alignment, "whole-work");
   }
+});
+
+test("legacy per-line mappings need semantic audit and translated text is bound to the mapping", () => {
+  const lines = [{text:"甲"},{text:"乙"}], paragraphs = ["第二句的意思", "第一句的意思"];
+  assert.equal(alignClassicalReadingUnits(lines, {paragraphs, alignment:createClassicalAlignment(lines)})[0].alignment,"whole-work");
+  const alignment = createSemanticAlignment(lines,paragraphs,[
+    {sourceIds:["s00001"],translationIndexes:[1]}, {sourceIds:["s00002"],translationIndexes:[0]}
+  ],verification);
+  const units = alignClassicalReadingUnits(lines,{paragraphs,alignment});
+  assert.deepEqual(units.map((unit)=>unit.translations[0]),["第一句的意思","第二句的意思"]);
+  assert.equal(alignClassicalReadingUnits(lines,{paragraphs:["被替換的譯文",paragraphs[1]],alignment})[0].alignment,"whole-work");
 });
 
 test("meaningless legacy placeholders are shown as repair notices", () => {

@@ -2,12 +2,30 @@ import {
   openClassicalTranslations,
   openClassicalTranslationSnapshot
 } from "./open-classical-translations.js";
+import { validateClassicalAlignment } from "./classical-alignment.js";
 
 const dynamicTranslationCache = new Map();
 const shardPromiseCache = new Map();
 const translationManifestUrl = new URL("../data/classical-translations/manifest.json", import.meta.url);
 const aiTranslationStatus = "AI 今譯 · 未經人工校訂";
 let manifestPromise = null;
+let semanticStatusPromise = null;
+
+async function applySemanticStatus(id, translation, poem) {
+  if (!semanticStatusPromise) {
+    semanticStatusPromise = fetchTranslationJson(new URL("semantic-status.json", translationManifestUrl), "今譯核對狀態")
+      .then((value) => value?.schemaVersion === 1 ? value : null)
+      .catch(() => { semanticStatusPromise = null; return null; });
+  }
+  const metadata = await semanticStatusPromise;
+  const issue = metadata?.holds?.[id];
+  const editorial = metadata?.editorial?.[id];
+  const alignment = editorial?.alignment;
+  const validEditorial = alignment && Array.isArray(poem?.lines)
+    && validateClassicalAlignment(poem.lines, translation.paragraphs, alignment, { requireSemantic: true }).valid;
+  return Object.freeze({ ...translation, ...(validEditorial ? { alignment } : {}),
+    source: Object.freeze({ ...translation.source, ...(typeof issue === "string" ? { semanticBlocked: true, semanticIssue: issue } : {}) }) });
+}
 
 export const classicalTranslationErrorCodes = Object.freeze({
   catalogUnavailable: "CLASSICAL_TRANSLATION_CATALOG_UNAVAILABLE",
@@ -610,14 +628,24 @@ function normalizeAiTranslation(record, fallbackKind) {
 
 export function getClassicalTranslation(poemOrId) {
   const id = translationId(poemOrId);
-  return editorialTranslations[id] || openClassicalTranslations[id] || dynamicTranslationCache.get(id) || null;
+  return dynamicTranslationCache.get(id) || editorialTranslations[id] || openClassicalTranslations[id] || null;
 }
 
 export async function loadClassicalTranslation(poemOrId) {
   const id = translationId(poemOrId);
   if (!id) throw new TypeError("今譯載入需要作品 ID");
-  const available = getClassicalTranslation(id);
-  if (available) return available;
+  if (dynamicTranslationCache.has(id)) return dynamicTranslationCache.get(id);
+  const inline = typeof poemOrId === "object" && String(poemOrId?.translation || "").trim();
+  const available = getClassicalTranslation(id) || (inline ? { paragraphs: [inline],
+    source: { label: "Leafbound 今譯", status: "人工已校", reviewStatus: "reviewed", productionReady: true } } : null);
+  if (available) {
+    // String-only callers (including build scripts) keep synchronous editorial
+    // data; the reader supplies source lines for source-bound semantic evidence.
+    if (typeof poemOrId === "string") return available;
+    const translation = await applySemanticStatus(id, available, poemOrId);
+    dynamicTranslationCache.set(id, translation);
+    return translation;
+  }
 
   const manifest = await loadTranslationManifest();
   const { descriptor, shardId } = await translationShardDescriptor(manifest, id);
@@ -627,7 +655,8 @@ export async function loadClassicalTranslation(poemOrId) {
     const payload = await loadTranslationShard(shardUrl);
     const record = translationRecord(payload, id);
     if (!record) throw new Error("今譯分片尚未收錄這篇作品");
-    const translation = normalizeAiTranslation(record, typeof poemOrId === "object" ? poemOrId?.kind : "");
+    const base = normalizeAiTranslation(record, typeof poemOrId === "object" ? poemOrId?.kind : "");
+    const translation = typeof poemOrId === "object" ? await applySemanticStatus(id, base, poemOrId) : base;
     dynamicTranslationCache.set(id, translation);
     return translation;
   } catch (error) {

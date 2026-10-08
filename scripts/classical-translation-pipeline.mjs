@@ -862,6 +862,7 @@ function buildInMemoryArtifacts(records, plan) {
       productionReadyRemainingCount: Math.max(0, plan.missingCount - productionReadyGeneratedCount),
       blockedGeneratedCount,
       modelAlignedGeneratedCount: records.filter((record) => record.metadata.alignment).length,
+      semanticAlignedGeneratedCount: records.filter((record) => record.metadata.alignment?.version === 2).length,
       statusCounts,
       editorialTriageCounts,
       generatedByKind

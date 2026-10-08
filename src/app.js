@@ -16,7 +16,6 @@ import {
 import {
   alignClassicalReadingUnits,
   classicalReadingModes,
-  classicalTranslationParagraphs,
   classicalTranslationReviewMeta
 } from "./classical-reading.js";
 import { icon } from "./icons.js";
@@ -1322,7 +1321,7 @@ function requestPoemContent(poem, retry = false) {
 }
 
 function requestClassicalTranslation(poem, retry = false) {
-  if (!poem || poem.translation || getClassicalTranslation(poem)) return null;
+  if (!poem || (poem.contentShard && !poem.contentLoaded)) return null;
   const current = classicalTranslationLoadStates.get(poem.id);
   if (!retry && (current?.status === "loading" || current?.status === "ready" || current?.status === "error" || current?.status === "unavailable")) {
     return current.promise || null;
@@ -1350,6 +1349,8 @@ function requestClassicalTranslation(poem, retry = false) {
 }
 
 function classicalTranslationFor(poem) {
+  const loaded = getClassicalTranslation(poem);
+  if (loaded) return loaded;
   if (String(poem?.translation || "").trim()) {
     return {
       paragraphs: [String(poem.translation).trim()],
@@ -1366,7 +1367,7 @@ function classicalTranslationFor(poem) {
 
 function effectiveClassicalReadingMode(requested, translation) {
   const review = classicalTranslationReviewMeta(translation, { inline: Boolean(translation && !translation.source) });
-  if (!translation || review.id === "rejected") return "original";
+  if (!translation || translation.source?.semanticBlocked || review.id === "rejected") return "original";
   return classicalReadingModes.some((option) => option.id === requested) ? requested : "parallel";
 }
 
@@ -1374,9 +1375,13 @@ function renderClassicalReadingControls(poem, translation, requestedMode) {
   const loadState = classicalTranslationLoadStates.get(poem.id)?.status;
   const review = classicalTranslationReviewMeta(translation, { inline: Boolean(poem.translation) });
   const mode = effectiveClassicalReadingMode(requestedMode, translation);
-  const available = Boolean(translation) && review.id !== "rejected";
+  const available = Boolean(translation) && !translation.source?.semanticBlocked && review.id !== "rejected";
   const warnings = Array.isArray(translation?.source?.warnings) ? translation.source.warnings : [];
-  const reviewCopy = review.id === "reviewed"
+  const reviewCopy = translation?.source?.semanticBlocked
+    ? String(translation.source.semanticIssue).startsWith("source-")
+      ? "原始資料疑有缺漏，核實後再提供今譯"
+      : "原文與今譯含義尚待核實，暫顯示原文"
+    : review.id === "reviewed"
     ? "已完成內容校對"
     : review.id === "machine-draft"
       ? "只作理解參考，尚未人工校對"
@@ -1546,7 +1551,7 @@ function renderPoemSourceLines(poem, lines, savedLineIds, showJyutping, parallel
 
 function renderPoemBody(poem, savedLineIds, showJyutping, mode = "original", translation = null) {
   if (mode === "translation") {
-    const paragraphs = classicalTranslationParagraphs(translation);
+    const paragraphs = alignClassicalReadingUnits(poem.lines, translation).flatMap((unit) => unit.translations);
     return `
       <div class="classical-translation-only" lang="zh-Hant">
         ${paragraphs.map((paragraph, index) => `<p><span aria-hidden="true">${String(index + 1).padStart(2, "0")}</span>${escapeHtml(paragraph)}</p>`).join("")}
@@ -1565,9 +1570,9 @@ function renderPoemBody(poem, savedLineIds, showJyutping, mode = "original", tra
       ${units.map((unit, unitIndex) => {
         const isFocused = ui.classicalFocusIndex === unitIndex;
         const alignmentNote = unit.alignment === "whole-work"
-          ? "分段對應尚未確認，暫按全篇展示。"
-          : unit.alignment === "model-checked" && unitIndex === 0
-            ? "本機模型已核對分段對應；譯文校訂狀態見上方標示。"
+          ? "原文與今譯按全篇閱讀；句段對應仍待核對。"
+          : unit.alignment === "semantic-groups" && unitIndex === 0
+            ? "按完整意思分組對照，一組可包含多句原文或多段今譯；校訂狀態見上方。"
             : "";
         return `
           <section class="classical-reading-unit ${isFocused ? "is-focused" : ""} ${focusActive && !isFocused ? "is-muted" : ""}"

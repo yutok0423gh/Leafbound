@@ -75,7 +75,7 @@ test("local repair refuses remote endpoints and prevents redirects", async () =>
   } });
 });
 
-test("repair metadata survives building and loads into verified source groups, never human-reviewed", async () => {
+test("legacy repair metadata survives building but awaits semantic audit before pairing", async () => {
   const { record, requests } = await repairedFixture();
   assert.equal(requests.length, 2);
   assert.ok(!requests[0].messages[1].content.includes("整篇舊譯"), "old errors must not anchor the independent translation");
@@ -90,8 +90,8 @@ test("repair metadata survives building and loads into verified source groups, n
   const [loaded] = await readBuiltRecords(dataRoot);
   assert.deepEqual(loaded.alignment, record.alignment);
   const units = alignClassicalReadingUnits(job.lines.map((text) => ({ text })), loaded);
-  assert.deepEqual(units.map((unit) => unit.translations[0]), translated);
-  assert.ok(units.every((unit) => unit.alignment === "model-checked"));
+  assert.deepEqual(units.flatMap((unit) => unit.translations), translated);
+  assert.ok(units.every((unit) => unit.alignment === "whole-work"));
   const originalFetch = globalThis.fetch;
   try {
     globalThis.fetch = async (url) => {
@@ -103,7 +103,7 @@ test("repair metadata survives building and loads into verified source groups, n
     const browserRecord = await runtime.loadClassicalTranslation(job);
     assert.deepEqual(browserRecord.alignment, record.alignment, "the actual browser loader must keep the mapping");
     assert.equal(browserRecord.source.reviewStatus, "pending-review");
-    assert.equal(alignClassicalReadingUnits(job.lines.map((text) => ({ text })), browserRecord).length, 2);
+    assert.equal(alignClassicalReadingUnits(job.lines.map((text) => ({ text })), browserRecord).length, 1);
   } finally {
     globalThis.fetch = originalFetch;
   }
