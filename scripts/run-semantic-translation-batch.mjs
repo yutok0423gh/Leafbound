@@ -206,7 +206,8 @@ async function run(){
       await appendFile(journalPath,JSON.stringify({id:entry.job.id,inputHash:entry.inputHash,status:"held",code,message:error.message,promptVersion:SEMANTIC_PROMPT_VERSION,at:new Date().toISOString()})+"\n");
     }
     state.processed++;await save();
-    if(pending.length>=options.batchSize&&!existsSync(stopPath)){await publish(pending,publicStatus);pending.length=0;}
+    const batchSize=state.publications.length ? options.batchSize : 2;
+    if(pending.length>=batchSize&&!existsSync(stopPath)){await publish(pending,publicStatus);pending.length=0;}
   }
   if(!existsSync(stopPath))await publish(pending,publicStatus);
   state.current=null;state.status=existsSync(stopPath)?"stopped":state.held?"needs_review":"complete";await save();
