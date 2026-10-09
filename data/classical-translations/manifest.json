@@ -40,12 +40,12 @@
     "productionReadyGeneratedCount": 0,
     "productionReadyCoveredCount": 184,
     "productionReadyRemainingCount": 17189,
-    "blockedGeneratedCount": 16168,
-    "modelAlignedGeneratedCount": 966,
-    "semanticAlignedGeneratedCount": 941,
+    "blockedGeneratedCount": 16164,
+    "modelAlignedGeneratedCount": 970,
+    "semanticAlignedGeneratedCount": 945,
     "statusCounts": {
-      "machine-draft": 16124,
-      "pending-review": 1065,
+      "machine-draft": 16120,
+      "pending-review": 1069,
       "reviewed": 0,
       "rejected": 0
     },
@@ -59,7 +59,7 @@
       "古文": 451
     }
   },
-  "recordsSha256": "d549ec368aa62d8b2d6beb3cf95814a4e99289ef47696f9edc498f5b09715c91",
+  "recordsSha256": "c0cd3e08ce9da9d1a02e04440afac637bd09867bc0e4aec5c5ca4ca7dbbfb85d",
   "shards": [
     {
       "id": "00",
@@ -478,8 +478,8 @@
     {
       "id": "45",
       "count": 69,
-      "bytes": 111505,
-      "sha256": "a96c96042684478686978fa65641c60ebf60de24a96eeceab8c82114ee59eb12"
+      "bytes": 113353,
+      "sha256": "25d3bf3bc10635a21038e7c2ed6abd941f407707c2f0d4756d9c554e7a9d9034"
     },
     {
       "id": "46",
@@ -688,8 +688,8 @@
     {
       "id": "68",
       "count": 77,
-      "bytes": 136859,
-      "sha256": "36e2a7a2e1bda63ee7ddce6253203ebbd7d39bac61f80cc193c243bdad9d039f"
+      "bytes": 138229,
+      "sha256": "44b2f01a0ad8043283b5cd9dcd235775f018dbbbfd301adc7c3eb9228dd9b562"
     },
     {
       "id": "69",
@@ -1408,8 +1408,8 @@
     {
       "id": "e0",
       "count": 67,
-      "bytes": 103358,
-      "sha256": "b3b7b1a1478002b09ebd6c1c8fce28e3280d3c74fba0165642dc7cb9c44887df"
+      "bytes": 104740,
+      "sha256": "82cf252710affaf1839732a9fdbe87d0223739b166b90af06d87220f5efa6e9c"
     },
     {
       "id": "e1",
@@ -1522,8 +1522,8 @@
     {
       "id": "f3",
       "count": 55,
-      "bytes": 99526,
-      "sha256": "693bfd43fe4b603675961be31d4b24b3dce3c9a68616c87f492be4dd3a8de41f"
+      "bytes": 101261,
+      "sha256": "09ba8a842d3376bdb1e21105ad8eacc6c5116a010e9ae19d5f6fa5ac7d8b252e"
     },
     {
       "id": "f4",
