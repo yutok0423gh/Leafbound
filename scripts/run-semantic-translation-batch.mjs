@@ -10,6 +10,7 @@ import { readRepairCheckpoint } from "./repair-classical-alignment.mjs";
 import { createSemanticPlan, repairSemanticTranslation, SEMANTIC_PROMPT_VERSION, sourceIntegrityIssue } from "./semantic-classical-translations.mjs";
 import { loadGeneratorConfig, loadClassicalGlossary } from "./generate-classical-translation-drafts.mjs";
 import { validateClassicalAlignment } from "../src/classical-alignment.js";
+import { CLOUD_MODEL, CloudAssistStopped, CodexSemanticProvider, cloudGenerationParameters, repairWithCloudFallback } from "./codex-semantic-provider.mjs";
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const execute=promisify(execFile),sleep=(ms)=>new Promise(done=>setTimeout(done,ms));
@@ -24,12 +25,13 @@ for(const key of ["state-dir","progress-html","model-file","server-binary","mode
 const stateDir=resolve(options["state-dir"]),page=resolve(options["progress-html"]);
 const statePath=resolve(stateDir,"progress.json"),journalPath=resolve(stateDir,"journal.jsonl"),checkpoint=resolve(stateDir,"accepted.jsonl"),stopPath=resolve(stateDir,"STOP");
 const publicStatusPath=resolve(root,"data/classical-translations/semantic-status.json");
+const cloudOptionsPath=resolve(stateDir,"cloud-assist.json"),cloudFinishedPath=resolve(stateDir,"cloud-assist-finished.json");
 const repository=options.repository||"yutok0423gh/Leafbound",site=options.site||"https://yutok0423gh.github.io/Leafbound/";
 const expectedBranch=options.branch||"codex/semantic-alignment-all";
 const state={schemaVersion:1,pid:process.pid,status:"starting",startedAt:new Date().toISOString(),updatedAt:null,
   promptVersion:SEMANTIC_PROMPT_VERSION,total:0,processed:0,accepted:0,published:0,held:0,sourceHolds:0,
-  current:null,error:null,site,checkpoint,stopPath,publications:[]};
-let server=null,heartbeat=null,saveQueue=Promise.resolve();
+  current:null,error:null,site,checkpoint,stopPath,publications:[],activeModel:"Qwen3.5-9B-Alignment",cloudAccepted:0,cloudAssist:null};
+let server=null,heartbeat=null,saveQueue=Promise.resolve(),cloud=null,cloudConfig=null;
 const html=(value)=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 
 function save(){
@@ -41,11 +43,12 @@ function save(){
     await writeFile(page,`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="15"><title>Leafbound 全库核对进度</title>
 <style>body{max-width:950px;margin:45px auto;padding:0 22px;background:#f8f5ee;color:#283f33;font:17px/1.75 system-ui}h1{font-family:serif;font-weight:500}.cards{display:flex;flex-wrap:wrap;gap:14px}.card{background:white;border:1px solid #dddfd2;border-radius:10px;padding:16px 20px}.card b{display:block;font-size:30px}a{color:#306e54}small{color:#69746b}progress{width:100%;height:15px}.warning{color:#934235}</style>
 <small>LEAFBOUND · 全部 17,373 篇</small><h1 id="status">${html(labels[snapshot.status]||snapshot.status)}</h1>
-<p><a href="${html(site)}" target="_blank">打开正式网站</a> · 本机 Qwen3.5-9B · 按意思分组，允许多句合译</p>
+<p><a href="${html(site)}" target="_blank">打开正式网站</a> · ${snapshot.activeModel===CLOUD_MODEL?"GPT-5.6 Luna":"本机 Qwen3.5-9B"} · 按意思分组，允许多句合译</p>
 <div class="cards"><div class="card"><b>${snapshot.processed} / ${snapshot.total}</b>已处理</div><div class="card"><b>${snapshot.accepted}</b>通过语义检查</div><div class="card"><b>${snapshot.published}</b>已上线分组</div><div class="card"><b>${snapshot.held}</b>仍待核实</div></div>
 <p><progress max="${Math.max(snapshot.total,1)}" value="${snapshot.processed}"></progress></p>
 <p>${snapshot.current?`当前：${html(snapshot.current.title)} · ${html(snapshot.current.poet)}`:"已有人工译文保留原字句；疑似错配的机器稿重新翻译并复核。"}</p>
 <p>${snapshot.sourceHolds} 篇存在来源疑点；不把缺字或混进标题的正文交给模型猜补。通过模型核对仍需人工校订。</p>
+${snapshot.cloudAssist?`<p>GPT-5.6 Luna 已完成 ${snapshot.cloudAccepted} 篇。${snapshot.cloudAssist.quota?`周剩余额度最近读数：${snapshot.cloudAssist.quota.remainingPercent}%。`:""}保留 10% 周额度，另留 2% 缓冲，约剩 12% 时结束本轮云端协助并继续本地处理。${snapshot.cloudAssist.mode==="local"?`<br>已切回本地：${html(snapshot.cloudAssist.stopLabel||"本轮云端协助已结束")}。`:""}</p>`:""}
 ${snapshot.error?`<p class="warning">${html(snapshot.error)}</p>`:""}
 <p id="heartbeat"><small>最后更新：${html(new Date(snapshot.updatedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai",hour12:false}))}。页面每 15 秒刷新。</small></p>
 <p>任务由本机计划任务续跑，电脑关机时不会处理；下次登录后从检查点继续。请保持电脑接通电源。<br>停止入口：在任务目录创建 STOP 文件；再次启动前需移走这个文件。</p>
@@ -92,6 +95,36 @@ async function startModel(){
         LEAFBOUND_OPENAI_TIMEOUT:"240000",LEAFBOUND_OPENAI_MAX_TOKENS:"6144",LEAFBOUND_OPENAI_RETRY:"1",LEAFBOUND_OPENAI_TEMPERATURE:"0.1"});
     }catch{}await sleep(1000);
   }throw new Error("本机模型加载超时。");
+}
+
+async function stopCloud(error){
+  const reason=error.reason||"cloud-unavailable";
+  const labels={"weekly-reserve-reached":"已到额度保留线","weekly-window-changed":"本次授权的周额度窗口已结束",
+    "quota-unavailable":"暂时无法确认额度","quota-invalid-or-expired":"额度读数已失效",
+    "cloud-request-too-large":"长篇继续由本地模型处理"};
+  cloud?.close();cloud=null;state.activeModel="Qwen3.5-9B-Alignment";
+  state.cloudAssist={...state.cloudAssist,mode:"local",stopReason:reason,stopLabel:labels[reason]||"云端调用暂不可用",stoppedAt:new Date().toISOString()};
+  await writeFile(cloudFinishedPath+".next",JSON.stringify(state.cloudAssist,null,2)+"\n");
+  await rename(cloudFinishedPath+".next",cloudFinishedPath);await save();
+}
+
+async function startCloud(){
+  if(!existsSync(cloudOptionsPath))return;
+  const settings=JSON.parse(await readFile(cloudOptionsPath,"utf8"));if(!settings.enabled)return;
+  state.cloudAssist={requestId:settings.requestId,mode:"starting",model:CLOUD_MODEL,quota:null};
+  if(existsSync(cloudFinishedPath)){
+    const finished=JSON.parse(await readFile(cloudFinishedPath,"utf8"));
+    if(finished.requestId===settings.requestId){state.cloudAssist=finished;return;}
+  }
+  try{
+    if(settings.model!==CLOUD_MODEL||!settings.requestId||!settings.codexBinary
+      ||settings.reservePercent!==10||settings.safetyMarginPercent!==2)throw new CloudAssistStopped("invalid-cloud-settings");
+    cloudConfig={model:CLOUD_MODEL,modelRevision:"codex:gpt-5.6-luna:unversioned-alias",promptVersion:SEMANTIC_PROMPT_VERSION,
+      temperature:0,maxTokens:6144,generationParameters:cloudGenerationParameters()};
+    cloud=new CodexSemanticProvider({binary:settings.codexBinary,cwd:root,policy:settings,
+      onQuota:async quota=>{state.cloudAssist.quota=quota;await save();}});
+    await cloud.start();state.activeModel=CLOUD_MODEL;state.cloudAssist.mode="cloud";await save();
+  }catch(error){await stopCloud(error);}
 }
 async function publish(results,publicStatus){
   if(!options.publish)return;
@@ -154,6 +187,8 @@ async function run(){
   if(options.publish)await syncPublishedBranch();
   let publicStatus=existsSync(publicStatusPath)?JSON.parse(await readFile(publicStatusPath,"utf8")):{schemaVersion:1,holds:{},editorial:{}};
   const plan=createSemanticPlan(await readBuiltRecords());state.total=plan.length;
+  state.cloudAccepted=plan.filter(entry=>entry.record?.model===CLOUD_MODEL&&entry.record?.alignment?.verification?.verdict==="pass").length
+    +Object.values(publicStatus.editorial).filter(value=>value.alignment?.verification?.model===CLOUD_MODEL).length;
   const accepted=await readRepairCheckpoint(checkpoint),events=await readRepairCheckpoint(journalPath);
   const latest=new Map(accepted.filter(result=>result.editorial
     ? result.alignment?.verification?.promptVersion===SEMANTIC_PROMPT_VERSION
@@ -164,7 +199,7 @@ async function run(){
     const id=entry.job.id,alignment=entry.editorial?publicStatus.editorial[id]?.alignment:entry.record?.alignment;
     if(validateClassicalAlignment(entry.job.lines,entry.paragraphs,alignment,{requireSemantic:true}).valid){state.processed++;state.accepted++;continue;}
     const result=latest.get(id);
-    if(result?.inputHash===entry.inputHash){pending.push(result);state.processed++;state.accepted++;continue;}
+    if(result?.inputHash===entry.inputHash){pending.push(result);state.processed++;state.accepted++;if(result.record?.model===CLOUD_MODEL||result.alignment?.verification?.model===CLOUD_MODEL)state.cloudAccepted++;continue;}
     const sourceIssue=sourceIntegrityIssue(entry.job),prior=held.get(id);
     if(sourceIssue||(prior&&prior.inputHash===entry.inputHash)){
       publicStatus.holds[id]=sourceIssue||prior.code;state.processed++;state.held++;if(sourceIssue)state.sourceHolds++;continue;
@@ -188,19 +223,22 @@ async function run(){
   if(pending.length){await publish(pending,publicStatus);pending.length=0;}
   const selected=requested?queue.filter(entry=>requested.includes(entry.job.id)):queue;
   let config=null,catalog=null;
-  if(selected.length){config=await startModel();catalog=await loadClassicalGlossary(config.glossaryPath);}
+  const getLocalConfig=async()=>{state.activeModel="Qwen3.5-9B-Alignment";await save();if(!config)config=await startModel();return config;};
+  if(selected.length){await startCloud();if(!cloud)await getLocalConfig();catalog=await loadClassicalGlossary();}
   state.status="running";await save();
   for(const entry of selected){
     if(existsSync(stopPath))break;
     state.current={id:entry.job.id,title:entry.job.title,poet:entry.job.poet,startedAt:new Date().toISOString()};await save();
     try{
-      const result=await repairSemanticTranslation(entry,config,catalog);
+      const result=await repairWithCloudFallback(entry,{cloud,cloudConfig,getLocalConfig,catalog,repair:repairSemanticTranslation,onCloudStop:stopCloud});
       await appendFile(checkpoint,JSON.stringify(result)+"\n");pending.push(result);state.accepted++;
+      if(result.record?.model===CLOUD_MODEL||result.alignment?.verification?.model===CLOUD_MODEL)state.cloudAccepted++;
       await appendFile(journalPath,JSON.stringify({id:result.id,inputHash:entry.inputHash,status:"accepted",promptVersion:SEMANTIC_PROMPT_VERSION,at:new Date().toISOString()})+"\n");
+      if(cloud?.stopAfterResult)await stopCloud(cloud.stopAfterResult);
     }catch(error){
       // Connectivity and runtime failures must retry after restart; never mark
       // thousands of unprocessed works as semantic failures after the GPU dies.
-      if(/Local model|request failed|timed out/.test(error.message)||server?.exitCode!==null)throw error;
+      if(/Local model|request failed|timed out/.test(error.message)||(server&&server.exitCode!==null))throw error;
       if(error.candidate)await appendFile(resolve(stateDir,"rejected.jsonl"),JSON.stringify(error.candidate)+"\n");
       const code=error.message.split(":")[0];publicStatus.holds[entry.job.id]=code;state.held++;
       await appendFile(journalPath,JSON.stringify({id:entry.job.id,inputHash:entry.inputHash,status:"held",code,message:error.message,promptVersion:SEMANTIC_PROMPT_VERSION,at:new Date().toISOString()})+"\n");
@@ -214,4 +252,4 @@ async function run(){
 }
 try{await run();}
 catch(error){state.status="failed";state.error=error.message;await save();console.error(error.message);process.exitCode=1;}
-finally{if(heartbeat)clearInterval(heartbeat);if(server&&server.exitCode===null)server.kill();await saveQueue;}
+finally{if(heartbeat)clearInterval(heartbeat);cloud?.close();if(server&&server.exitCode===null)server.kill();await saveQueue;}

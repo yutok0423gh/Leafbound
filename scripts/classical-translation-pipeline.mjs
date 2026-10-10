@@ -322,6 +322,10 @@ function normalizedStringArray(values = []) {
 
 function normalizedGenerationParameters(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  if (value.transport === "codex-chatgpt") return Object.freeze({
+    transport: value.transport, reasoningEffort: value.reasoningEffort, serviceTier: value.serviceTier,
+    outputFormat: value.outputFormat, disableThinking: value.disableThinking
+  });
   return Object.freeze({
     temperature: Number(value.temperature),
     maxTokens: Number(value.maxTokens),
@@ -428,10 +432,16 @@ function validateOptionalProvenance(record) {
   }
   if (record.generationParameters !== undefined) {
     const parameters = record.generationParameters;
+    const codexParameters = parameters?.transport === "codex-chatgpt";
+    if (codexParameters && (record.model !== "gpt-5.6-luna" || parameters.reasoningEffort !== "medium"
+      || parameters.serviceTier !== "default" || parameters.outputFormat !== "json-schema" || parameters.disableThinking !== false
+      || parameters.temperature !== undefined || parameters.maxTokens !== undefined)) {
+      return "Codex plan metadata must identify the actual model and reasoning settings without unsupported sampling parameters.";
+    }
     if (!parameters || typeof parameters !== "object" || Array.isArray(parameters)
-      || !Number.isFinite(parameters.temperature)
+      || (!codexParameters && (!Number.isFinite(parameters.temperature)
       || !Number.isSafeInteger(parameters.maxTokens)
-      || typeof parameters.disableThinking !== "boolean") {
+      || typeof parameters.disableThinking !== "boolean"))) {
       return "generationParameters must contain temperature, integer maxTokens, and boolean disableThinking.";
     }
   }

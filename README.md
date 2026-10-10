@@ -89,6 +89,10 @@ npm run classical-translations:semantic -- --publish --state-dir D:/Project/pers
 
 Windows 的 `scripts/install-semantic-task.ps1` 可用上述路徑註冊 `Leafbound-Classical-Semantic` 計劃任務：登入及每 10 分鐘檢查續跑，單實例、接通電源時執行，已接受稿件不重做。工作狀態在 `progress.json`，候選在 `accepted.jsonl`，失敗原因在 `journal.jsonl`；建立任務目錄中的 `STOP` 文件會在本篇結束後停止，移走後可續跑。進度頁每 15 秒刷新，超過三分鐘無心跳會明確標示中斷；已處理、模型通過、公開上線和待核實數量分開顯示。仍有疑義時，結束狀態是 `needs_review`，不宣稱全部譯文已修好。
 
+經擁有者授權後，可在任務目錄加入 `cloud-assist.json`，暫時使用已登入 Codex 的 ChatGPT 週額度呼叫 `gpt-5.6-luna`。設定包含 `enabled: true`、唯一 `requestId`、`model: "gpt-5.6-luna"`、本機 `codexBinary` 絕對路徑、`reservePercent: 10`、`safetyMarginPercent: 2`，以及由 `account/rateLimits/read` 取得的本次七天窗口 `weeklyResetAt`。每次請求前及推理期間檢查實際週額度，剩餘不高於 12% 時停止雲端，為希望保留的 10% 留出讀數延遲緩衝；這是本機保護措施，不能限制同帳戶其他對話的用量。沒有可靠額度、帳戶不是 ChatGPT 登入、指定模型不可用、週窗口變更或雲端中斷時，均回到本機模型；不自動購買額度或兌換額度重設。
+
+雲端採標準速度、medium 推理，每篇仍須通過原文覆蓋與独立語義復核；來源疑點及受保護譯稿規則不變。未完成的雲端稿在切換時丟棄並由本機重新處理該篇，避免混淆模型來源。`cloud-assist-finished.json` 保存本輪停止原因，重新登入、計劃任務續跑或週額度重設不會自行重新啟用同一輪雲端授權。需再次使用時須獲得新的擁有者授權並更新 `requestId` 及週窗口。進度頁顯示目前模型、雲端通過篇數與最近週額度讀數；產物記錄實際的推理設定，不虛構 Codex 訂閱介面不提供的 temperature 或 token 上限。介面依 [OpenAI App Server 文件](https://learn.chatgpt.com/docs/app-server) 實作。
+
 以下 `classical-translations:alignment` 命令保留作舊 v1 資料檢查與兼容；它產生的逐句映射不再直接用於分組閱讀：
 
 `classical-translations:alignment` 只連接本機端點，使用 llama.cpp 的 JSON schema 約束。每個原文編號必須完整且唯一；長篇按標點分塊，保留前後文，最後按原編號合併。第一輪獨立依據原文翻譯，避免舊錯譯誤導模型；第二輪核對詞義、漏譯和對應關係。缺號、重號、截斷、空話、模型不確定或拒絕的輸出不會作為修復稿發布。短小且疑似殘缺的來源先留待核實。

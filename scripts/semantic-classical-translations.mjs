@@ -323,7 +323,7 @@ export async function repairSemanticTranslation(entry, config, catalog, { reques
     status:entry.preserveText ? entry.record.status : "pending-review",warnings:[],sourceLabel:"Leafbound 語義分組核對稿",
     pipelineVersion:4,generationMode:"alignment-repair",model:config.model,modelRevision:config.modelRevision,
     promptVersion:SEMANTIC_PROMPT_VERSION,promptSha256:digest(prompts),critiquePromptSha256,generatedAt:completedAt,
-    generationParameters:{temperature:config.temperature,maxTokens:config.maxTokens,disableThinking:false},
+    generationParameters:config.generationParameters||{temperature:config.temperature,maxTokens:config.maxTokens,disableThinking:false},
     glossary:{source:glossary.source,version:glossary.version,sourceSha256:glossary.sourceSha256,
       upstreamSourceSha256:glossary.upstreamSourceSha256,selectionSha256:glossary.selectionSha256,terms:glossary.terms},
     critique:{verdict:rewritten?"revised":"pass",issues,model:config.model,modelRevision:config.modelRevision,promptSha256:critiquePromptSha256,completedAt}};
