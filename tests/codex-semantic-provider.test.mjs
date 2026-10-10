@@ -30,6 +30,25 @@ test("unknown, expired, reset, blocked, or ambiguous quota cannot authorize infe
   assert.throws(() => checkWeeklyQuota(response(), { ...policy, reservePercent: 0 }, now), /Invalid/);
 });
 
+test("a transient window mismatch is rechecked without extending the authorized week", async () => {
+  const resetAt = Math.floor(Date.now() / 1000) + 86400;
+  const provider = new CodexSemanticProvider({ policy: { ...policy, weeklyResetAt: resetAt }, cwd: process.cwd() });
+  let reads = 0;
+  provider.rpc = async method => {
+    assert.equal(method, "account/rateLimits/read");
+    const reading = response(); reading.rateLimitsByLimitId.codex.primary.resetsAt = ++reads === 1 ? resetAt + 1 : resetAt;
+    return reading;
+  };
+  assert.equal((await provider.checkQuota()).allowed, true); assert.equal(reads, 2);
+  reads = 0;
+  provider.rpc = async () => { reads++; const reading = response(); reading.rateLimitsByLimitId.codex.primary.resetsAt = resetAt + 604800; return reading; };
+  await assert.rejects(provider.checkQuota(), error => error.reason === "weekly-window-changed" && error.details.observedResetAt === resetAt + 604800);
+  assert.equal(reads, 2);
+  reads = 0;
+  provider.rpc = async () => { reads++; const reading = response(88); reading.rateLimitsByLimitId.codex.primary.resetsAt = resetAt; return reading; };
+  await assert.rejects(provider.checkQuota(), /weekly-reserve-reached/); assert.equal(reads, 1);
+});
+
 test("quota stop before inference does not start a model turn", async () => {
   const provider = new CodexSemanticProvider({ policy, cwd: process.cwd() });
   let rpcCalls = 0;
@@ -74,6 +93,28 @@ test("completed JSON response uses the requested model and standard speed withou
   assert.equal(output.choices[0].message.content, '{"ok":true}');
   assert.equal(turnParams.model, CLOUD_MODEL); assert.equal(turnParams.serviceTierForTurn, "default");
   assert.equal(turnParams.effort, "medium"); assert.equal(turnParams.max_output_tokens, undefined);
+});
+
+test("Fast is explicit for both the session and every turn, and its provenance is retained", async () => {
+  const provider = new CodexSemanticProvider({ policy: { ...policy, serviceTier: "priority" }, cwd: process.cwd() });
+  provider.checkQuota = async () => {};
+  const calls = [];
+  provider.rpc = async (method, params) => {
+    calls.push([method, params]);
+    if (method === "thread/start") return { thread: { id: "fast-thread" }, model: CLOUD_MODEL, modelProvider: "openai", serviceTier: "priority" };
+    if (method === "turn/start") {
+      queueMicrotask(() => provider.receive({ method: "turn/completed", params: { threadId: "fast-thread", turn: {
+        status: "completed", items: [{ type: "agentMessage", text: '{"ok":true}', phase: "final_answer" }],
+      } } }));
+      return { turn: { id: "fast-turn" } };
+    }
+    return {};
+  };
+  await provider.request({ model: CLOUD_MODEL, messages: [], response_format: { schema: { type: "object" } } });
+  assert.equal(calls.find(([method]) => method === "thread/start")[1].serviceTier, "priority");
+  assert.equal(calls.find(([method]) => method === "turn/start")[1].serviceTierForTurn, "priority");
+  assert.equal(cloudGenerationParameters("priority").serviceTier, "priority");
+  assert.throws(() => cloudGenerationParameters("ultrafast"), /Unsupported/);
 });
 
 test("mid-work quota stop discards the partial cloud work and restarts the same entry locally", async () => {
@@ -126,6 +167,8 @@ test("cloud translation retains independent review and truthful generation prove
   assert.equal(JSON.stringify(inputs[1]).includes('"meaning"'), false);
   assert.equal(result.record.generationParameters.maxTokens, undefined);
   assert.equal(validateDraftRecords([result.record], { jobs: [job] }).valid, true);
+  const fast = structuredClone(result.record); fast.generationParameters = cloudGenerationParameters("priority");
+  assert.equal(validateDraftRecords([fast], { jobs: [job] }).valid, true);
   const dishonest = structuredClone(result.record); dishonest.generationParameters.maxTokens = 6144;
   assert.equal(validateDraftRecords([dishonest], { jobs: [job] }).valid, false);
 });

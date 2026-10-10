@@ -434,7 +434,7 @@ function validateOptionalProvenance(record) {
     const parameters = record.generationParameters;
     const codexParameters = parameters?.transport === "codex-chatgpt";
     if (codexParameters && (record.model !== "gpt-5.6-luna" || parameters.reasoningEffort !== "medium"
-      || parameters.serviceTier !== "default" || parameters.outputFormat !== "json-schema" || parameters.disableThinking !== false
+      || !["default", "priority"].includes(parameters.serviceTier) || parameters.outputFormat !== "json-schema" || parameters.disableThinking !== false
       || parameters.temperature !== undefined || parameters.maxTokens !== undefined)) {
       return "Codex plan metadata must identify the actual model and reasoning settings without unsupported sampling parameters.";
     }

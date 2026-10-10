@@ -91,7 +91,9 @@ Windows 的 `scripts/install-semantic-task.ps1` 可用上述路徑註冊 `Leafbo
 
 經擁有者授權後，可在任務目錄加入 `cloud-assist.json`，暫時使用已登入 Codex 的 ChatGPT 週額度呼叫 `gpt-5.6-luna`。設定包含 `enabled: true`、唯一 `requestId`、`model: "gpt-5.6-luna"`、本機 `codexBinary` 絕對路徑、`reservePercent: 10`、`safetyMarginPercent: 2`，以及由 `account/rateLimits/read` 取得的本次七天窗口 `weeklyResetAt`。每次請求前及推理期間檢查實際週額度，剩餘不高於 12% 時停止雲端，為希望保留的 10% 留出讀數延遲緩衝；這是本機保護措施，不能限制同帳戶其他對話的用量。沒有可靠額度、帳戶不是 ChatGPT 登入、指定模型不可用、週窗口變更或雲端中斷時，均回到本機模型；不自動購買額度或兌換額度重設。
 
-雲端採標準速度、medium 推理，每篇仍須通過原文覆蓋與独立語義復核；來源疑點及受保護譯稿規則不變。未完成的雲端稿在切換時丟棄並由本機重新處理該篇，避免混淆模型來源。`cloud-assist-finished.json` 保存本輪停止原因，重新登入、計劃任務續跑或週額度重設不會自行重新啟用同一輪雲端授權。需再次使用時須獲得新的擁有者授權並更新 `requestId` 及週窗口。進度頁顯示目前模型、雲端通過篇數與最近週額度讀數；產物記錄實際的推理設定，不虛構 Codex 訂閱介面不提供的 temperature 或 token 上限。介面依 [OpenAI App Server 文件](https://learn.chatgpt.com/docs/app-server) 實作。
+雲端預設採標準速度；擁有者要求加速時，可在 `cloud-assist.json` 設 `serviceTier: "priority"`，使用目前模型列表中的 Fast 檔位。啟動時確認該模型提供此檔位，並在每次翻譯及復核請求明確指定。Fast 會更快消耗訂閱額度，週額度保留線不變；進度頁及產物均記錄實際速度。medium 推理及每篇原文覆蓋、獨立語義復核維持不變；來源疑點及受保護譯稿規則亦不變。
+
+未完成的雲端稿在切換時丟棄並由本機重新處理該篇，避免混淆模型來源。週窗口讀數不一致時，在發起下一次推理前重新讀取一次；只有與本輪授權一致且仍高於保留線才繼續，不能藉此延長授權期限。`cloud-assist-finished.json` 保存本輪停止原因，重新登入、計劃任務續跑或週額度重設不會自行重新啟用同一輪雲端授權。需再次使用時須獲得新的擁有者授權並更新 `requestId` 及週窗口。進度頁顯示目前模型、雲端累計通過篇數與最近週額度讀數；產物記錄實際的推理設定，不虛構 Codex 訂閱介面不提供的 temperature 或 token 上限。介面依 [OpenAI App Server 文件](https://learn.chatgpt.com/docs/app-server) 實作。
 
 以下 `classical-translations:alignment` 命令保留作舊 v1 資料檢查與兼容；它產生的逐句映射不再直接用於分組閱讀：
 

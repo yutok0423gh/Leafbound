@@ -3,7 +3,7 @@ import { createInterface } from "node:readline";
 
 export const CLOUD_MODEL = "gpt-5.6-luna";
 export class CloudAssistStopped extends Error {
-  constructor(reason) { super(`Cloud model request failed: ${reason}`); this.reason = reason; }
+  constructor(reason, details) { super(`Cloud model request failed: ${reason}`); this.reason = reason; this.details = details; }
 }
 
 // Use the actual seven-day window, which is not always the secondary window.
@@ -25,17 +25,18 @@ export function checkWeeklyQuota(response, policy, now = Date.now()) {
     || !Number.isSafeInteger(window.resetsAt) || window.resetsAt * 1000 <= now) {
     throw new CloudAssistStopped("quota-invalid-or-expired");
   }
-  if (!Number.isSafeInteger(weeklyResetAt) || window.resetsAt !== weeklyResetAt) {
-    throw new CloudAssistStopped("weekly-window-changed");
+  if (!Number.isSafeInteger(weeklyResetAt) || weeklyResetAt * 1000 <= now || window.resetsAt !== weeklyResetAt) {
+    throw new CloudAssistStopped("weekly-window-changed", { expectedResetAt: weeklyResetAt, observedResetAt: window.resetsAt });
   }
   const quota = { remainingPercent: 100 - window.usedPercent, resetsAt: window.resetsAt,
     checkedAt: new Date(now).toISOString(), reservePercent, switchAtPercent: reservePercent + safetyMarginPercent };
   return { ...quota, allowed: quota.remainingPercent > quota.switchAtPercent };
 }
 
-export function cloudGenerationParameters() {
+export function cloudGenerationParameters(serviceTier = "default") {
+  if (!["default", "priority"].includes(serviceTier)) throw new Error("Unsupported translation speed.");
   // Codex plan inference does not expose temperature or max_output_tokens.
-  return { transport: "codex-chatgpt", reasoningEffort: "medium", serviceTier: "default",
+  return { transport: "codex-chatgpt", reasoningEffort: "medium", serviceTier,
     outputFormat: "json-schema", disableThinking: false };
 }
 
@@ -55,6 +56,7 @@ export async function repairWithCloudFallback(entry, { cloud, cloudConfig, getLo
 export class CodexSemanticProvider {
   constructor({ binary, cwd, policy, onQuota = async () => {}, spawnImpl = spawn }) {
     this.binary = binary; this.cwd = cwd; this.policy = policy; this.onQuota = onQuota;
+    this.serviceTier = cloudGenerationParameters(policy.serviceTier).serviceTier;
     this.spawnImpl = spawnImpl; this.pending = new Map(); this.sequence = 0; this.active = null;
     this.closed = false; this.quotaChecking = null;
   }
@@ -65,7 +67,7 @@ export class CodexSemanticProvider {
       "features.multi_agent": false, "features.shell_tool": false, "features.unified_exec": false,
       "features.code_mode_host": false, "features.browser_use": false, "features.computer_use": false,
       "mcp_servers.node_repl.enabled": false, "mcp_servers.cua_repl.enabled": false,
-      web_search: "disabled", project_doc_max_bytes: 0, service_tier: "default",
+      web_search: "disabled", project_doc_max_bytes: 0, service_tier: this.serviceTier,
     };
     const args = ["app-server", "--stdio", ...Object.entries(overrides).flatMap(([key, value]) => ["-c", `${key}=${JSON.stringify(value)}`])];
     this.child = this.spawnImpl(this.binary, args, { cwd: this.cwd, windowsHide: true, stdio: ["pipe", "pipe", "pipe"] });
@@ -85,7 +87,11 @@ export class CodexSemanticProvider {
     const account = await this.rpc("account/read", { refreshToken: false });
     if (account.account?.type !== "chatgpt") throw new CloudAssistStopped("chatgpt-plan-required");
     const models = await this.rpc("model/list", { limit: 100 });
-    if (!models.data?.some(model => model.model === CLOUD_MODEL)) throw new CloudAssistStopped("requested-model-unavailable");
+    const model = models.data?.find(model => model.model === CLOUD_MODEL);
+    if (!model) throw new CloudAssistStopped("requested-model-unavailable");
+    if (this.serviceTier !== "default" && !model.serviceTiers?.some(tier => tier.id === this.serviceTier)) {
+      throw new CloudAssistStopped("requested-speed-unavailable");
+    }
     await this.checkQuota();
     return this;
   }
@@ -122,9 +128,11 @@ export class CodexSemanticProvider {
     const { method, params = {} } = message;
     if (method === "account/rateLimits/updated" && params.rateLimits?.limitId === "codex") {
       const weekly = [params.rateLimits.primary, params.rateLimits.secondary].find(window => window?.windowDurationMins === 10080);
-      if (weekly && (weekly.resetsAt !== this.policy.weeklyResetAt
-        || 100 - weekly.usedPercent <= this.policy.reservePercent + this.policy.safetyMarginPercent)) {
+      if (weekly && 100 - weekly.usedPercent <= this.policy.reservePercent + this.policy.safetyMarginPercent) {
         this.active?.reject(new CloudAssistStopped("weekly-reserve-reached"));
+      } else if (weekly && weekly.resetsAt !== this.policy.weeklyResetAt && this.active) {
+        const active = this.active;
+        this.checkQuota().catch(error => active.reject(error));
       }
     }
     const active = this.active;
@@ -150,7 +158,16 @@ export class CodexSemanticProvider {
   async checkQuota() {
     if (this.quotaChecking) return this.quotaChecking;
     this.quotaChecking = (async () => {
-      const quota = checkWeeklyQuota(await this.rpc("account/rateLimits/read"), this.policy);
+      let quota;
+      // A single inconsistent window reading previously stopped this run even
+      // though fresh account reads still showed its original authorized week.
+      // Confirm once, without starting inference or extending that deadline.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try { quota = checkWeeklyQuota(await this.rpc("account/rateLimits/read"), this.policy); break; }
+        catch (error) {
+          if (error.reason !== "weekly-window-changed" || attempt === 1 || this.policy.weeklyResetAt * 1000 <= Date.now()) throw error;
+        }
+      }
       await this.onQuota(quota);
       if (!quota.allowed) throw new CloudAssistStopped("weekly-reserve-reached");
       return quota;
@@ -168,12 +185,13 @@ export class CodexSemanticProvider {
     try {
       const thread = await this.rpc("thread/start", { model: CLOUD_MODEL, modelProvider: "openai", allowProviderModelFallback: false,
         cwd: this.cwd, ephemeral: true, environments: [], selectedCapabilityRoots: [], dynamicTools: [],
-        approvalPolicy: "never", sandbox: "read-only", serviceTier: "default",
+        approvalPolicy: "never", sandbox: "read-only", serviceTier: this.serviceTier,
         baseInstructions: request.messages.filter(message => message.role === "system").map(message => message.content).join("\n"),
         developerInstructions: "只執行提供的翻譯或語義核對，直接輸出要求的 JSON。不要調用工具、讀取檔案、搜尋網頁或委派任務。",
       });
       threadId = thread.thread?.id;
       if (!threadId || thread.model !== CLOUD_MODEL || thread.modelProvider !== "openai") throw new CloudAssistStopped("model-mismatch");
+      if (thread.serviceTier !== undefined && thread.serviceTier !== null && thread.serviceTier !== this.serviceTier) throw new CloudAssistStopped("speed-mismatch");
       let resolveTurn, rejectTurn;
       const result = new Promise((resolve, reject) => { resolveTurn = resolve; rejectTurn = reject; });
       result.catch(() => {});
@@ -182,7 +200,7 @@ export class CodexSemanticProvider {
       poll = setInterval(() => this.checkQuota().catch(rejectTurn), 15000);
       // Recheck after preparing the session; no inference may begin on stale data.
       await this.checkQuota();
-      const turn = await this.rpc("turn/start", { threadId, model: CLOUD_MODEL, effort: "medium", serviceTierForTurn: "default",
+      const turn = await this.rpc("turn/start", { threadId, model: CLOUD_MODEL, effort: "medium", serviceTierForTurn: this.serviceTier,
         environments: [], input: request.messages.filter(message => message.role !== "system").map(message => ({ type: "text", text: message.content })),
         outputSchema: request.response_format.schema });
       this.active.turnId = turn.turn?.id;
