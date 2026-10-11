@@ -11,7 +11,37 @@ export class CloudAssistStopped extends Error {
 // it never authorizes inference from a cached quota reading.
 const recoverableCloudStops = new Set([
   "cloud-turn-timeout", "codex-request-timeout", "codex-exited", "codex-disconnected",
+  "cloud-stream-disconnected", "cloud-connection-failed", "cloud-service-unavailable",
 ]);
+
+function cloudTurnFailure(error) {
+  const info = error?.codexErrorInfo;
+  if (["usageLimitExceeded", "rateLimitExceeded", "sessionBudgetExceeded"].includes(info)) {
+    return new CloudAssistStopped("quota-unavailable", { codexErrorInfo: info });
+  }
+  if (info === "unauthorized") return new CloudAssistStopped("cloud-auth-failed", { codexErrorInfo: info });
+  if (["serverOverloaded", "internalServerError"].includes(info)) {
+    return new CloudAssistStopped("cloud-service-unavailable", { codexErrorInfo: info });
+  }
+  if (info && typeof info === "object" && Object.keys(info).length === 1) {
+    const kind = Object.keys(info)[0];
+    if (["httpConnectionFailed", "responseStreamConnectionFailed", "responseStreamDisconnected", "responseTooManyFailedAttempts"].includes(kind)) {
+      if (!info[kind] || typeof info[kind] !== "object" || Array.isArray(info[kind])) return new CloudAssistStopped("cloud-turn-incomplete");
+      const status = info[kind]?.httpStatusCode;
+      // Persist only the protocol code/status, never free-form account or
+      // server diagnostics. Unknown failures are not retry permissions.
+      const details = { codexErrorInfo: kind, httpStatusCode: Number.isInteger(status) ? status : null };
+      if ([401, 403].includes(status)) return new CloudAssistStopped("cloud-auth-failed", details);
+      if ([402, 429].includes(status)) return new CloudAssistStopped("quota-unavailable", details);
+      if ([408, 500, 502, 503, 504].includes(status)
+        || (status == null && kind !== "responseTooManyFailedAttempts")) {
+        return new CloudAssistStopped(kind === "responseStreamDisconnected" ? "cloud-stream-disconnected" : "cloud-connection-failed", details);
+      }
+    }
+  }
+  return new CloudAssistStopped("cloud-turn-incomplete");
+}
+
 export function cloudRecoveryAt(finished, policy, now = Date.now()) {
   if (!policy.enabled || !policy.requestId || finished?.requestId !== policy.requestId
     || !recoverableCloudStops.has(finished.stopReason)
@@ -121,6 +151,7 @@ export class CodexSemanticProvider {
   }
 
   rpc(method, params, timeout = 30000) {
+    if (method === "turn/start" && this.stopAfterResult) return Promise.reject(this.stopAfterResult);
     const id = ++this.sequence;
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => { this.pending.delete(id); reject(new CloudAssistStopped("codex-request-timeout")); }, timeout);
@@ -141,40 +172,42 @@ export class CodexSemanticProvider {
     if (message.id !== undefined && message.method) {
       // Translation never needs tools, account resets, or permission prompts.
       this.send({ id: message.id, error: { code: -32601, message: "Tools are disabled for translation." } });
-      this.active?.reject(new CloudAssistStopped("unexpected-tool-request"));
+      this.halt(new CloudAssistStopped("unexpected-tool-request"));
       return;
     }
     const { method, params = {} } = message;
     if (method === "account/rateLimits/updated" && params.rateLimits?.limitId === "codex") {
       const weekly = [params.rateLimits.primary, params.rateLimits.secondary].find(window => window?.windowDurationMins === 10080);
       if (weekly && 100 - weekly.usedPercent <= this.policy.reservePercent + this.policy.safetyMarginPercent) {
-        this.active?.reject(new CloudAssistStopped("weekly-reserve-reached"));
-      } else if (weekly && weekly.resetsAt !== this.policy.weeklyResetAt && this.active) {
-        const active = this.active;
-        this.checkQuota().catch(error => active.reject(error));
+        this.halt(new CloudAssistStopped("weekly-reserve-reached"));
+      } else if (weekly && weekly.resetsAt !== this.policy.weeklyResetAt) {
+        this.checkQuota().catch(error => this.halt(error));
       }
     }
     const active = this.active;
     if (!active || params.threadId !== active.threadId) return;
     if (method === "turn/started") active.turnId = params.turn?.id;
+    if (method === "error" && params.willRetry === false) active.turnError = params.error;
     if (method === "item/started" && !["userMessage", "reasoning", "agentMessage"].includes(params.item?.type)) {
-      active.reject(new CloudAssistStopped("unexpected-tool-use"));
+      this.halt(new CloudAssistStopped("unexpected-tool-use"));
     }
     if (method === "item/completed" && params.item?.type === "agentMessage" && params.item.phase !== "commentary") {
       active.text = params.item.text;
     }
     if (method === "turn/completed") {
-      if (params.turn?.status !== "completed") active.reject(new CloudAssistStopped("cloud-turn-incomplete"));
+      if (params.turn?.status !== "completed") this.halt(params.turn?.status === "failed"
+        ? cloudTurnFailure(params.turn.error || active.turnError) : new CloudAssistStopped("cloud-turn-incomplete"));
       else {
         const lastMessage = params.turn.items?.filter(item => item.type === "agentMessage" && item.phase !== "commentary").at(-1);
         const text = lastMessage?.text || active.text;
-        if (!text || text.length > 60000) active.reject(new CloudAssistStopped("cloud-output-invalid"));
+        if (!text || text.length > 60000) this.halt(new CloudAssistStopped("cloud-output-invalid"));
         else active.resolve(text);
       }
     }
   }
 
   async checkQuota() {
+    if (this.stopAfterResult) throw this.stopAfterResult;
     if (this.quotaChecking) return this.quotaChecking;
     this.quotaChecking = (async () => {
       let quota;
@@ -187,10 +220,11 @@ export class CodexSemanticProvider {
           if (error.reason !== "weekly-window-changed" || attempt === 1 || this.policy.weeklyResetAt * 1000 <= Date.now()) throw error;
         }
       }
+      if (!quota.allowed) this.halt(new CloudAssistStopped("weekly-reserve-reached"));
       await this.onQuota(quota);
-      if (!quota.allowed) throw new CloudAssistStopped("weekly-reserve-reached");
+      if (this.stopAfterResult) throw this.stopAfterResult;
       return quota;
-    })();
+    })().catch(error => { throw this.halt(error); });
     try { return await this.quotaChecking; } finally { this.quotaChecking = null; }
   }
 
@@ -200,6 +234,7 @@ export class CodexSemanticProvider {
     if (request.model !== CLOUD_MODEL) throw new CloudAssistStopped("model-mismatch");
     if (JSON.stringify(request.messages).length > 32000) throw new CloudAssistStopped("cloud-request-too-large");
     await this.checkQuota();
+    if (this.stopAfterResult) throw this.stopAfterResult;
     let threadId, timer, poll;
     try {
       const thread = await this.rpc("thread/start", { model: CLOUD_MODEL, modelProvider: "openai", allowProviderModelFallback: false,
@@ -215,30 +250,42 @@ export class CodexSemanticProvider {
       const result = new Promise((resolve, reject) => { resolveTurn = resolve; rejectTurn = reject; });
       result.catch(() => {});
       this.active = { threadId, turnId: null, text: "", resolve: resolveTurn, reject: rejectTurn };
-      timer = setTimeout(() => rejectTurn(new CloudAssistStopped("cloud-turn-timeout")), 180000);
-      poll = setInterval(() => this.checkQuota().catch(rejectTurn), 15000);
+      timer = setTimeout(() => this.halt(new CloudAssistStopped("cloud-turn-timeout")), 180000);
+      poll = setInterval(() => this.checkQuota().catch(error => this.halt(error)), 15000);
       // Recheck after preparing the session; no inference may begin on stale data.
       await this.checkQuota();
+      if (this.stopAfterResult) throw this.stopAfterResult;
       const turn = await this.rpc("turn/start", { threadId, model: CLOUD_MODEL, effort: "medium", serviceTierForTurn: this.serviceTier,
         environments: [], input: request.messages.filter(message => message.role !== "system").map(message => ({ type: "text", text: message.content })),
         outputSchema: request.response_format.schema });
       this.active.turnId = turn.turn?.id;
       const content = await result;
       // Refresh for the next request; a fully finished result can still be kept.
-      try { await this.checkQuota(); } catch (error) { this.stopAfterResult = error; }
+      try { await this.checkQuota(); } catch (error) { this.halt(error); }
       return { choices: [{ finish_reason: "stop", message: { content } }] };
     } catch (error) {
+      this.halt(error);
       if (this.active?.turnId) await this.rpc("turn/interrupt", { threadId, turnId: this.active.turnId }, 5000).catch(() => {});
-      throw error instanceof CloudAssistStopped ? error : new CloudAssistStopped("cloud-request-error");
+      throw this.stopAfterResult;
     } finally {
       clearTimeout(timer); clearInterval(poll); this.active = null;
       if (threadId) await this.rpc("thread/unsubscribe", { threadId }, 5000).catch(() => {});
     }
   }
 
+  halt(error) {
+    const stopped = error instanceof CloudAssistStopped ? error : new CloudAssistStopped("cloud-request-error");
+    // Latch even when no turn is active or its result has already resolved.
+    // A later connection error must never turn a quota/auth stop into a retry.
+    if (!this.stopAfterResult || (recoverableCloudStops.has(this.stopAfterResult.reason)
+      && !recoverableCloudStops.has(stopped.reason))) this.stopAfterResult = stopped;
+    this.active?.reject(this.stopAfterResult);
+    return this.stopAfterResult;
+  }
+
   fail(error) {
-    this.active?.reject(error);
-    for (const pending of this.pending.values()) { clearTimeout(pending.timer); pending.reject(error); }
+    const stopped = this.halt(error);
+    for (const pending of this.pending.values()) { clearTimeout(pending.timer); pending.reject(stopped); }
     this.pending.clear();
   }
 

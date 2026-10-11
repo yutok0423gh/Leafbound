@@ -71,8 +71,10 @@ test("a transient window mismatch is rechecked without extending the authorized 
   await assert.rejects(provider.checkQuota(), error => error.reason === "weekly-window-changed" && error.details.observedResetAt === resetAt + 604800);
   assert.equal(reads, 2);
   reads = 0;
-  provider.rpc = async () => { reads++; const reading = response(88); reading.rateLimitsByLimitId.codex.primary.resetsAt = resetAt; return reading; };
-  await assert.rejects(provider.checkQuota(), /weekly-reserve-reached/); assert.equal(reads, 1);
+  await assert.rejects(provider.checkQuota(), /weekly-window-changed/); assert.equal(reads, 0);
+  const reserveProvider = new CodexSemanticProvider({ policy: { ...policy, weeklyResetAt: resetAt }, cwd: process.cwd() });
+  reserveProvider.rpc = async () => { reads++; const reading = response(88); reading.rateLimitsByLimitId.codex.primary.resetsAt = resetAt; return reading; };
+  await assert.rejects(reserveProvider.checkQuota(), /weekly-reserve-reached/); assert.equal(reads, 1);
 });
 
 test("quota stop before inference does not start a model turn", async () => {

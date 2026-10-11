@@ -106,6 +106,8 @@ async function stopCloud(error){
     "quota-unavailable":"暂时无法确认额度","quota-invalid-or-expired":"额度读数已失效",
     "cloud-turn-timeout":"云端响应超时","codex-request-timeout":"云端连接超时",
     "codex-exited":"云端连接进程退出","codex-disconnected":"云端连接断开",
+    "cloud-stream-disconnected":"云端响应流断开","cloud-connection-failed":"云端连接暂时失败",
+    "cloud-service-unavailable":"云端服务暂时不可用","cloud-auth-failed":"云端登录验证失败",
     "cloud-request-too-large":"长篇继续由本地模型处理"};
   cloud?.close();cloud=null;state.activeModel="Qwen3.5-9B-Alignment";
   state.cloudAssist={...state.cloudAssist,mode:"local",stopReason:reason,stopDetails:error.details,stopLabel:labels[reason]||"云端调用暂不可用",stoppedAt:new Date().toISOString(),
