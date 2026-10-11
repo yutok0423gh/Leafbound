@@ -10,7 +10,7 @@ import { readRepairCheckpoint } from "./repair-classical-alignment.mjs";
 import { createSemanticPlan, repairSemanticTranslation, SEMANTIC_PROMPT_VERSION, sourceIntegrityIssue } from "./semantic-classical-translations.mjs";
 import { loadGeneratorConfig, loadClassicalGlossary } from "./generate-classical-translation-drafts.mjs";
 import { validateClassicalAlignment } from "../src/classical-alignment.js";
-import { CLOUD_MODEL, CloudAssistStopped, CodexSemanticProvider, cloudGenerationParameters, repairWithCloudFallback } from "./codex-semantic-provider.mjs";
+import { CLOUD_MODEL, CloudAssistStopped, CodexSemanticProvider, cloudGenerationParameters, cloudRecoveryAt, repairWithCloudFallback } from "./codex-semantic-provider.mjs";
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const execute=promisify(execFile),sleep=(ms)=>new Promise(done=>setTimeout(done,ms));
@@ -31,10 +31,12 @@ const expectedBranch=options.branch||"codex/semantic-alignment-all";
 const state={schemaVersion:1,pid:process.pid,status:"starting",startedAt:new Date().toISOString(),updatedAt:null,
   promptVersion:SEMANTIC_PROMPT_VERSION,total:0,processed:0,accepted:0,published:0,held:0,sourceHolds:0,
   current:null,error:null,site,checkpoint,stopPath,publications:[],activeModel:"Qwen3.5-9B-Alignment",cloudAccepted:0,cloudAssist:null};
-let server=null,heartbeat=null,saveQueue=Promise.resolve(),cloud=null,cloudConfig=null;
+let server=null,heartbeat=null,saveQueue=Promise.resolve(),cloud=null,cloudConfig=null,cloudSettings=null,recentAcceptedAt=[];
 const html=(value)=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 
 function save(){
+  recentAcceptedAt=recentAcceptedAt.filter(at=>at>Date.now()-3600000);
+  state.recentAccepted=recentAcceptedAt.length;
   state.updatedAt=new Date().toISOString();const snapshot=structuredClone(state);
   saveQueue=saveQueue.then(async()=>{
     await writeFile(statePath+".next",JSON.stringify(snapshot,null,2)+"\n");await rename(statePath+".next",statePath);
@@ -46,9 +48,10 @@ function save(){
 <p><a href="${html(site)}" target="_blank">打开正式网站</a> · ${snapshot.activeModel===CLOUD_MODEL?`GPT-5.6 Luna · ${snapshot.cloudAssist?.serviceTier==="priority"?"Fast":"标准速度"}`:"本机 Qwen3.5-9B"} · 按意思分组，允许多句合译</p>
 <div class="cards"><div class="card"><b>${snapshot.processed} / ${snapshot.total}</b>已处理</div><div class="card"><b>${snapshot.accepted}</b>通过语义检查</div><div class="card"><b>${snapshot.published}</b>已上线分组</div><div class="card"><b>${snapshot.held}</b>仍待核实</div></div>
 <p><progress max="${Math.max(snapshot.total,1)}" value="${snapshot.processed}"></progress></p>
+<p>过去 1 小时通过 ${snapshot.recentAccepted} 篇；尚有 ${Math.max(0,snapshot.total-snapshot.processed)} 篇排队。处理速度包含翻译、独立复核、重试和发布等待。</p>
 <p>${snapshot.current?`当前：${html(snapshot.current.title)} · ${html(snapshot.current.poet)}`:"已有人工译文保留原字句；疑似错配的机器稿重新翻译并复核。"}</p>
 <p>${snapshot.sourceHolds} 篇存在来源疑点；不把缺字或混进标题的正文交给模型猜补。通过模型核对仍需人工校订。</p>
-${snapshot.cloudAssist?`<p>GPT-5.6 Luna 累计已完成 ${snapshot.cloudAccepted} 篇。${snapshot.cloudAssist.quota?`周剩余额度最近读数：${snapshot.cloudAssist.quota.remainingPercent}%。`:""}保留 10% 周额度，另留 2% 缓冲，约剩 12% 时结束本轮云端协助并继续本地处理。${snapshot.cloudAssist.mode==="local"?`<br>已切回本地：${html(snapshot.cloudAssist.stopLabel||"本轮云端协助已结束")}。`:""}</p>`:""}
+${snapshot.cloudAssist?`<p>GPT-5.6 Luna 累计已完成 ${snapshot.cloudAccepted} 篇。${snapshot.cloudAssist.quota?`周剩余额度最近读数：${snapshot.cloudAssist.quota.remainingPercent}%。`:""}保留 10% 周额度，另留 2% 缓冲，约剩 12% 时结束本轮云端协助并继续本地处理。${["local","cooldown"].includes(snapshot.cloudAssist.mode)?`<br>已切回本地：${html(snapshot.cloudAssist.stopLabel||"本轮云端协助已结束")}。${snapshot.cloudAssist.mode==="cooldown"?`下次恢复检查不早于 ${html(new Date(snapshot.cloudAssist.retryAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai",hour12:false}))}，在当前篇处理完成后检查。`:""}`:""}</p>`:""}
 ${snapshot.error?`<p class="warning">${html(snapshot.error)}</p>`:""}
 <p id="heartbeat"><small>最后更新：${html(new Date(snapshot.updatedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai",hour12:false}))}。页面每 15 秒刷新。</small></p>
 <p>任务由本机计划任务续跑，电脑关机时不会处理；下次登录后从检查点继续。请保持电脑接通电源。<br>停止入口：在任务目录创建 STOP 文件；再次启动前需移走这个文件。</p>
@@ -101,21 +104,34 @@ async function stopCloud(error){
   const reason=error.reason||"cloud-unavailable";
   const labels={"weekly-reserve-reached":"已到额度保留线","weekly-window-changed":"额度窗口读数发生变化，已保护性转回本地",
     "quota-unavailable":"暂时无法确认额度","quota-invalid-or-expired":"额度读数已失效",
+    "cloud-turn-timeout":"云端响应超时","codex-request-timeout":"云端连接超时",
+    "codex-exited":"云端连接进程退出","codex-disconnected":"云端连接断开",
     "cloud-request-too-large":"长篇继续由本地模型处理"};
   cloud?.close();cloud=null;state.activeModel="Qwen3.5-9B-Alignment";
-  state.cloudAssist={...state.cloudAssist,mode:"local",stopReason:reason,stopDetails:error.details,stopLabel:labels[reason]||"云端调用暂不可用",stoppedAt:new Date().toISOString()};
+  state.cloudAssist={...state.cloudAssist,mode:"local",stopReason:reason,stopDetails:error.details,stopLabel:labels[reason]||"云端调用暂不可用",stoppedAt:new Date().toISOString(),
+    consecutiveFailures:(state.cloudAssist?.consecutiveFailures||0)+1,retryAt:null};
+  const retryAt=cloudRecoveryAt(state.cloudAssist,cloudSettings||{});
+  if(retryAt!==null){state.cloudAssist.mode="cooldown";state.cloudAssist.retryAt=new Date(retryAt).toISOString();}
   await writeFile(cloudFinishedPath+".next",JSON.stringify(state.cloudAssist,null,2)+"\n");
   await rename(cloudFinishedPath+".next",cloudFinishedPath);await save();
 }
 
 async function startCloud(){
+  if(cloud)return;
   if(!existsSync(cloudOptionsPath))return;
   const settings=JSON.parse(await readFile(cloudOptionsPath,"utf8"));if(!settings.enabled)return;
-  state.cloudAssist={requestId:settings.requestId,mode:"starting",model:CLOUD_MODEL,serviceTier:settings.serviceTier||"default",quota:null};
+  cloudSettings=settings;let recovering=null;
   if(existsSync(cloudFinishedPath)){
     const finished=JSON.parse(await readFile(cloudFinishedPath,"utf8"));
-    if(finished.requestId===settings.requestId){state.cloudAssist=finished;return;}
+    if(finished.requestId===settings.requestId){
+      const retryAt=cloudRecoveryAt(finished,settings);
+      state.cloudAssist={...finished,mode:retryAt===null?"local":"cooldown",retryAt:retryAt===null?null:new Date(retryAt).toISOString()};
+      if(retryAt===null||Date.now()<retryAt)return;
+      recovering=finished;
+    }
   }
+  state.cloudAssist={requestId:settings.requestId,mode:"starting",model:CLOUD_MODEL,serviceTier:settings.serviceTier||"default",quota:null,
+    weeklyResetAt:settings.weeklyResetAt,consecutiveFailures:recovering?.consecutiveFailures??(recovering?1:0)};
   try{
     if(settings.model!==CLOUD_MODEL||!settings.requestId||!settings.codexBinary
       ||settings.reservePercent!==10||settings.safetyMarginPercent!==2)throw new CloudAssistStopped("invalid-cloud-settings");
@@ -123,7 +139,14 @@ async function startCloud(){
       temperature:0,maxTokens:6144,generationParameters:cloudGenerationParameters(settings.serviceTier)};
     cloud=new CodexSemanticProvider({binary:settings.codexBinary,cwd:root,policy:settings,
       onQuota:async quota=>{state.cloudAssist.quota=quota;await save();}});
-    await cloud.start();state.activeModel=CLOUD_MODEL;state.cloudAssist.mode="cloud";await save();
+    await cloud.start();
+    if(recovering){
+      // Preserve the old stop for diagnosis; restarting must not encounter an
+      // obsolete latch after successful reauthentication and quota checks.
+      await rename(cloudFinishedPath,resolve(stateDir,`cloud-assist-recovered-${Date.now()}.json`));
+      state.cloudAssist.recoveredAt=new Date().toISOString();
+    }
+    state.activeModel=CLOUD_MODEL;state.cloudAssist.mode="cloud";await save();
   }catch(error){await stopCloud(error);}
 }
 async function publish(results,publicStatus){
@@ -190,6 +213,7 @@ async function run(){
   state.cloudAccepted=plan.filter(entry=>entry.record?.model===CLOUD_MODEL&&entry.record?.alignment?.verification?.verdict==="pass").length
     +Object.values(publicStatus.editorial).filter(value=>value.alignment?.verification?.model===CLOUD_MODEL).length;
   const accepted=await readRepairCheckpoint(checkpoint),events=await readRepairCheckpoint(journalPath);
+  recentAcceptedAt=events.filter(event=>event.status==="accepted").map(event=>Date.parse(event.at)).filter(at=>Number.isFinite(at)&&at>Date.now()-3600000);
   const latest=new Map(accepted.filter(result=>result.editorial
     ? result.alignment?.verification?.promptVersion===SEMANTIC_PROMPT_VERSION
     : result.record?.promptVersion===SEMANTIC_PROMPT_VERSION).map(result=>[result.id,result]));
@@ -228,12 +252,14 @@ async function run(){
   state.status="running";await save();
   for(const entry of selected){
     if(existsSync(stopPath))break;
+    if(!cloud)await startCloud();
     state.current={id:entry.job.id,title:entry.job.title,poet:entry.job.poet,startedAt:new Date().toISOString()};await save();
     try{
       const result=await repairWithCloudFallback(entry,{cloud,cloudConfig,getLocalConfig,catalog,repair:repairSemanticTranslation,onCloudStop:stopCloud});
       await appendFile(checkpoint,JSON.stringify(result)+"\n");pending.push(result);state.accepted++;
-      if(result.record?.model===CLOUD_MODEL||result.alignment?.verification?.model===CLOUD_MODEL)state.cloudAccepted++;
+      if(result.record?.model===CLOUD_MODEL||result.alignment?.verification?.model===CLOUD_MODEL){state.cloudAccepted++;state.cloudAssist.consecutiveFailures=0;}
       await appendFile(journalPath,JSON.stringify({id:result.id,inputHash:entry.inputHash,status:"accepted",promptVersion:SEMANTIC_PROMPT_VERSION,at:new Date().toISOString()})+"\n");
+      recentAcceptedAt.push(Date.now());
       if(cloud?.stopAfterResult)await stopCloud(cloud.stopAfterResult);
     }catch(error){
       // Connectivity and runtime failures must retry after restart; never mark

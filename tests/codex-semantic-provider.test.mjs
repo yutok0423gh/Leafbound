@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { CLOUD_MODEL, CloudAssistStopped, CodexSemanticProvider, checkWeeklyQuota, cloudGenerationParameters, repairWithCloudFallback } from "../scripts/codex-semantic-provider.mjs";
+import { CLOUD_MODEL, CloudAssistStopped, CodexSemanticProvider, checkWeeklyQuota, cloudGenerationParameters, cloudRecoveryAt, repairWithCloudFallback } from "../scripts/codex-semantic-provider.mjs";
 import { repairSemanticTranslation } from "../scripts/semantic-classical-translations.mjs";
 import { sourceHashFor, validateDraftRecords } from "../scripts/classical-translation-pipeline.mjs";
 
@@ -10,6 +10,32 @@ const response = (usedPercent = 25, secondary = false) => ({ ordinaryUsageAllowe
   limitId: "codex", primary: secondary ? { windowDurationMins: 300, usedPercent: 5, resetsAt: reset } : { windowDurationMins: 10080, usedPercent, resetsAt: reset },
   secondary: secondary ? { windowDurationMins: 10080, usedPercent, resetsAt: reset } : null,
 } } });
+
+test("transient transport stops can recover with backoff inside the same authorized week", () => {
+  const settings={...policy,enabled:true,requestId:"authorized-run"};
+  const stopped={requestId:settings.requestId,weeklyResetAt:reset,stopReason:"cloud-turn-timeout",stoppedAt:new Date(now).toISOString()};
+  assert.equal(cloudRecoveryAt(stopped,settings,now),now+15*60000);
+  assert.equal(cloudRecoveryAt({...stopped,consecutiveFailures:2},settings,now),now+30*60000);
+  assert.equal(cloudRecoveryAt({...stopped,consecutiveFailures:8},settings,now),now+60*60000);
+  assert.equal(cloudRecoveryAt(stopped,settings,now+2*3600000),now+15*60000);
+  assert.equal(cloudRecoveryAt(stopped,settings,reset*1000),null);
+  assert.equal(cloudRecoveryAt({...stopped,stoppedAt:new Date(reset*1000-60000).toISOString()},settings,now),null);
+});
+
+test("quota, authorization, model and unknown stops remain terminal on restart", () => {
+  const settings={...policy,enabled:true,requestId:"authorized-run"};
+  const stopped={requestId:settings.requestId,weeklyResetAt:reset,stopReason:"cloud-turn-timeout",stoppedAt:new Date(now).toISOString()};
+  for(const stopReason of ["weekly-reserve-reached","weekly-window-changed","quota-unavailable","quota-invalid-or-expired",
+    "chatgpt-plan-required","model-mismatch","speed-mismatch","requested-model-unavailable","cloud-turn-incomplete","unknown"]) {
+    assert.equal(cloudRecoveryAt({...stopped,stopReason},settings,now),null,stopReason);
+  }
+  assert.equal(cloudRecoveryAt(stopped,{...settings,enabled:false},now),null);
+  assert.equal(cloudRecoveryAt(stopped,{...settings,requestId:"another-run"},now),null);
+  assert.equal(cloudRecoveryAt(stopped,{...settings,weeklyResetAt:reset+604800},now),null);
+  assert.equal(cloudRecoveryAt({...stopped,weeklyResetAt:undefined},settings,now),null);
+  assert.equal(cloudRecoveryAt({...stopped,weeklyResetAt:undefined,quota:{resetsAt:reset}},settings,now),now+15*60000);
+  assert.equal(cloudRecoveryAt({...stopped,stoppedAt:"invalid"},settings,now),null);
+});
 
 test("weekly reserve uses the seven-day bucket in either position, including zero remaining", () => {
   assert.equal(checkWeeklyQuota(response(), policy, now).remainingPercent, 75);

@@ -6,6 +6,25 @@ export class CloudAssistStopped extends Error {
   constructor(reason, details) { super(`Cloud model request failed: ${reason}`); this.reason = reason; this.details = details; }
 }
 
+// Only transport interruptions may recover automatically, within the same
+// authorization and week. This schedules a fresh login/model/quota check;
+// it never authorizes inference from a cached quota reading.
+const recoverableCloudStops = new Set([
+  "cloud-turn-timeout", "codex-request-timeout", "codex-exited", "codex-disconnected",
+]);
+export function cloudRecoveryAt(finished, policy, now = Date.now()) {
+  if (!policy.enabled || !policy.requestId || finished?.requestId !== policy.requestId
+    || !recoverableCloudStops.has(finished.stopReason)
+    || !Number.isSafeInteger(policy.weeklyResetAt) || policy.weeklyResetAt * 1000 <= now
+    || (finished.weeklyResetAt ?? finished.quota?.resetsAt) !== policy.weeklyResetAt) return null;
+  const stoppedAt = Date.parse(finished.stoppedAt);
+  const failures = finished.consecutiveFailures ?? 1;
+  if (!Number.isFinite(stoppedAt) || !Number.isSafeInteger(failures) || failures < 1) return null;
+  const delay = 15 * 60000 * 2 ** Math.min(failures - 1, 2);
+  const retryAt = stoppedAt + delay;
+  return retryAt < policy.weeklyResetAt * 1000 ? retryAt : null;
+}
+
 // Use the actual seven-day window, which is not always the secondary window.
 // Missing, expired, or ambiguous usage data must never authorize more inference.
 export function checkWeeklyQuota(response, policy, now = Date.now()) {
