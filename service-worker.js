@@ -1,6 +1,6 @@
 const CACHE_PREFIX = "leafbound-local";
-const SHELL_CACHE = `${CACHE_PREFIX}-shell-v5`;
-const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-v5`;
+const SHELL_CACHE = `${CACHE_PREFIX}-shell-v6`;
+const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-v6`;
 
 // These are same-origin application files only. Audio is deliberately absent:
 // Leafbound never copies or caches an external station/SoundCloud response, and
@@ -15,6 +15,8 @@ const APP_SHELL = [
   "./assets/icons/leafbound-192.png",
   "./assets/icons/leafbound-512.png",
   "./src/app.js",
+  "./src/bootstrap.js",
+  "./src/pwa.js?release=alignment-v6",
   "./src/pwa.js",
   "./src/data.js",
   "./src/open-poems-index.js",
@@ -96,7 +98,7 @@ self.addEventListener("fetch", (event) => {
 
   // Weekly releases should be visible on the first online visit after publishing.
   // Keep the last downloaded articles available when the device is offline.
-  if (WEEKLY_CONTENT_URLS.has(url.href) || url.href.startsWith(CLASSICAL_TRANSLATION_ROOT)) {
+  if (/\.(?:js|css)$/.test(url.pathname) || WEEKLY_CONTENT_URLS.has(url.href) || url.href.startsWith(CLASSICAL_TRANSLATION_ROOT)) {
     event.respondWith((async () => {
       try {
         // Older tabs can still request force-cache. A network-first policy
@@ -125,7 +127,8 @@ self.addEventListener("fetch", (event) => {
         }
         return response;
       } catch {
-        return (await caches.match(request))
+        const cache = await caches.open(RUNTIME_CACHE);
+        return (await cache.match(request)) || (await caches.match(request))
           || (await caches.match(scopedUrl("./index.html")))
           || caches.match(scopedUrl("./offline.html"));
       }
@@ -134,7 +137,8 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith((async () => {
-    const cached = await caches.match(request);
+    const runtime = await caches.open(RUNTIME_CACHE);
+    const cached = (await runtime.match(request)) || (await caches.match(request));
     const refresh = fetch(request).then(async (response) => {
       if (isCacheable(response)) {
         const cache = await caches.open(RUNTIME_CACHE);

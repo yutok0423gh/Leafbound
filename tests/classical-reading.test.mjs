@@ -1,8 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFile } from "node:fs/promises";
 import { createClassicalAlignment, createSemanticAlignment, validateClassicalAlignment } from "../src/classical-alignment.js";
 const verification = { method: "independent-semantic-audit", verdict: "pass", model: "test", modelRevision: "test",
   promptSha256s: ["a".repeat(64), "b".repeat(64)], completedAt: "2026-10-08T00:00:00Z" };
+
+test("旅宿 keeps 寒燈 and 斷鴈 with their translation, without proportional placement", async () => {
+  const shard = JSON.parse(await readFile(new URL("../data/classical-translations/shards/52.json", import.meta.url), "utf8"));
+  const record = shard.records.find(([id]) => id === "open-tang-200fe9fa-0221-4123-86de-4d63ce9d3daf");
+  const lines = ["旅館無良伴", "凝情自悄然", "寒燈思舊事", "斷鴈警愁眠", "遠夢歸侵曉", "家書到隔年", "湘江好煙月", "門繫釣魚船"].map(text => ({ text }));
+  const units = alignClassicalReadingUnits(lines, { paragraphs: record[2], alignment: record[4].alignment });
+  assert.deepEqual(units.map(unit => unit.sourceLines.length), [4, 2, 2]);
+  assert.match(units[0].translations.join(""), /寒燈/);
+  assert.match(units[1].translations.join(""), /家書/);
+  assert.match(units[2].translations.join(""), /湘江/);
+});
 
 import {
   alignClassicalReadingUnits,

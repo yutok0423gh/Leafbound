@@ -5,6 +5,35 @@ import { runInNewContext } from "node:vm";
 
 const root = new URL("../", import.meta.url);
 
+test("startup waits for the replacement worker to activate before loading reading modules", async () => {
+  const listeners = new Set();
+  const pending = {
+    state: "installing",
+    addEventListener: (_, callback) => listeners.add(callback),
+    removeEventListener: (_, callback) => listeners.delete(callback),
+    postMessage() {}
+  };
+  const registration = { installing: pending, update: async () => {}, addEventListener() {} };
+  const source = (await readFile(new URL("src/pwa.js", root), "utf8"))
+    .replaceAll("export ", "").replaceAll("import.meta.url", '"https://example.org/src/pwa.js"');
+  const ready = runInNewContext(source + "\npwaReady;", {
+    URL, CustomEvent: class {},
+    navigator: { serviceWorker: { register: async () => registration, controller: {} } },
+    window: { location: { protocol: "https:" }, dispatchEvent() {} }
+  });
+  let completed = false;
+  ready.then(() => { completed = true; });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(completed, false);
+  pending.state = "activated";
+  for (const listener of listeners) listener();
+  await ready;
+  assert.equal(completed, true);
+  assert.equal(listeners.size, 0);
+  const bootstrap = await readFile(new URL("src/bootstrap.js", root), "utf8");
+  assert.match(bootstrap, /await pwaReady;\s*await import\("\.\/app\.js"\)/);
+});
+
 test("the web manifest provides installable PNG icons", async () => {
   const manifest = JSON.parse(await readFile(new URL("manifest.webmanifest", root), "utf8"));
   assert.equal(manifest.display, "standalone");
@@ -25,7 +54,7 @@ test("the web manifest provides installable PNG icons", async () => {
 test("the PWA client is registered and its cache excludes media and cross-origin requests", async () => {
   const index = await readFile(new URL("index.html", root), "utf8");
   const serviceWorker = await readFile(new URL("service-worker.js", root), "utf8");
-  assert.match(index, /src="\.\/src\/pwa\.js"/);
+  assert.match(index, /src="\.\/src\/bootstrap\.js"/);
   assert.match(serviceWorker, /url\.origin !== self\.location\.origin/);
   assert.match(serviceWorker, /isMediaRequest\(request, url\)/);
   assert.doesNotMatch(serviceWorker.match(/const APP_SHELL = \[[\s\S]*?\];/)?.[0] || "", /assets\/audio/);
@@ -63,7 +92,7 @@ test("weekly content and repaired translations refresh online and keep the corre
     listeners.fetch({ request, respondWith: (promise) => { result = promise; } });
     return (await result).text();
   };
-  for (const path of ["src/content-release.js", "data/classical-translations/manifest.json", "data/classical-translations/shards/ab.json"]) {
+  for (const path of ["src/app.js", "src/classical-reading.js", "src/pwa.js?release=alignment-v6", "styles.css", "src/content-release.js", "data/classical-translations/manifest.json", "data/classical-translations/shards/ab.json"]) {
     const request = new Request(`https://example.org/Leafbound/${path}`, { cache: "force-cache" });
     offline = false;
     assert.equal(await dispatch(request), "latest weekly content");

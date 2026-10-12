@@ -27,6 +27,23 @@ export async function registerLeafboundServiceWorker() {
         }
       });
     });
+    // Finish upgrading the worker before the application imports its module
+    // graph. Otherwise the previous worker can serve obsolete reading logic.
+    await registration.update().catch(() => undefined);
+    const pending = registration.installing || registration.waiting;
+    if (pending) {
+      await new Promise((resolve) => {
+        const check = () => {
+          if (["activated", "redundant"].includes(pending.state)) {
+            pending.removeEventListener("statechange", check);
+            resolve();
+          }
+        };
+        pending.addEventListener("statechange", check);
+        pending.postMessage({ type: "SKIP_WAITING" });
+        check();
+      });
+    }
     return registration;
   } catch (error) {
     pwaState.error = error;
@@ -42,5 +59,5 @@ export function activateWaitingServiceWorker() {
   return true;
 }
 
-registerLeafboundServiceWorker();
+export const pwaReady = registerLeafboundServiceWorker();
 
