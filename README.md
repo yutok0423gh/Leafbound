@@ -81,17 +81,17 @@ npm run classical-translations:build -- --drafts .tmp-data/classical-translation
 
 全量隊列包括全部 17,373 篇，含編輯稿與人工審閱稿。這些受保護稿件只核對分組，不改寫字句或人工審閱記錄。其他機器稿只依原文及辭典重新翻譯，不讓舊錯譯引導新稿；開啟本機推理後獨立復核，未通過時最多重試三輪，以具體審校意見修正。仍有疑義則保留檢查點並暫停顯示該今譯。缺字、難以可靠解讀的文字遊戲，以及元曲來源把開頭正文混進標題的情況，另標為原文待核實，不讓模型猜補。`semantic-status.json` 記錄待核實作品及編輯稿的分組。
 
-`classical-translations:semantic` 是目前的全量入口。它核對本地 GGUF 校驗值，啟動只監聽本機的模型，每 10 篇通過稿運行全庫驗證及測試後發布，並等待 Pages 部署及公開資料驗證。只有指定的獨立分支、倉庫和翻譯資料路徑可自動發布；遇到其他提交或衝突會停止並保留檢查點。呼叫範例（在 `codex/semantic-alignment-all` 獨立工作目錄中）：
+`classical-translations:semantic` 是目前的全量入口。它核對本地 GGUF 校驗值，啟動只監聽本機的模型，預設兩篇並發，共用一個模型並開啟連續批次推理；每篇仍有 16,384 token 上下文，翻譯及獨立復核依序完成。可用 `--local-concurrency 1` 回退單篇處理；目前只接受 1 或 2。檢查點與日誌依次寫入，每批達到 10 篇通過稿後，等待已開始的篇目完成，再運行全庫驗證及測試後發布，並等待 Pages 部署及公開資料驗證；不讓並發工作同時改寫發布資料。只有指定的獨立分支、倉庫和翻譯資料路徑可自動發布；遇到其他提交或衝突會停止並保留檢查點。呼叫範例（在 `codex/semantic-alignment-all` 獨立工作目錄中）：
 
 ```powershell
 npm run classical-translations:semantic -- --publish --state-dir D:/Project/personal_poetry_language_app_prd/.tmp-data/classical-translations/semantic-run --progress-html D:/Project/personal_poetry_language_app_prd/artifacts/classical-alignment-progress.html --model-file D:/AI/models/Qwen3.5-9B-Q4_K_M.gguf --server-binary D:/AI/llama.cpp/b10679/llama-server.exe --model-sha256 03b74727a860a56338e042c4420bb3f04b2fec5734175f4cb9fa853daf52b7e8
 ```
 
-Windows 的 `scripts/install-semantic-task.ps1` 可用上述路徑註冊 `Leafbound-Classical-Semantic` 計劃任務：登入及每 10 分鐘檢查續跑，單實例、接通電源時執行，已接受稿件不重做。工作狀態在 `progress.json`，候選在 `accepted.jsonl`，失敗原因在 `journal.jsonl`；建立任務目錄中的 `STOP` 文件會在本篇結束後停止，移走後可續跑。進度頁每 15 秒刷新，超過三分鐘無心跳會明確標示中斷；已處理、模型通過、公開上線和待核實數量分開顯示。仍有疑義時，結束狀態是 `needs_review`，不宣稱全部譯文已修好。
+Windows 的 `scripts/install-semantic-task.ps1` 可用上述路徑註冊 `Leafbound-Classical-Semantic` 計劃任務：登入及每 10 分鐘檢查續跑，單實例、接通電源時執行，已接受稿件不重做。工作狀態在 `progress.json`，候選在 `accepted.jsonl`，失敗原因在 `journal.jsonl`；建立任務目錄中的 `STOP` 文件會停止領取新篇目，等待正在處理的篇目保存後停止，移走後可續跑。模型或寫入故障亦會停止新工作，保留其他已在處理的結果。進度頁每 15 秒刷新，顯示各篇並發任務；超過三分鐘無心跳會明確標示中斷，已處理、模型通過、公開上線和待核實數量分開顯示。仍有疑義時，結束狀態是 `needs_review`，不宣稱全部譯文已修好。
 
 經擁有者授權後，可在任務目錄加入 `cloud-assist.json`，暫時使用已登入 Codex 的 ChatGPT 週額度呼叫 `gpt-5.6-luna`。設定包含 `enabled: true`、唯一 `requestId`、`model: "gpt-5.6-luna"`、本機 `codexBinary` 絕對路徑、`reservePercent: 10`、`safetyMarginPercent: 2`，以及由 `account/rateLimits/read` 取得的本次七天窗口 `weeklyResetAt`。每次請求前及推理期間檢查實際週額度，剩餘不高於 12% 時停止雲端，為希望保留的 10% 留出讀數延遲緩衝；這是本機保護措施，不能限制同帳戶其他對話的用量。沒有可靠額度、帳戶不是 ChatGPT 登入、指定模型不可用、週窗口變更或雲端中斷時，均回到本機模型；不自動購買額度或兌換額度重設。
 
-雲端預設採標準速度；擁有者要求加速時，可在 `cloud-assist.json` 設 `serviceTier: "priority"`，使用目前模型列表中的 Fast 檔位。啟動時確認該模型提供此檔位，並在每次翻譯及復核請求明確指定。Fast 會更快消耗訂閱額度，週額度保留線不變；進度頁及產物均記錄實際速度。medium 推理及每篇原文覆蓋、獨立語義復核維持不變；來源疑點及受保護譯稿規則亦不變。
+雲端預設採標準速度；擁有者要求加速時，可在 `cloud-assist.json` 設 `serviceTier: "priority"`，使用目前模型列表中的 Fast 檔位。啟動時確認該模型提供此檔位，並在每次翻譯及復核請求明確指定。Fast 會更快消耗訂閱額度，週額度保留線不變；進度頁及產物均記錄實際速度。雲端仍只允許一個請求，啟動或恢復雲端只在本地批次全部保存後進行；本地並發不會清除額度停止記錄或延長獲授權的週窗口。medium 推理及每篇原文覆蓋、獨立語義復核維持不變；來源疑點及受保護譯稿規則亦不變。
 
 額度停止信號會立即鎖定，包含空閒期間及最後一次額度檢查期間收到的通知；發送 `turn/start` 前再次檢查，後續正常讀數不能解除本輪停止。已完成的結果可以保留，但不得再發起翻譯或復核。斷線與停止信號同時發生時，額度、登入等終止原因優先，不會被改成可重試的故障。失敗回合按 `codexErrorInfo` 分類，明確的串流斷線、連線逾時及暫時服務故障可進入原有退避恢復；401／403、402／429、用量限制、取消及未知錯誤均不自動恢復。只保存錯誤類型和 HTTP 狀態，不把自由文字診斷寫入進度頁。
 

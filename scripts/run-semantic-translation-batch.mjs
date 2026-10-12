@@ -11,17 +11,19 @@ import { createSemanticPlan, repairSemanticTranslation, SEMANTIC_PROMPT_VERSION,
 import { loadGeneratorConfig, loadClassicalGlossary } from "./generate-classical-translation-drafts.mjs";
 import { validateClassicalAlignment } from "../src/classical-alignment.js";
 import { CLOUD_MODEL, CloudAssistStopped, CodexSemanticProvider, cloudGenerationParameters, cloudRecoveryAt, repairWithCloudFallback } from "./codex-semantic-provider.mjs";
+import { localModelCapacity, runSemanticBatch, semanticBatchConcurrency } from "./semantic-batch-queue.mjs";
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const execute=promisify(execFile),sleep=(ms)=>new Promise(done=>setTimeout(done,ms));
 const args=process.argv.slice(2),options={publish:false,batchSize:10};
 for(let i=0;i<args.length;i++){
   if(args[i]==="--publish")options.publish=true;
-  else if(["--state-dir","--progress-html","--model-file","--server-binary","--model-sha256","--ids","--branch","--site","--repository"].includes(args[i])){
+  else if(["--state-dir","--progress-html","--model-file","--server-binary","--model-sha256","--ids","--branch","--site","--repository","--local-concurrency"].includes(args[i])){
     const key=args[i].slice(2),value=args[++i];if(!value||value.startsWith("--"))throw new Error(`Missing ${key}`);options[key]=value;
   }else throw new Error(`Unknown option ${args[i]}`);
 }
 for(const key of ["state-dir","progress-html","model-file","server-binary","model-sha256"])if(!options[key])throw new Error(`Missing --${key}`);
+const localCapacity=localModelCapacity(options["local-concurrency"]);
 const stateDir=resolve(options["state-dir"]),page=resolve(options["progress-html"]);
 const statePath=resolve(stateDir,"progress.json"),journalPath=resolve(stateDir,"journal.jsonl"),checkpoint=resolve(stateDir,"accepted.jsonl"),stopPath=resolve(stateDir,"STOP");
 const publicStatusPath=resolve(root,"data/classical-translations/semantic-status.json");
@@ -30,7 +32,7 @@ const repository=options.repository||"yutok0423gh/Leafbound",site=options.site||
 const expectedBranch=options.branch||"codex/semantic-alignment-all";
 const state={schemaVersion:1,pid:process.pid,status:"starting",startedAt:new Date().toISOString(),updatedAt:null,
   promptVersion:SEMANTIC_PROMPT_VERSION,total:0,processed:0,accepted:0,published:0,held:0,sourceHolds:0,
-  current:null,error:null,site,checkpoint,stopPath,publications:[],activeModel:"Qwen3.5-9B-Alignment",cloudAccepted:0,cloudAssist:null};
+  current:null,inFlight:[],concurrency:{local:localCapacity.parallel,cloud:1,active:0},error:null,site,checkpoint,stopPath,publications:[],activeModel:"Qwen3.5-9B-Alignment",cloudAccepted:0,cloudAssist:null};
 let server=null,heartbeat=null,saveQueue=Promise.resolve(),cloud=null,cloudConfig=null,cloudSettings=null,recentAcceptedAt=[];
 const html=(value)=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 
@@ -49,9 +51,10 @@ function save(){
 <div class="cards"><div class="card"><b>${snapshot.processed} / ${snapshot.total}</b>已处理</div><div class="card"><b>${snapshot.accepted}</b>通过语义检查</div><div class="card"><b>${snapshot.published}</b>已上线分组</div><div class="card"><b>${snapshot.held}</b>仍待核实</div></div>
 <p><progress max="${Math.max(snapshot.total,1)}" value="${snapshot.processed}"></progress></p>
 <p>过去 1 小时通过 ${snapshot.recentAccepted} 篇；尚有 ${Math.max(0,snapshot.total-snapshot.processed)} 篇排队。处理速度包含翻译、独立复核、重试和发布等待。</p>
-<p>${snapshot.current?`当前：${html(snapshot.current.title)} · ${html(snapshot.current.poet)}`:"已有人工译文保留原字句；疑似错配的机器稿重新翻译并复核。"}</p>
+<p>本地最多 ${snapshot.concurrency.local} 篇并发；当前正在处理 ${snapshot.inFlight.length} 篇。每篇分别翻译及独立复核，结果依次保存，整批检查后发布。</p>
+${snapshot.inFlight.length?`<ul>${snapshot.inFlight.map(entry=>`<li>任务 ${entry.slot+1}：${html(entry.title)} · ${html(entry.poet)}</li>`).join("")}</ul>`:"<p>已有人工译文保留原字句；疑似错配的机器稿重新翻译并复核。</p>"}
 <p>${snapshot.sourceHolds} 篇存在来源疑点；不把缺字或混进标题的正文交给模型猜补。通过模型核对仍需人工校订。</p>
-${snapshot.cloudAssist?`<p>GPT-5.6 Luna 累计已完成 ${snapshot.cloudAccepted} 篇。${snapshot.cloudAssist.quota?`周剩余额度最近读数：${snapshot.cloudAssist.quota.remainingPercent}%。`:""}保留 10% 周额度，另留 2% 缓冲，约剩 12% 时结束本轮云端协助并继续本地处理。${["local","cooldown"].includes(snapshot.cloudAssist.mode)?`<br>已切回本地：${html(snapshot.cloudAssist.stopLabel||"本轮云端协助已结束")}。${snapshot.cloudAssist.mode==="cooldown"?`下次恢复检查不早于 ${html(new Date(snapshot.cloudAssist.retryAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai",hour12:false}))}，在当前篇处理完成后检查。`:""}`:""}</p>`:""}
+${snapshot.cloudAssist?`<p>GPT-5.6 Luna 累计已完成 ${snapshot.cloudAccepted} 篇。${snapshot.cloudAssist.quota?`周剩余额度最近读数：${snapshot.cloudAssist.quota.remainingPercent}%（${html(new Date(snapshot.cloudAssist.quota.checkedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai",hour12:false}))}）。`:""}保留 10% 周额度，另留 2% 缓冲，约剩 12% 时结束本轮云端协助并继续本地处理。${["local","cooldown"].includes(snapshot.cloudAssist.mode)?`<br>已切回本地：${html(snapshot.cloudAssist.stopLabel||"本轮云端协助已结束")}。${snapshot.cloudAssist.mode==="cooldown"?`下次恢复检查不早于 ${html(new Date(snapshot.cloudAssist.retryAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai",hour12:false}))}，在当前批次处理完成后检查。`:""}`:""}</p>`:""}
 ${snapshot.error?`<p class="warning">${html(snapshot.error)}</p>`:""}
 <p id="heartbeat"><small>最后更新：${html(new Date(snapshot.updatedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai",hour12:false}))}。页面每 15 秒刷新。</small></p>
 <p>任务由本机计划任务续跑，电脑关机时不会处理；下次登录后从检查点继续。请保持电脑接通电源。<br>停止入口：在任务目录创建 STOP 文件；再次启动前需移走这个文件。</p>
@@ -86,7 +89,7 @@ async function startModel(){
   const apiKey=randomUUID();
   const out=openSync(resolve(stateDir,"model.stdout.log"),"a"),err=openSync(resolve(stateDir,"model.stderr.log"),"a");
   server=spawn(options["server-binary"],["-m",options["model-file"],"--host","127.0.0.1","--port","8080","--alias","Qwen3.5-9B-Alignment",
-    "-c","16384","-ngl","99","-np","1","--jinja","--no-webui","--reasoning-budget","1536","--reasoning-format","deepseek","--api-key",apiKey],{windowsHide:true,stdio:["ignore",out,err]});
+    "-c",String(localCapacity.contextSize),"-ngl","99","-np",String(localCapacity.parallel),"--cont-batching","--jinja","--no-webui","--reasoning-budget","1536","--reasoning-format","deepseek","--api-key",apiKey],{windowsHide:true,stdio:["ignore",out,err]});
   closeSync(out);closeSync(err);state.modelPid=server.pid;let launchError=null;server.on("error",error=>{launchError=error;});
   for(let attempt=0;attempt<90;attempt++){
     if(launchError)throw launchError;
@@ -203,7 +206,7 @@ async function publish(results,publicStatus){
 
 async function run(){
   await mkdir(stateDir,{recursive:true});await mkdir(dirname(page),{recursive:true});
-  if(existsSync(stopPath)){state.status="stopped";await save();return;}
+  if(existsSync(stopPath))return; // A scheduled probe must not erase the saved progress while stopped.
   if(existsSync(statePath)){
     const previous=JSON.parse(await readFile(statePath,"utf8"));
     if(previous.pid!==process.pid){try{process.kill(previous.pid,0);if(Date.now()-Date.parse(previous.updatedAt)<180000)return;}catch(error){if(error.code!=="ESRCH")throw error;}}
@@ -248,36 +251,56 @@ async function run(){
   await save();heartbeat=setInterval(()=>save().catch(error=>console.error(error.message)),15000);
   if(pending.length){await publish(pending,publicStatus);pending.length=0;}
   const selected=requested?queue.filter(entry=>requested.includes(entry.job.id)):queue;
-  let config=null,catalog=null;
-  const getLocalConfig=async()=>{state.activeModel="Qwen3.5-9B-Alignment";await save();if(!config)config=await startModel();return config;};
+  let configPromise=null,catalog=null;
+  const getLocalConfig=async()=>{state.activeModel="Qwen3.5-9B-Alignment";configPromise??=startModel();await save();return configPromise;};
   if(selected.length){await startCloud();if(!cloud)await getLocalConfig();catalog=await loadClassicalGlossary();}
   state.status="running";await save();
-  for(const entry of selected){
-    if(existsSync(stopPath))break;
-    if(!cloud)await startCloud();
-    state.current={id:entry.job.id,title:entry.job.title,poet:entry.job.poet,startedAt:new Date().toISOString()};await save();
+  const settle=async(entry,outcome)=>{
     try{
-      const result=await repairWithCloudFallback(entry,{cloud,cloudConfig,getLocalConfig,catalog,repair:repairSemanticTranslation,onCloudStop:stopCloud});
-      await appendFile(checkpoint,JSON.stringify(result)+"\n");pending.push(result);state.accepted++;
-      if(result.record?.model===CLOUD_MODEL||result.alignment?.verification?.model===CLOUD_MODEL){state.cloudAccepted++;state.cloudAssist.consecutiveFailures=0;}
-      await appendFile(journalPath,JSON.stringify({id:result.id,inputHash:entry.inputHash,status:"accepted",promptVersion:SEMANTIC_PROMPT_VERSION,at:new Date().toISOString()})+"\n");
-      recentAcceptedAt.push(Date.now());
-      if(cloud?.stopAfterResult)await stopCloud(cloud.stopAfterResult);
-    }catch(error){
-      // Connectivity and runtime failures must retry after restart; never mark
-      // thousands of unprocessed works as semantic failures after the GPU dies.
-      if(/Local model|request failed|timed out/.test(error.message)||(server&&server.exitCode!==null))throw error;
-      if(error.candidate)await appendFile(resolve(stateDir,"rejected.jsonl"),JSON.stringify(error.candidate)+"\n");
-      const code=error.message.split(":")[0];publicStatus.holds[entry.job.id]=code;state.held++;
-      await appendFile(journalPath,JSON.stringify({id:entry.job.id,inputHash:entry.inputHash,status:"held",code,message:error.message,promptVersion:SEMANTIC_PROMPT_VERSION,at:new Date().toISOString()})+"\n");
+      if(outcome.status==="fulfilled"){
+        const result=outcome.value;
+        if(result.id!==entry.job.id||result.inputHash!==entry.inputHash)throw new Error("Checkpoint result does not match its source entry.");
+        await appendFile(checkpoint,JSON.stringify(result)+"\n");pending.push(result);state.accepted++;
+        if(result.record?.model===CLOUD_MODEL||result.alignment?.verification?.model===CLOUD_MODEL){state.cloudAccepted++;state.cloudAssist.consecutiveFailures=0;}
+        await appendFile(journalPath,JSON.stringify({id:result.id,inputHash:entry.inputHash,status:"accepted",promptVersion:SEMANTIC_PROMPT_VERSION,at:new Date().toISOString()})+"\n");
+        recentAcceptedAt.push(Date.now());
+        if(cloud?.stopAfterResult)await stopCloud(cloud.stopAfterResult);
+      }else{
+        const error=outcome.reason;
+        // Runtime failures resume from checkpoints; they are not bad poems.
+        if(/Local model|request failed|timed out/.test(error.message)||(server&&server.exitCode!==null))throw error;
+        if(error.candidate)await appendFile(resolve(stateDir,"rejected.jsonl"),JSON.stringify(error.candidate)+"\n");
+        const code=error.message.split(":")[0];publicStatus.holds[entry.job.id]=code;state.held++;
+        await appendFile(journalPath,JSON.stringify({id:entry.job.id,inputHash:entry.inputHash,status:"held",code,message:error.message,promptVersion:SEMANTIC_PROMPT_VERSION,at:new Date().toISOString()})+"\n");
+      }
+      state.processed++;
+    }finally{
+      state.inFlight=state.inFlight.filter(value=>value.id!==entry.job.id);state.current=state.inFlight[0]||null;await save();
     }
-    state.processed++;await save();
+  };
+  let next=0;
+  while(next<selected.length&&!existsSync(stopPath)){
+    // Cloud lifecycle and publication are barriers: no inference is active
+    // when either runs. Cloud fallback keeps one lane until the next barrier.
+    if(!cloud)await startCloud();
+    const concurrency=semanticBatchConcurrency(cloud,localCapacity.parallel);
+    state.concurrency.active=concurrency;
     const batchSize=state.publications.length ? options.batchSize : 2;
+    next+=await runSemanticBatch(selected.slice(next,next+options.batchSize),{
+      concurrency,shouldStop:()=>existsSync(stopPath)||pending.length>=batchSize,
+      start:async(entry,slot)=>{
+        state.inFlight.push({id:entry.job.id,title:entry.job.title,poet:entry.job.poet,slot,startedAt:new Date().toISOString()});
+        state.current=state.inFlight[0];await save();
+      },
+      work:entry=>repairWithCloudFallback(entry,{cloud,cloudConfig,getLocalConfig,catalog,repair:repairSemanticTranslation,onCloudStop:stopCloud}),
+      settle,
+    });
+    state.concurrency.active=0;
     if(pending.length>=batchSize&&!existsSync(stopPath)){await publish(pending,publicStatus);pending.length=0;}
   }
   if(!existsSync(stopPath))await publish(pending,publicStatus);
   state.current=null;state.status=existsSync(stopPath)?"stopped":state.held?"needs_review":"complete";await save();
 }
 try{await run();}
-catch(error){state.status="failed";state.error=error.message;await save();console.error(error.message);process.exitCode=1;}
+catch(error){state.status="failed";state.current=null;state.inFlight=[];state.concurrency.active=0;state.error=error.message;await save();console.error(error.message);process.exitCode=1;}
 finally{if(heartbeat)clearInterval(heartbeat);cloud?.close();if(server&&server.exitCode===null)server.kill();await saveQueue;}
