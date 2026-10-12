@@ -120,7 +120,7 @@ test("completed JSON response uses the requested model and standard speed withou
   const output = await provider.request({ model: CLOUD_MODEL, messages: [{ role: "system", content: "Translate." }, { role: "user", content: "原文" }], response_format: { schema: { type: "object" } } });
   assert.equal(output.choices[0].message.content, '{"ok":true}');
   assert.equal(turnParams.model, CLOUD_MODEL); assert.equal(turnParams.serviceTierForTurn, "default");
-  assert.equal(turnParams.effort, "medium"); assert.equal(turnParams.max_output_tokens, undefined);
+  assert.equal(turnParams.effort, "low"); assert.equal(turnParams.max_output_tokens, undefined);
 });
 
 test("Fast is explicit for both the session and every turn, and its provenance is retained", async () => {
@@ -141,6 +141,7 @@ test("Fast is explicit for both the session and every turn, and its provenance i
   await provider.request({ model: CLOUD_MODEL, messages: [], response_format: { schema: { type: "object" } } });
   assert.equal(calls.find(([method]) => method === "thread/start")[1].serviceTier, "priority");
   assert.equal(calls.find(([method]) => method === "turn/start")[1].serviceTierForTurn, "priority");
+  assert.equal(calls.find(([method]) => method === "turn/start")[1].effort, "low");
   assert.equal(cloudGenerationParameters("priority").serviceTier, "priority");
   assert.throws(() => cloudGenerationParameters("ultrafast"), /Unsupported/);
 });
@@ -197,6 +198,11 @@ test("cloud translation retains independent review and truthful generation prove
   assert.equal(validateDraftRecords([result.record], { jobs: [job] }).valid, true);
   const fast = structuredClone(result.record); fast.generationParameters = cloudGenerationParameters("priority");
   assert.equal(validateDraftRecords([fast], { jobs: [job] }).valid, true);
+  assert.equal(fast.generationParameters.reasoningEffort, "low");
+  const legacy = structuredClone(fast); legacy.generationParameters.reasoningEffort = "medium";
+  assert.equal(validateDraftRecords([legacy], { jobs: [job] }).valid, true);
+  const unknown = structuredClone(fast); unknown.generationParameters.reasoningEffort = "unspecified";
+  assert.equal(validateDraftRecords([unknown], { jobs: [job] }).valid, false);
   const dishonest = structuredClone(result.record); dishonest.generationParameters.maxTokens = 6144;
   assert.equal(validateDraftRecords([dishonest], { jobs: [job] }).valid, false);
 });

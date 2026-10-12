@@ -90,7 +90,7 @@ export function checkWeeklyQuota(response, policy, now = Date.now()) {
 export function cloudGenerationParameters(serviceTier = "default") {
   if (!["default", "priority"].includes(serviceTier)) throw new Error("Unsupported translation speed.");
   // Codex plan inference does not expose temperature or max_output_tokens.
-  return { transport: "codex-chatgpt", reasoningEffort: "medium", serviceTier,
+  return { transport: "codex-chatgpt", reasoningEffort: "low", serviceTier,
     outputFormat: "json-schema", disableThinking: false };
 }
 
@@ -287,7 +287,7 @@ export class CodexSemanticProvider {
       // Recheck after preparing the session; no inference may begin on stale data.
       await this.checkQuota();
       if (this.stopAfterResult) throw this.stopAfterResult;
-      const turn = await this.rpc("turn/start", { threadId, model: CLOUD_MODEL, effort: "medium", serviceTierForTurn: this.serviceTier,
+      const turn = await this.rpc("turn/start", { threadId, model: CLOUD_MODEL, effort: "low", serviceTierForTurn: this.serviceTier,
         environments: [], input: request.messages.filter(message => message.role !== "system").map(message => ({ type: "text", text: message.content })),
         outputSchema: request.response_format.schema });
       active.turnId ||= turn.turn?.id;
