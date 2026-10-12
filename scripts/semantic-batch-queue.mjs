@@ -1,8 +1,8 @@
 // Share one model across bounded inference slots. Keep the original context
 // budget for EACH work; increasing -np alone would divide that budget.
-export function localModelCapacity(value = 2) {
+export function localModelCapacity(value = 4) {
   const parallel = Number(value);
-  if (![1, 2].includes(parallel)) throw new Error("--local-concurrency must be 1 or 2.");
+  if (!Number.isSafeInteger(parallel) || parallel < 1 || parallel > 4) throw new Error("--local-concurrency must be an integer from 1 to 4.");
   return { parallel, contextSize: 16384 * parallel };
 }
 
@@ -19,7 +19,7 @@ export function semanticBatchConcurrency(cloud, localConcurrency) {
 export async function runSemanticBatch(entries, {
   concurrency, work, settle, start = async () => {}, shouldStop = () => false,
 }) {
-  if (!Number.isSafeInteger(concurrency) || concurrency < 1 || concurrency > 2) {
+  if (!Number.isSafeInteger(concurrency) || concurrency < 1 || concurrency > 4) {
     throw new Error("Invalid semantic batch concurrency.");
   }
   let next = 0, failure = null, writes = Promise.resolve();

@@ -5,13 +5,13 @@ import { localModelCapacity, runSemanticBatch, semanticBatchConcurrency } from "
 
 const gate = () => Promise.withResolvers();
 
-test("two local slots retain 16K context per work; unsupported capacities fail closed", () => {
-  for (const count of [1, 2]) {
+test("all local slots retain 16K context per work; unsupported capacities fail closed", () => {
+  for (const count of [1, 2, 3, 4]) {
     const capacity = localModelCapacity(count);
     assert.equal(capacity.contextSize / capacity.parallel, 16384);
   }
-  assert.equal(localModelCapacity().parallel, 2);
-  for (const value of [0, 3, 8, 1.5, "auto", NaN, null]) assert.throws(() => localModelCapacity(value));
+  assert.equal(localModelCapacity().parallel, 4);
+  for (const value of [0, 5, 8, 1.5, "auto", NaN, null]) assert.throws(() => localModelCapacity(value));
 });
 
 test("local inference overlaps, out-of-order results stay paired, and checkpoint writes serialize", async () => {
@@ -116,14 +116,14 @@ test("cloud stays single-flight even with local parallelism; a reserve stop admi
   let turns = 0, stopped = false;
   const cloud = { request: async () => { turns++; stopped = true; throw new Error("weekly-reserve-reached"); } };
   const count = await runSemanticBatch([0, 1, 2], {
-    concurrency: semanticBatchConcurrency(cloud, 2),
+    concurrency: semanticBatchConcurrency(cloud, 4),
     shouldStop: () => stopped,
     work: () => cloud.request(),
     settle: async (_id, outcome) => assert.equal(outcome.reason.message, "weekly-reserve-reached"),
   });
   assert.equal(count, 1);
   assert.equal(turns, 1);
-  assert.equal(semanticBatchConcurrency(null, 2), 2);
+  assert.equal(semanticBatchConcurrency(null, 4), 4);
 });
 
 test("batch boundary waits for all accepted checkpoints before the next batch starts", async () => {
@@ -151,4 +151,50 @@ test("an existing stop starts no work", async () => {
     work: () => assert.fail("inference must not start"),
     settle: () => assert.fail("nothing to checkpoint"),
   }), 0);
+});
+
+test("four slots keep processing while one work retries, then drain before publication", async () => {
+  const slow = gate(), threshold = gate(), started = [], saved = [];
+  let accepted = 0, active = 0, peak = 0, writes = 0, peakWrites = 0;
+  const run = runSemanticBatch(Array.from({ length: 40 }, (_, id) => id), {
+    concurrency: 4, shouldStop: () => accepted >= 10,
+    work: async id => {
+      started.push(id); peak = Math.max(peak, ++active);
+      if (id === 0) await slow.promise; else await tick();
+      active--;
+      return `translation-${id}`;
+    },
+    settle: async (id, outcome) => {
+      peakWrites = Math.max(peakWrites, ++writes);
+      await tick();
+      saved.push([id, outcome.value]); accepted++; writes--;
+      if (accepted === 10) threshold.resolve();
+    },
+  });
+  await threshold.promise;
+  assert.ok(started.length > 10, "a slow first work does not empty the admission window");
+  assert.ok(!saved.some(([id]) => id === 0));
+  slow.resolve();
+  const consumed = await run;
+  assert.equal(peak, 4);
+  assert.equal(peakWrites, 1);
+  assert.ok(consumed >= 11 && consumed <= 13, "at most three in-flight works can exceed the publish threshold");
+  assert.equal(saved.length, consumed);
+  assert.deepEqual(started, Array.from({ length: consumed }, (_, id) => id));
+  for (const [id, value] of saved) assert.equal(value, `translation-${id}`);
+});
+
+test("STOP checkpoints all four in-flight works without taking a fifth", async () => {
+  const requests = Array.from({ length: 4 }, gate), started = [], saved = [];
+  let stopped = false;
+  const run = runSemanticBatch([0, 1, 2, 3, 4, 5], {
+    concurrency: 4, shouldStop: () => stopped,
+    work: async id => { started.push(id); return requests[id].promise; },
+    settle: async (id, outcome) => saved.push([id, outcome.value]),
+  });
+  await tick(); stopped = true;
+  for (const id of [3, 1, 0, 2]) { requests[id].resolve(`translation-${id}`); await tick(); }
+  assert.equal(await run, 4);
+  assert.deepEqual(started, [0, 1, 2, 3]);
+  assert.deepEqual(saved, [[3, "translation-3"], [1, "translation-1"], [0, "translation-0"], [2, "translation-2"]]);
 });

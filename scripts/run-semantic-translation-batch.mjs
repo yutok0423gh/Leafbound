@@ -286,7 +286,10 @@ async function run(){
     const concurrency=semanticBatchConcurrency(cloud,localCapacity.parallel);
     state.concurrency.active=concurrency;
     const batchSize=state.publications.length ? options.batchSize : 2;
-    next+=await runSemanticBatch(selected.slice(next,next+options.batchSize),{
+    // Keep spare entries available until the accepted-result threshold is
+    // reached; a slow/retried work must not leave the other slots idle.
+    // Bound each admission window so cloud recovery is checked regularly.
+    next+=await runSemanticBatch(selected.slice(next,next+options.batchSize*concurrency),{
       concurrency,shouldStop:()=>existsSync(stopPath)||pending.length>=batchSize,
       start:async(entry,slot)=>{
         state.inFlight.push({id:entry.job.id,title:entry.job.title,poet:entry.job.poet,slot,startedAt:new Date().toISOString()});

@@ -81,7 +81,7 @@ npm run classical-translations:build -- --drafts .tmp-data/classical-translation
 
 全量隊列包括全部 17,373 篇，含編輯稿與人工審閱稿。這些受保護稿件只核對分組，不改寫字句或人工審閱記錄。其他機器稿只依原文及辭典重新翻譯，不讓舊錯譯引導新稿；開啟本機推理後獨立復核，未通過時最多重試三輪，以具體審校意見修正。仍有疑義則保留檢查點並暫停顯示該今譯。缺字、難以可靠解讀的文字遊戲，以及元曲來源把開頭正文混進標題的情況，另標為原文待核實，不讓模型猜補。`semantic-status.json` 記錄待核實作品及編輯稿的分組。
 
-`classical-translations:semantic` 是目前的全量入口。它核對本地 GGUF 校驗值，啟動只監聽本機的模型，預設兩篇並發，共用一個模型並開啟連續批次推理；每篇仍有 16,384 token 上下文，翻譯及獨立復核依序完成。可用 `--local-concurrency 1` 回退單篇處理；目前只接受 1 或 2。檢查點與日誌依次寫入，每批達到 10 篇通過稿後，等待已開始的篇目完成，再運行全庫驗證及測試後發布，並等待 Pages 部署及公開資料驗證；不讓並發工作同時改寫發布資料。只有指定的獨立分支、倉庫和翻譯資料路徑可自動發布；遇到其他提交或衝突會停止並保留檢查點。呼叫範例（在 `codex/semantic-alignment-all` 獨立工作目錄中）：
+`classical-translations:semantic` 是目前的全量入口。它核對本地 GGUF 校驗值，啟動只監聽本機的模型，預設四篇並發，共用一個模型並開啟連續批次推理；每篇仍有 16,384 token 上下文，翻譯及獨立復核依序完成。`--local-concurrency` 接受 1 至 4，可用 `--local-concurrency 2` 回退雙並發，或設為 1 單篇處理。達到發布門檻前，空出的槽位會接續下篇，個別篇目重試不阻塞其他槽位；候選窗口仍有上限，以便定期檢查雲端恢復條件。檢查點與日誌依次寫入，每批達到 10 篇通過稿後，等待已開始的篇目完成，再運行全庫驗證及測試後發布，並等待 Pages 部署及公開資料驗證；不讓並發工作同時改寫發布資料。只有指定的獨立分支、倉庫和翻譯資料路徑可自動發布；遇到其他提交或衝突會停止並保留檢查點。呼叫範例（在 `codex/semantic-alignment-all` 獨立工作目錄中）：
 
 ```powershell
 npm run classical-translations:semantic -- --publish --state-dir D:/Project/personal_poetry_language_app_prd/.tmp-data/classical-translations/semantic-run --progress-html D:/Project/personal_poetry_language_app_prd/artifacts/classical-alignment-progress.html --model-file D:/AI/models/Qwen3.5-9B-Q4_K_M.gguf --server-binary D:/AI/llama.cpp/b10679/llama-server.exe --model-sha256 03b74727a860a56338e042c4420bb3f04b2fec5734175f4cb9fa853daf52b7e8
