@@ -40,12 +40,12 @@
     "productionReadyGeneratedCount": 0,
     "productionReadyCoveredCount": 184,
     "productionReadyRemainingCount": 17189,
-    "blockedGeneratedCount": 13872,
-    "modelAlignedGeneratedCount": 3263,
-    "semanticAlignedGeneratedCount": 3238,
+    "blockedGeneratedCount": 13871,
+    "modelAlignedGeneratedCount": 3264,
+    "semanticAlignedGeneratedCount": 3239,
     "statusCounts": {
-      "machine-draft": 13828,
-      "pending-review": 3361,
+      "machine-draft": 13827,
+      "pending-review": 3362,
       "reviewed": 0,
       "rejected": 0
     },
@@ -59,7 +59,7 @@
       "古文": 451
     }
   },
-  "recordsSha256": "b0e3c9c88edde939a0aeb7a9fce3400ab725ac4e3fa5e49db34fa73a71973566",
+  "recordsSha256": "fe173356169535dfbe98a9aac76d7b1cfba0a7dadb57a10270fe65eb0bc0a58d",
   "shards": [
     {
       "id": "00",
@@ -1306,8 +1306,8 @@
     {
       "id": "cf",
       "count": 67,
-      "bytes": 125672,
-      "sha256": "7941e89d84bd14e91906968452479cf3cc1d7ea3f2d5084bcad1b508fddb19ee"
+      "bytes": 127432,
+      "sha256": "673212cc1bab278618c9380e6c04433daf128d9120c513e539d827e8a10c1a5b"
     },
     {
       "id": "d0",
