@@ -165,7 +165,7 @@ test("mid-work quota stop discards the partial cloud work and restarts the same 
 test("live quota notification stops an in-flight request at the reserve boundary", () => {
   const provider = new CodexSemanticProvider({ policy, cwd: process.cwd() });
   let error;
-  provider.active = { threadId: "fixture-thread", reject: value => { error = value; } };
+  provider.requests.add({ threadId: "fixture-thread", reject: value => { error = value; } });
   provider.receive({ method: "account/rateLimits/updated", params: { rateLimits: {
     limitId: "codex", primary: { windowDurationMins: 10080, usedPercent: 88, resetsAt: reset },
   } } });

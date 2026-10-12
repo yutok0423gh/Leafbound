@@ -10,7 +10,7 @@ import { readRepairCheckpoint } from "./repair-classical-alignment.mjs";
 import { createSemanticPlan, repairSemanticTranslation, SEMANTIC_PROMPT_VERSION, sourceIntegrityIssue } from "./semantic-classical-translations.mjs";
 import { loadGeneratorConfig, loadClassicalGlossary } from "./generate-classical-translation-drafts.mjs";
 import { validateClassicalAlignment } from "../src/classical-alignment.js";
-import { CLOUD_MODEL, CloudAssistStopped, CodexSemanticProvider, cloudGenerationParameters, cloudRecoveryAt, repairWithCloudFallback } from "./codex-semantic-provider.mjs";
+import { CLOUD_MODEL, CloudAssistStopped, CodexSemanticProvider, cloudGenerationParameters, cloudRecoveryAt, cloudModelConcurrency, createCloudStopHandler, repairWithCloudFallback } from "./codex-semantic-provider.mjs";
 import { localModelCapacity, runSemanticBatch, semanticBatchConcurrency } from "./semantic-batch-queue.mjs";
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
@@ -18,12 +18,13 @@ const execute=promisify(execFile),sleep=(ms)=>new Promise(done=>setTimeout(done,
 const args=process.argv.slice(2),options={publish:false,batchSize:10};
 for(let i=0;i<args.length;i++){
   if(args[i]==="--publish")options.publish=true;
-  else if(["--state-dir","--progress-html","--model-file","--server-binary","--model-sha256","--ids","--branch","--site","--repository","--local-concurrency"].includes(args[i])){
+  else if(["--state-dir","--progress-html","--model-file","--server-binary","--model-sha256","--ids","--branch","--site","--repository","--local-concurrency","--cloud-concurrency"].includes(args[i])){
     const key=args[i].slice(2),value=args[++i];if(!value||value.startsWith("--"))throw new Error(`Missing ${key}`);options[key]=value;
   }else throw new Error(`Unknown option ${args[i]}`);
 }
 for(const key of ["state-dir","progress-html","model-file","server-binary","model-sha256"])if(!options[key])throw new Error(`Missing --${key}`);
 const localCapacity=localModelCapacity(options["local-concurrency"]);
+const cloudCapacity=cloudModelConcurrency(options["cloud-concurrency"]);
 const stateDir=resolve(options["state-dir"]),page=resolve(options["progress-html"]);
 const statePath=resolve(stateDir,"progress.json"),journalPath=resolve(stateDir,"journal.jsonl"),checkpoint=resolve(stateDir,"accepted.jsonl"),stopPath=resolve(stateDir,"STOP");
 const publicStatusPath=resolve(root,"data/classical-translations/semantic-status.json");
@@ -32,8 +33,8 @@ const repository=options.repository||"yutok0423gh/Leafbound",site=options.site||
 const expectedBranch=options.branch||"codex/semantic-alignment-all";
 const state={schemaVersion:1,pid:process.pid,status:"starting",startedAt:new Date().toISOString(),updatedAt:null,
   promptVersion:SEMANTIC_PROMPT_VERSION,total:0,processed:0,accepted:0,published:0,held:0,sourceHolds:0,
-  current:null,inFlight:[],concurrency:{local:localCapacity.parallel,cloud:1,active:0},error:null,site,checkpoint,stopPath,publications:[],activeModel:"Qwen3.5-9B-Alignment",cloudAccepted:0,cloudAssist:null};
-let server=null,heartbeat=null,saveQueue=Promise.resolve(),cloud=null,cloudConfig=null,cloudSettings=null,recentAcceptedAt=[];
+  current:null,inFlight:[],concurrency:{local:localCapacity.parallel,cloud:cloudCapacity,active:0},error:null,site,checkpoint,stopPath,publications:[],activeModel:"Qwen3.5-9B-Alignment",cloudAccepted:0,cloudAssist:null};
+let server=null,heartbeat=null,saveQueue=Promise.resolve(),cloud=null,cloudConfig=null,cloudSettings=null,stopCloudOnce=null,recentAcceptedAt=[];
 const html=(value)=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 
 function save(){
@@ -51,7 +52,7 @@ function save(){
 <div class="cards"><div class="card"><b>${snapshot.processed} / ${snapshot.total}</b>已处理</div><div class="card"><b>${snapshot.accepted}</b>通过语义检查</div><div class="card"><b>${snapshot.published}</b>已上线分组</div><div class="card"><b>${snapshot.held}</b>仍待核实</div></div>
 <p><progress max="${Math.max(snapshot.total,1)}" value="${snapshot.processed}"></progress></p>
 <p>过去 1 小时通过 ${snapshot.recentAccepted} 篇；尚有 ${Math.max(0,snapshot.total-snapshot.processed)} 篇排队。处理速度包含翻译、独立复核、重试和发布等待。</p>
-<p>本地最多 ${snapshot.concurrency.local} 篇并发；当前正在处理 ${snapshot.inFlight.length} 篇。每篇分别翻译及独立复核，结果依次保存，整批检查后发布。</p>
+<p>Luna 最多 ${snapshot.concurrency.cloud} 篇并发，本地最多 ${snapshot.concurrency.local} 篇并发；当前正在处理 ${snapshot.inFlight.length} 篇。每篇分别翻译及独立复核，结果依次保存，整批检查后发布。</p>
 ${snapshot.inFlight.length?`<ul>${snapshot.inFlight.map(entry=>`<li>任务 ${entry.slot+1}：${html(entry.title)} · ${html(entry.poet)}</li>`).join("")}</ul>`:"<p>已有人工译文保留原字句；疑似错配的机器稿重新翻译并复核。</p>"}
 <p>${snapshot.sourceHolds} 篇存在来源疑点；不把缺字或混进标题的正文交给模型猜补。通过模型核对仍需人工校订。</p>
 ${snapshot.cloudAssist?`<p>GPT-5.6 Luna 累计已完成 ${snapshot.cloudAccepted} 篇。${snapshot.cloudAssist.quota?`周剩余额度最近读数：${snapshot.cloudAssist.quota.remainingPercent}%（${html(new Date(snapshot.cloudAssist.quota.checkedAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai",hour12:false}))}）。`:""}保留 10% 周额度，另留 2% 缓冲，约剩 12% 时结束本轮云端协助并继续本地处理。${["local","cooldown"].includes(snapshot.cloudAssist.mode)?`<br>已切回本地：${html(snapshot.cloudAssist.stopLabel||"本轮云端协助已结束")}。${snapshot.cloudAssist.mode==="cooldown"?`下次恢复检查不早于 ${html(new Date(snapshot.cloudAssist.retryAt).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai",hour12:false}))}，在当前批次处理完成后检查。`:""}`:""}</p>`:""}
@@ -103,7 +104,11 @@ async function startModel(){
   }throw new Error("本机模型加载超时。");
 }
 
-async function stopCloud(error){
+function stopCloud(error){
+  stopCloudOnce??=createCloudStopHandler({provider:cloud,onStopped:persistCloudStop});
+  return stopCloudOnce(error);
+}
+async function persistCloudStop(error){
   const reason=error.reason||"cloud-unavailable";
   const labels={"weekly-reserve-reached":"已到额度保留线","weekly-window-changed":"额度窗口读数发生变化，已保护性转回本地",
     "quota-unavailable":"暂时无法确认额度","quota-invalid-or-expired":"额度读数已失效",
@@ -112,7 +117,7 @@ async function stopCloud(error){
     "cloud-stream-disconnected":"云端响应流断开","cloud-connection-failed":"云端连接暂时失败",
     "cloud-service-unavailable":"云端服务暂时不可用","cloud-auth-failed":"云端登录验证失败",
     "cloud-request-too-large":"长篇继续由本地模型处理"};
-  cloud?.close();cloud=null;state.activeModel="Qwen3.5-9B-Alignment";
+  cloud=null;state.activeModel="Qwen3.5-9B-Alignment";
   state.cloudAssist={...state.cloudAssist,mode:"local",stopReason:reason,stopDetails:error.details,stopLabel:labels[reason]||"云端调用暂不可用",stoppedAt:new Date().toISOString(),
     consecutiveFailures:(state.cloudAssist?.consecutiveFailures||0)+1,retryAt:null};
   const retryAt=cloudRecoveryAt(state.cloudAssist,cloudSettings||{});
@@ -137,12 +142,13 @@ async function startCloud(){
   }
   state.cloudAssist={requestId:settings.requestId,mode:"starting",model:CLOUD_MODEL,serviceTier:settings.serviceTier||"default",quota:null,
     weeklyResetAt:settings.weeklyResetAt,consecutiveFailures:recovering?.consecutiveFailures??(recovering?1:0)};
+  stopCloudOnce=null;
   try{
     if(settings.model!==CLOUD_MODEL||!settings.requestId||!settings.codexBinary
       ||settings.reservePercent!==10||settings.safetyMarginPercent!==2)throw new CloudAssistStopped("invalid-cloud-settings");
     cloudConfig={model:CLOUD_MODEL,modelRevision:"codex:gpt-5.6-luna:unversioned-alias",promptVersion:SEMANTIC_PROMPT_VERSION,
       temperature:0,maxTokens:6144,generationParameters:cloudGenerationParameters(settings.serviceTier)};
-    cloud=new CodexSemanticProvider({binary:settings.codexBinary,cwd:root,policy:settings,
+    cloud=new CodexSemanticProvider({binary:settings.codexBinary,cwd:root,policy:settings,concurrency:cloudCapacity,
       onQuota:async quota=>{state.cloudAssist.quota=quota;await save();}});
     await cloud.start();
     if(recovering){
@@ -261,7 +267,7 @@ async function run(){
         const result=outcome.value;
         if(result.id!==entry.job.id||result.inputHash!==entry.inputHash)throw new Error("Checkpoint result does not match its source entry.");
         await appendFile(checkpoint,JSON.stringify(result)+"\n");pending.push(result);state.accepted++;
-        if(result.record?.model===CLOUD_MODEL||result.alignment?.verification?.model===CLOUD_MODEL){state.cloudAccepted++;state.cloudAssist.consecutiveFailures=0;}
+        if(result.record?.model===CLOUD_MODEL||result.alignment?.verification?.model===CLOUD_MODEL){state.cloudAccepted++;if(state.cloudAssist.mode==="cloud"&&!cloud?.stopAfterResult)state.cloudAssist.consecutiveFailures=0;}
         await appendFile(journalPath,JSON.stringify({id:result.id,inputHash:entry.inputHash,status:"accepted",promptVersion:SEMANTIC_PROMPT_VERSION,at:new Date().toISOString()})+"\n");
         recentAcceptedAt.push(Date.now());
         if(cloud?.stopAfterResult)await stopCloud(cloud.stopAfterResult);
@@ -281,7 +287,7 @@ async function run(){
   let next=0;
   while(next<selected.length&&!existsSync(stopPath)){
     // Cloud lifecycle and publication are barriers: no inference is active
-    // when either runs. Cloud fallback keeps one lane until the next barrier.
+    // when either runs. Fallback keeps the batch's lane count until it drains.
     if(!cloud)await startCloud();
     const concurrency=semanticBatchConcurrency(cloud,localCapacity.parallel);
     state.concurrency.active=concurrency;
@@ -306,4 +312,4 @@ async function run(){
 }
 try{await run();}
 catch(error){state.status="failed";state.current=null;state.inFlight=[];state.concurrency.active=0;state.error=error.message;await save();console.error(error.message);process.exitCode=1;}
-finally{if(heartbeat)clearInterval(heartbeat);cloud?.close();if(server&&server.exitCode===null)server.kill();await saveQueue;}
+finally{if(heartbeat)clearInterval(heartbeat);await cloud?.close();if(server&&server.exitCode===null)server.kill();await saveQueue;}

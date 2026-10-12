@@ -112,9 +112,9 @@ test("semantic rejection is persisted without preventing other works from comple
   assert.deepEqual(outcomes.sort((a, b) => a[0] - b[0]), [[0, "fulfilled"], [1, "rejected"], [2, "fulfilled"]]);
 });
 
-test("cloud stays single-flight even with local parallelism; a reserve stop admits no next turn", async () => {
+test("explicit single-lane cloud mode is independent of local parallelism", async () => {
   let turns = 0, stopped = false;
-  const cloud = { request: async () => { turns++; stopped = true; throw new Error("weekly-reserve-reached"); } };
+  const cloud = { concurrency: 1, request: async () => { turns++; stopped = true; throw new Error("weekly-reserve-reached"); } };
   const count = await runSemanticBatch([0, 1, 2], {
     concurrency: semanticBatchConcurrency(cloud, 4),
     shouldStop: () => stopped,
@@ -124,6 +124,8 @@ test("cloud stays single-flight even with local parallelism; a reserve stop admi
   assert.equal(count, 1);
   assert.equal(turns, 1);
   assert.equal(semanticBatchConcurrency(null, 4), 4);
+  assert.equal(semanticBatchConcurrency({ concurrency: 2 }, 4), 2);
+  assert.throws(() => semanticBatchConcurrency({ concurrency: 3 }, 4));
 });
 
 test("batch boundary waits for all accepted checkpoints before the next batch starts", async () => {

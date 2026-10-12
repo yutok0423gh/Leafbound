@@ -2,6 +2,11 @@ import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
 
 export const CLOUD_MODEL = "gpt-5.6-luna";
+export function cloudModelConcurrency(value = 2) {
+  const parallel = Number(value);
+  if (!Number.isSafeInteger(parallel) || parallel < 1 || parallel > 2) throw new Error("--cloud-concurrency must be 1 or 2.");
+  return parallel;
+}
 export class CloudAssistStopped extends Error {
   constructor(reason, details) { super(`Cloud model request failed: ${reason}`); this.reason = reason; this.details = details; }
 }
@@ -102,11 +107,27 @@ export async function repairWithCloudFallback(entry, { cloud, cloudConfig, getLo
   return repair(entry, await getLocalConfig(), catalog);
 }
 
+// Every lane joins the same shutdown and persistence operation. Wait for all
+// request cleanups before closing the connection or starting local fallback.
+export function createCloudStopHandler({ provider, onStopped }) {
+  let stopping;
+  return error => {
+    provider?.halt(error);
+    stopping ??= (async () => {
+      await provider?.close();
+      await onStopped(provider?.stopAfterResult || error);
+    })();
+    return stopping;
+  };
+}
+
 export class CodexSemanticProvider {
-  constructor({ binary, cwd, policy, onQuota = async () => {}, spawnImpl = spawn }) {
+  constructor({ binary, cwd, policy, concurrency = 1, onQuota = async () => {}, spawnImpl = spawn }) {
     this.binary = binary; this.cwd = cwd; this.policy = policy; this.onQuota = onQuota;
+    this.concurrency = cloudModelConcurrency(concurrency);
     this.serviceTier = cloudGenerationParameters(policy.serviceTier).serviceTier;
-    this.spawnImpl = spawnImpl; this.pending = new Map(); this.sequence = 0; this.active = null;
+    this.spawnImpl = spawnImpl; this.pending = new Map(); this.sequence = 0;
+    this.requests = new Set(); this.active = new Map();
     this.closed = false; this.quotaChecking = null;
   }
 
@@ -184,9 +205,12 @@ export class CodexSemanticProvider {
         this.checkQuota().catch(error => this.halt(error));
       }
     }
-    const active = this.active;
-    if (!active || params.threadId !== active.threadId) return;
-    if (method === "turn/started") active.turnId = params.turn?.id;
+    const active = this.active.get(params.threadId);
+    if (!active) return;
+    if (method === "turn/started") {
+      active.turnId = params.turn?.id;
+      if (this.stopAfterResult) this.interrupt(active);
+    }
     if (method === "error" && params.willRetry === false) active.turnError = params.error;
     if (method === "item/started" && !["userMessage", "reasoning", "agentMessage"].includes(params.item?.type)) {
       this.halt(new CloudAssistStopped("unexpected-tool-use"));
@@ -195,13 +219,16 @@ export class CodexSemanticProvider {
       active.text = params.item.text;
     }
     if (method === "turn/completed") {
+      // Interrupt acknowledgements are expected during shared shutdown. They
+      // must not turn a recoverable transport stop into a terminal failure.
+      if (params.turn?.status === "interrupted" && this.stopAfterResult) return;
       if (params.turn?.status !== "completed") this.halt(params.turn?.status === "failed"
         ? cloudTurnFailure(params.turn.error || active.turnError) : new CloudAssistStopped("cloud-turn-incomplete"));
       else {
         const lastMessage = params.turn.items?.filter(item => item.type === "agentMessage" && item.phase !== "commentary").at(-1);
         const text = lastMessage?.text || active.text;
         if (!text || text.length > 60000) this.halt(new CloudAssistStopped("cloud-output-invalid"));
-        else active.resolve(text);
+        else { active.completed = true; active.resolve(text); }
       }
     }
   }
@@ -230,13 +257,19 @@ export class CodexSemanticProvider {
 
   async request(request) {
     if (this.stopAfterResult) throw this.stopAfterResult;
-    if (this.active) throw new CloudAssistStopped("parallel-inference-disabled");
+    if (this.requests.size >= this.concurrency) throw new CloudAssistStopped("cloud-concurrency-limit");
     if (request.model !== CLOUD_MODEL) throw new CloudAssistStopped("model-mismatch");
     if (JSON.stringify(request.messages).length > 32000) throw new CloudAssistStopped("cloud-request-too-large");
-    await this.checkQuota();
-    if (this.stopAfterResult) throw this.stopAfterResult;
+    const result = Promise.withResolvers(), cleanup = Promise.withResolvers();
+    result.promise.catch(() => {});
+    const active = { threadId: null, turnId: null, text: "", completed: false,
+      resolve: result.resolve, reject: result.reject, done: cleanup.promise };
+    // Reserve before the first await, including quota checks and thread setup.
+    this.requests.add(active);
     let threadId, timer, poll;
     try {
+      await this.checkQuota();
+      if (this.stopAfterResult) throw this.stopAfterResult;
       const thread = await this.rpc("thread/start", { model: CLOUD_MODEL, modelProvider: "openai", allowProviderModelFallback: false,
         cwd: this.cwd, ephemeral: true, environments: [], selectedCapabilityRoots: [], dynamicTools: [],
         approvalPolicy: "never", sandbox: "read-only", serviceTier: this.serviceTier,
@@ -246,10 +279,9 @@ export class CodexSemanticProvider {
       threadId = thread.thread?.id;
       if (!threadId || thread.model !== CLOUD_MODEL || thread.modelProvider !== "openai") throw new CloudAssistStopped("model-mismatch");
       if (thread.serviceTier !== undefined && thread.serviceTier !== null && thread.serviceTier !== this.serviceTier) throw new CloudAssistStopped("speed-mismatch");
-      let resolveTurn, rejectTurn;
-      const result = new Promise((resolve, reject) => { resolveTurn = resolve; rejectTurn = reject; });
-      result.catch(() => {});
-      this.active = { threadId, turnId: null, text: "", resolve: resolveTurn, reject: rejectTurn };
+      if (this.active.has(threadId)) throw new CloudAssistStopped("cloud-thread-collision");
+      active.threadId = threadId;
+      this.active.set(threadId, active);
       timer = setTimeout(() => this.halt(new CloudAssistStopped("cloud-turn-timeout")), 180000);
       poll = setInterval(() => this.checkQuota().catch(error => this.halt(error)), 15000);
       // Recheck after preparing the session; no inference may begin on stale data.
@@ -258,19 +290,28 @@ export class CodexSemanticProvider {
       const turn = await this.rpc("turn/start", { threadId, model: CLOUD_MODEL, effort: "medium", serviceTierForTurn: this.serviceTier,
         environments: [], input: request.messages.filter(message => message.role !== "system").map(message => ({ type: "text", text: message.content })),
         outputSchema: request.response_format.schema });
-      this.active.turnId = turn.turn?.id;
-      const content = await result;
+      active.turnId ||= turn.turn?.id;
+      if (this.stopAfterResult) this.interrupt(active);
+      const content = await result.promise;
       // Refresh for the next request; a fully finished result can still be kept.
       try { await this.checkQuota(); } catch (error) { this.halt(error); }
       return { choices: [{ finish_reason: "stop", message: { content } }] };
     } catch (error) {
       this.halt(error);
-      if (this.active?.turnId) await this.rpc("turn/interrupt", { threadId, turnId: this.active.turnId }, 5000).catch(() => {});
+      await this.interrupt(active);
       throw this.stopAfterResult;
     } finally {
-      clearTimeout(timer); clearInterval(poll); this.active = null;
+      clearTimeout(timer); clearInterval(poll);
+      if (this.active.get(threadId) === active) this.active.delete(threadId);
       if (threadId) await this.rpc("thread/unsubscribe", { threadId }, 5000).catch(() => {});
+      this.requests.delete(active); cleanup.resolve();
     }
+  }
+
+  interrupt(active) {
+    if (!active.turnId || active.completed) return;
+    active.interrupting ??= this.rpc("turn/interrupt", { threadId: active.threadId, turnId: active.turnId }, 5000).catch(() => {});
+    return active.interrupting;
   }
 
   halt(error) {
@@ -279,7 +320,10 @@ export class CodexSemanticProvider {
     // A later connection error must never turn a quota/auth stop into a retry.
     if (!this.stopAfterResult || (recoverableCloudStops.has(this.stopAfterResult.reason)
       && !recoverableCloudStops.has(stopped.reason))) this.stopAfterResult = stopped;
-    this.active?.reject(this.stopAfterResult);
+    for (const active of this.requests) {
+      active.reject(this.stopAfterResult);
+      this.interrupt(active);
+    }
     return this.stopAfterResult;
   }
 
@@ -290,7 +334,13 @@ export class CodexSemanticProvider {
   }
 
   close() {
-    this.closed = true; this.fail(new CloudAssistStopped("codex-closed"));
-    this.lines?.close(); this.child?.stdin.end(); this.child?.kill();
+    this.closing ??= (async () => {
+      this.halt(this.stopAfterResult || new CloudAssistStopped("codex-closed"));
+      await Promise.all([...this.requests].map(active => active.done));
+      await this.quotaChecking?.catch(() => {});
+      this.closed = true; this.fail(this.stopAfterResult);
+      this.lines?.close(); this.child?.stdin.end(); this.child?.kill();
+    })();
+    return this.closing;
   }
 }

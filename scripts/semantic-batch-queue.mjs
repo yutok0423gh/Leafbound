@@ -1,3 +1,5 @@
+import { cloudModelConcurrency } from "./codex-semantic-provider.mjs";
+
 // Share one model across bounded inference slots. Keep the original context
 // budget for EACH work; increasing -np alone would divide that budget.
 export function localModelCapacity(value = 4) {
@@ -8,9 +10,9 @@ export function localModelCapacity(value = 4) {
 
 export function semanticBatchConcurrency(cloud, localConcurrency) {
   const { parallel } = localModelCapacity(localConcurrency);
-  // Cloud quota checks and sticky stops still protect a SINGLE active turn.
-  // A local batch never starts or recovers a cloud session while lanes run.
-  return cloud ? 1 : parallel;
+  // Cloud lanes share one provider and its quota latch. Starting/recovering
+  // that provider remains a barrier between fully drained batches.
+  return cloud ? cloudModelConcurrency(cloud.concurrency ?? 1) : parallel;
 }
 
 // Inference overlaps; checkpoint/journal mutations never overlap. A stop or
