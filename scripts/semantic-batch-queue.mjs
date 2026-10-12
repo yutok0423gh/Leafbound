@@ -15,13 +15,31 @@ export function semanticBatchConcurrency(cloud, localConcurrency) {
   return cloud ? cloudModelConcurrency(cloud.concurrency ?? 1) : parallel;
 }
 
+// A cloud batch may own eight unfinished works when it falls back. Bound the
+// whole local repair (including review/retries) to the GPU's actual capacity.
+// Transfer each released slot to the oldest waiter, including after failure.
+export function createLocalWorkLimiter(concurrency) {
+  const { parallel } = localModelCapacity(concurrency);
+  let active = 0;
+  const waiting = [];
+  return async work => {
+    if (active >= parallel) await new Promise(resolve => waiting.push(resolve));
+    else active++;
+    try { return await work(); }
+    finally {
+      const next = waiting.shift();
+      if (next) next(); else active--;
+    }
+  };
+}
+
 // Inference overlaps; checkpoint/journal mutations never overlap. A stop or
 // fatal persistence/runtime error stops admission, then drains all work that
 // has already started so that its accepted result can still be checkpointed.
 export async function runSemanticBatch(entries, {
   concurrency, work, settle, start = async () => {}, shouldStop = () => false,
 }) {
-  if (!Number.isSafeInteger(concurrency) || concurrency < 1 || concurrency > 4) {
+  if (!Number.isSafeInteger(concurrency) || concurrency < 1 || concurrency > 8) {
     throw new Error("Invalid semantic batch concurrency.");
   }
   let next = 0, failure = null, writes = Promise.resolve();

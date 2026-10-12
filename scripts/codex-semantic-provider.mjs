@@ -2,9 +2,9 @@ import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
 
 export const CLOUD_MODEL = "gpt-5.6-luna";
-export function cloudModelConcurrency(value = 2) {
+export function cloudModelConcurrency(value = 8) {
   const parallel = Number(value);
-  if (!Number.isSafeInteger(parallel) || parallel < 1 || parallel > 2) throw new Error("--cloud-concurrency must be 1 or 2.");
+  if (!Number.isSafeInteger(parallel) || parallel < 1 || parallel > 8) throw new Error("--cloud-concurrency must be an integer from 1 to 8.");
   return parallel;
 }
 export class CloudAssistStopped extends Error {
@@ -94,7 +94,7 @@ export function cloudGenerationParameters(serviceTier = "default") {
     outputFormat: "json-schema", disableThinking: false };
 }
 
-export async function repairWithCloudFallback(entry, { cloud, cloudConfig, getLocalConfig, catalog, repair, onCloudStop }) {
+export async function repairWithCloudFallback(entry, { cloud, cloudConfig, getLocalConfig, catalog, repair, onCloudStop, runLocal = work => work() }) {
   if (cloud) {
     try { return await repair(entry, cloudConfig, catalog, { requestImpl: request => cloud.request(request) }); }
     catch (error) {
@@ -104,7 +104,7 @@ export async function repairWithCloudFallback(entry, { cloud, cloudConfig, getLo
       await onCloudStop(error);
     }
   }
-  return repair(entry, await getLocalConfig(), catalog);
+  return runLocal(async () => repair(entry, await getLocalConfig(), catalog));
 }
 
 // Every lane joins the same shutdown and persistence operation. Wait for all

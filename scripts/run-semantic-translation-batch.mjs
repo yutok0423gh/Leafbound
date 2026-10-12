@@ -11,7 +11,7 @@ import { createSemanticPlan, repairSemanticTranslation, SEMANTIC_PROMPT_VERSION,
 import { loadGeneratorConfig, loadClassicalGlossary } from "./generate-classical-translation-drafts.mjs";
 import { validateClassicalAlignment } from "../src/classical-alignment.js";
 import { CLOUD_MODEL, CloudAssistStopped, CodexSemanticProvider, cloudGenerationParameters, cloudRecoveryAt, cloudModelConcurrency, createCloudStopHandler, repairWithCloudFallback } from "./codex-semantic-provider.mjs";
-import { localModelCapacity, runSemanticBatch, semanticBatchConcurrency } from "./semantic-batch-queue.mjs";
+import { createLocalWorkLimiter, localModelCapacity, runSemanticBatch, semanticBatchConcurrency } from "./semantic-batch-queue.mjs";
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const execute=promisify(execFile),sleep=(ms)=>new Promise(done=>setTimeout(done,ms));
@@ -258,6 +258,7 @@ async function run(){
   if(pending.length){await publish(pending,publicStatus);pending.length=0;}
   const selected=requested?queue.filter(entry=>requested.includes(entry.job.id)):queue;
   let configPromise=null,catalog=null;
+  const runLocal=createLocalWorkLimiter(localCapacity.parallel);
   const getLocalConfig=async()=>{state.activeModel="Qwen3.5-9B-Alignment";configPromise??=startModel();await save();return configPromise;};
   if(selected.length){await startCloud();if(!cloud)await getLocalConfig();catalog=await loadClassicalGlossary();}
   state.status="running";await save();
@@ -301,7 +302,7 @@ async function run(){
         state.inFlight.push({id:entry.job.id,title:entry.job.title,poet:entry.job.poet,slot,startedAt:new Date().toISOString()});
         state.current=state.inFlight[0];await save();
       },
-      work:entry=>repairWithCloudFallback(entry,{cloud,cloudConfig,getLocalConfig,catalog,repair:repairSemanticTranslation,onCloudStop:stopCloud}),
+      work:entry=>repairWithCloudFallback(entry,{cloud,cloudConfig,getLocalConfig,catalog,repair:repairSemanticTranslation,onCloudStop:stopCloud,runLocal}),
       settle,
     });
     state.concurrency.active=0;
