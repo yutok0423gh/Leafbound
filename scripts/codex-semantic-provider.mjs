@@ -16,7 +16,7 @@ export class CloudAssistStopped extends Error {
 // it never authorizes inference from a cached quota reading.
 const recoverableCloudStops = new Set([
   "cloud-turn-timeout", "codex-request-timeout", "codex-exited", "codex-disconnected",
-  "cloud-stream-disconnected", "cloud-connection-failed", "cloud-service-unavailable",
+  "cloud-stream-disconnected", "cloud-connection-failed", "cloud-service-unavailable", "codex-rpc-error--32603",
 ]);
 
 function cloudTurnFailure(error) {

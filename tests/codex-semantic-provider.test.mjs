@@ -15,6 +15,7 @@ test("transient transport stops can recover with backoff inside the same authori
   const settings={...policy,enabled:true,requestId:"authorized-run"};
   const stopped={requestId:settings.requestId,weeklyResetAt:reset,stopReason:"cloud-turn-timeout",stoppedAt:new Date(now).toISOString()};
   assert.equal(cloudRecoveryAt(stopped,settings,now),now+15*60000);
+  assert.equal(cloudRecoveryAt({...stopped,stopReason:"codex-rpc-error--32603"},settings,now),now+15*60000);
   assert.equal(cloudRecoveryAt({...stopped,consecutiveFailures:2},settings,now),now+30*60000);
   assert.equal(cloudRecoveryAt({...stopped,consecutiveFailures:8},settings,now),now+60*60000);
   assert.equal(cloudRecoveryAt(stopped,settings,now+2*3600000),now+15*60000);
