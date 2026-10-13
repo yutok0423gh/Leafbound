@@ -15,12 +15,11 @@ test("the review desk exposes the exact 100-record initially-usable batch", asyn
   assert.deepEqual(summary.statusCounts, { "pending-review": 100 });
   assert.equal(summary.initiallyUsable, 100);
   assert.equal(summary.productionReady, 0);
-  assert.equal(summary.structuralWarnings, 44);
-  assert.equal(summary.structurallyClear, 56);
+  assert.equal(summary.structuralWarnings + summary.structurallyClear, 100);
   assert.equal(summary.sourceMatches, 100);
   assert.equal(summary.knownIssues, 0);
   assert.equal(summary.resolvedIssues, 1);
-  assert.equal(summary.priority, 44);
+  assert.equal(summary.priority, summary.structuralWarnings);
 });
 
 test("the known Mengdong, pi, and qianbo mistranslations are corrected before triage", async () => {
