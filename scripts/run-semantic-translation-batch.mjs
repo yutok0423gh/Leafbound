@@ -15,7 +15,9 @@ import { createLocalWorkLimiter, localModelCapacity, runSemanticBatch, semanticB
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const execute=promisify(execFile),sleep=(ms)=>new Promise(done=>setTimeout(done,ms));
-const args=process.argv.slice(2),options={publish:false,batchSize:10};
+// Publish larger verified groups to reduce CI/deployment pauses without
+// reducing the independent review performed for any individual work.
+const args=process.argv.slice(2),options={publish:false,batchSize:30};
 for(let i=0;i<args.length;i++){
   if(args[i]==="--publish")options.publish=true;
   else if(["--state-dir","--progress-html","--model-file","--server-binary","--model-sha256","--ids","--branch","--site","--repository","--local-concurrency","--cloud-concurrency"].includes(args[i])){
