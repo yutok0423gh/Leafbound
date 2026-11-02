@@ -2695,6 +2695,149 @@
             "title:28a387c0731c8418efccdb765bcf5df5facea8b9a9964645e57105bf28b95870",
             "url:https://standardebooks.org/ebooks/herman-whitaker/the-mystery-of-the-barranca"
           ]
+        },
+        {
+          "id": "standard-standardebooks-org-ebooks-a-e-w-mason-the-prisoner-in-the-opal",
+          "sourceUrl": "https://standardebooks.org/ebooks/a-e-w-mason/the-prisoner-in-the-opal",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:f72d46160a145c171e22b0f04781c5d66d414640f21f6fa6afbb1828fef5110a",
+            "id:standard-standardebooks-org-ebooks-a-e-w-mason-the-prisoner-in-the-opal",
+            "title:6c01e015ce895642b4b7cd7795ff74fd552242fd9337d8c51bfe1e2d9f83b0f3",
+            "url:https://standardebooks.org/ebooks/a-e-w-mason/the-prisoner-in-the-opal"
+          ]
+        },
+        {
+          "id": "standard-standardebooks-org-ebooks-anton-chekhov-ivanov-constance-garnett",
+          "sourceUrl": "https://standardebooks.org/ebooks/anton-chekhov/ivanov/constance-garnett",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:80919f1934f06a4e576506bbbdf98f8ff0d22c66da1bb4d6c13484be47699b85",
+            "id:standard-standardebooks-org-ebooks-anton-chekhov-ivanov-constance-garnett",
+            "title:eb4b80a7f97953d6e6083448140912d19e10e6df0abd339c590c7190d26b9975",
+            "url:https://standardebooks.org/ebooks/anton-chekhov/ivanov/constance-garnett"
+          ]
+        },
+        {
+          "id": "global-voices-2026-10-30-when-chatbots-become-answer-engines-ai-geopolitics-and-truth",
+          "sourceUrl": "https://globalvoices.org/2026/10/30/when-chatbots-become-answer-engines-ai-geopolitics-and-truth/",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:2c0441b60d286fb9fbe902f4077d18a1b3baaf58a3fd95e273601898e42de201",
+            "id:global-voices-2026-10-30-when-chatbots-become-answer-engines-ai-geopolitics-and-truth",
+            "title:7b8dbe46e0eedcba5c4f806d3520ae0d794a985e530ea4a2d290fb008995ee08",
+            "url:https://globalvoices.org/2026/10/30/when-chatbots-become-answer-engines-ai-geopolitics-and-truth"
+          ]
+        },
+        {
+          "id": "global-voices-ow-one-haitian-entrepreneur-found-success-by-supporting-all-things-local",
+          "sourceUrl": "https://globalvoices.org/2026/10/30/how-one-haitian-entrepreneur-found-success-by-supporting-all-things-local/",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:958176091a62cd9eab6c5d36e412db223ca0bfb90ea6bbef7ed0d8118ee96ce3",
+            "id:global-voices-ow-one-haitian-entrepreneur-found-success-by-supporting-all-things-local",
+            "title:2382e30b8e0f980b636c17d53d77cc85359d28bece8324e3a8a8e1e9206ea6d8",
+            "url:https://globalvoices.org/2026/10/30/how-one-haitian-entrepreneur-found-success-by-supporting-all-things-local"
+          ]
+        },
+        {
+          "id": "global-voices-the-streets-and-a-social-media-army-led-lula-to-a-historic-win-in-brazil",
+          "sourceUrl": "https://globalvoices.org/2026/10/30/how-the-streets-and-a-social-media-army-led-lula-to-a-historic-win-in-brazil/",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:e0a14bc86fafa34c7f5781274278cafb98b545e0f674d108f03a61fe0cc1e533",
+            "id:global-voices-the-streets-and-a-social-media-army-led-lula-to-a-historic-win-in-brazil",
+            "title:98d641da9aa46bf5517cdc1aa0044d7896bc82256268430ca382c38f48955535",
+            "url:https://globalvoices.org/2026/10/30/how-the-streets-and-a-social-media-army-led-lula-to-a-historic-win-in-brazil"
+          ]
+        },
+        {
+          "id": "global-voices-anmar-journalists-reflection-when-other-peoples-pain-becomes-part-of-you",
+          "sourceUrl": "https://globalvoices.org/2026/10/29/a-myanmar-journalists-reflection-when-other-peoples-pain-becomes-part-of-you/",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:1bdedc2924881aa6903c76c1fad92c8f21cdd12706d1aba187b0e8395cdf648a",
+            "id:global-voices-anmar-journalists-reflection-when-other-peoples-pain-becomes-part-of-you",
+            "title:b0ea1559ad757280da6059fcd5cfea428e61fc4463cbf974a91807b7b9d11b15",
+            "url:https://globalvoices.org/2026/10/29/a-myanmar-journalists-reflection-when-other-peoples-pain-becomes-part-of-you"
+          ]
+        },
+        {
+          "id": "global-voices-bangladesh-weighs-tougher-cyber-law-as-ai-generated-abuse-targets-women",
+          "sourceUrl": "https://globalvoices.org/2026/10/28/bangladesh-weighs-tougher-cyber-law-as-ai-generated-abuse-targets-women/",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:4c912c03139f750f16019cd9c61cbcded956611624c144b0754a67977a546632",
+            "id:global-voices-bangladesh-weighs-tougher-cyber-law-as-ai-generated-abuse-targets-women",
+            "title:da05a37fc3d1c7660e6d0ef6f08f1df882ddee7084a19d65b95156f16d68c5db",
+            "url:https://globalvoices.org/2026/10/28/bangladesh-weighs-tougher-cyber-law-as-ai-generated-abuse-targets-women"
+          ]
+        },
+        {
+          "id": "global-voices-org-2026-10-28-support-global-voices-spotlight-justice-as-infrastructure",
+          "sourceUrl": "https://globalvoices.org/2026/10/28/support-global-voices-spotlight-justice-as-infrastructure/",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:47f6f323e749f0d116f37be518eaaac20185c8049ed3b338ab5385acb9147ec2",
+            "id:global-voices-org-2026-10-28-support-global-voices-spotlight-justice-as-infrastructure",
+            "title:a144f733d3728b3bf47f314d70ac82244f58cae060d751c6ef7270c9c88dc7e7",
+            "url:https://globalvoices.org/2026/10/28/support-global-voices-spotlight-justice-as-infrastructure"
+          ]
+        },
+        {
+          "id": "global-voices-laced-dolphins-the-hidden-costs-of-offshore-platforms-in-cameroon-waters",
+          "sourceUrl": "https://globalvoices.org/2026/10/27/fish-scarcity-tar-balls-and-displaced-dolphins-the-hidden-costs-of-offshore-platforms-in-cameroon-waters/",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:80da35c173005f5fb8675a5429c37a919d915a4e81cbf5fa0f9ea98e223304ea",
+            "id:global-voices-laced-dolphins-the-hidden-costs-of-offshore-platforms-in-cameroon-waters",
+            "title:a3c94fc84717013cc0633145eaf3dc9a01055f88d84db14db18d1ce77ba32602",
+            "url:https://globalvoices.org/2026/10/27/fish-scarcity-tar-balls-and-displaced-dolphins-the-hidden-costs-of-offshore-platforms-in-cameroon-waters"
+          ]
+        },
+        {
+          "id": "global-voices-land-remember-how-poles-opened-their-homes-to-ukrainian-refugees-in-2022",
+          "sourceUrl": "https://globalvoices.org/2026/10/26/volunteers-from-poland-remember-how-poles-opened-their-homes-to-ukrainian-refugees-in-2022/",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:f97880af1de7fe71f535af9c1a0f7ca83874267e3d71807feb3cd7153bb27fdd",
+            "id:global-voices-land-remember-how-poles-opened-their-homes-to-ukrainian-refugees-in-2022",
+            "title:7136600bac71f989ae3d76d2176d5da4fd6b70722d8d1e7a608ca770bb44c990",
+            "url:https://globalvoices.org/2026/10/26/volunteers-from-poland-remember-how-poles-opened-their-homes-to-ukrainian-refugees-in-2022"
+          ]
+        },
+        {
+          "id": "global-voices-vote-young-yet-govern-much-later-west-african-youths-struggle-for-power",
+          "sourceUrl": "https://globalvoices.org/2026/10/26/vote-young-yet-govern-much-later-west-african-youths-struggle-for-power/",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:df8be2c9b4e661bd514c15476719736924a16dcfc4c488963da43b2089182763",
+            "id:global-voices-vote-young-yet-govern-much-later-west-african-youths-struggle-for-power",
+            "title:939d6c10ff9fb31b9b5aa49ea7fce1e230dbfe8f33548c3b00a3b94fd0040fe7",
+            "url:https://globalvoices.org/2026/10/26/vote-young-yet-govern-much-later-west-african-youths-struggle-for-power"
+          ]
+        },
+        {
+          "id": "standard-standardebooks-org-ebooks-henry-seton-merriman-the-vultures",
+          "sourceUrl": "https://standardebooks.org/ebooks/henry-seton-merriman/the-vultures",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:e43ce5883ad08a98adea26b5219ad8be3725e3f205dd8c2adbc59eaf60fb7d85",
+            "id:standard-standardebooks-org-ebooks-henry-seton-merriman-the-vultures",
+            "title:0e2efacdccd9512b90010efe4f35f1ca8155c6347da306ad6a8321c3a9a0f9be",
+            "url:https://standardebooks.org/ebooks/henry-seton-merriman/the-vultures"
+          ]
+        },
+        {
+          "id": "global-voices-9-anthropic-exposes-ai-operation-that-drc-journalists-never-knew-existed",
+          "sourceUrl": "https://globalvoices.org/2026/10/19/anthropic-exposes-ai-operation-that-drc-journalists-never-knew-existed/",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:46cc9f814b4736cafa6a58914d95bf1db88156bbe05f704d381a91ec6986aa69",
+            "id:global-voices-9-anthropic-exposes-ai-operation-that-drc-journalists-never-knew-existed",
+            "title:4e3f369cb16da7fb9109177e79784963424d8bb3687dd40736e36ea9063a9fb0",
+            "url:https://globalvoices.org/2026/10/19/anthropic-exposes-ai-operation-that-drc-journalists-never-knew-existed"
+          ]
         }
       ],
       "weeks": {
@@ -2897,6 +3040,25 @@
             "standard-standardebooks-org-ebooks-herman-whitaker-the-mystery-of-the-barranca"
           ],
           "checkedAt": "2026-10-26T05:56:21.078Z",
+          "sourceErrors": []
+        },
+        "2026-11-02": {
+          "articleIds": [
+            "standard-standardebooks-org-ebooks-a-e-w-mason-the-prisoner-in-the-opal",
+            "standard-standardebooks-org-ebooks-anton-chekhov-ivanov-constance-garnett",
+            "global-voices-2026-10-30-when-chatbots-become-answer-engines-ai-geopolitics-and-truth",
+            "global-voices-ow-one-haitian-entrepreneur-found-success-by-supporting-all-things-local",
+            "global-voices-the-streets-and-a-social-media-army-led-lula-to-a-historic-win-in-brazil",
+            "global-voices-anmar-journalists-reflection-when-other-peoples-pain-becomes-part-of-you",
+            "global-voices-bangladesh-weighs-tougher-cyber-law-as-ai-generated-abuse-targets-women",
+            "global-voices-org-2026-10-28-support-global-voices-spotlight-justice-as-infrastructure",
+            "global-voices-laced-dolphins-the-hidden-costs-of-offshore-platforms-in-cameroon-waters",
+            "global-voices-land-remember-how-poles-opened-their-homes-to-ukrainian-refugees-in-2022",
+            "global-voices-vote-young-yet-govern-much-later-west-african-youths-struggle-for-power",
+            "standard-standardebooks-org-ebooks-henry-seton-merriman-the-vultures",
+            "global-voices-9-anthropic-exposes-ai-operation-that-drc-journalists-never-knew-existed"
+          ],
+          "checkedAt": "2026-11-02T07:32:14.827Z",
           "sourceErrors": []
         }
       }
@@ -6597,6 +6759,226 @@
             "title:247e4ca54d46c6682e83d88b0830d5888456c043b7b17b9d0551f3017d5401a3",
             "url:https://zh-yue.wikipedia.org/wiki/%E7%A9%8D%E8%91%B5%C2%B7%E5%88%A9%E7%B6%AD%E7%89%B9"
           ]
+        },
+        {
+          "id": "yue-wikipedia-103483",
+          "sourceUrl": "https://zh-yue.wikipedia.org/wiki/%E5%B4%99%E9%A0%AD",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:2f3056c596d23999b219120a1725700f8f528ca0d2b28e5253578c2a7d77e550",
+            "id:yue-wikipedia-103483",
+            "title:1e8349950fd796cfab9fc9d8861786f9688c3384cae97f9e45877aa13d3af1fd",
+            "url:https://zh-yue.wikipedia.org/wiki/%E5%B4%99%E9%A0%AD"
+          ]
+        },
+        {
+          "id": "yue-wikipedia-121924",
+          "sourceUrl": "https://zh-yue.wikipedia.org/wiki/%E6%96%B0%E7%A6%8F%E5%88%A9%E9%9B%86%E5%9C%98",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:70951054e8f09cda7e4f667b8e072b4ff2bb22221ca3575f4a9da630fbe4925a",
+            "id:yue-wikipedia-121924",
+            "title:85d6bb8fc18b0cb3e9e789b944cef9dce5391b7dc59b028bfefbdc6db2283570",
+            "url:https://zh-yue.wikipedia.org/wiki/%E6%96%B0%E7%A6%8F%E5%88%A9%E9%9B%86%E5%9C%98"
+          ]
+        },
+        {
+          "id": "yue-wikipedia-325719",
+          "sourceUrl": "https://zh-yue.wikipedia.org/wiki/%E6%B0%B4%E8%B6%B3%E8%B7%A1",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:64d8460ec49c12398af5eee10e7f6a15ec4470c0662b0e14d22c6f67d7069ceb",
+            "id:yue-wikipedia-325719",
+            "title:b5d265045b1fc515a616ad5a77220f46ab8ad94a0172c05ce07041a4c0ba83e9",
+            "url:https://zh-yue.wikipedia.org/wiki/%E6%B0%B4%E8%B6%B3%E8%B7%A1"
+          ]
+        },
+        {
+          "id": "yue-wikipedia-41204",
+          "sourceUrl": "https://zh-yue.wikipedia.org/wiki/%E7%86%B1%E6%B0%A3%E7%90%83",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:80d33516a5f10327e2b875e381365eacac2ec89cec93061679cd8d29131d25cf",
+            "id:yue-wikipedia-41204",
+            "title:aae5fe1c37cb10ff738ed051fb555669f6e56ab40894222991f8ab4866d2534d",
+            "url:https://zh-yue.wikipedia.org/wiki/%E7%86%B1%E6%B0%A3%E7%90%83"
+          ]
+        },
+        {
+          "id": "yue-wikipedia-142968",
+          "sourceUrl": "https://zh-yue.wikipedia.org/wiki/%E7%AC%AC69%E5%B1%86%E8%A5%BF%E7%8F%AD%E7%89%99%E5%9C%8B%E6%9C%83%E9%81%B8%E8%88%89",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:b2bec2a10d6ff139c732532afdd88db2a3495d43679d458b9ed8a1f541894676",
+            "id:yue-wikipedia-142968",
+            "title:dc41568d7f683512fbcbd2e124978661ea2f147c20fca28ba532c81a6dfca557",
+            "url:https://zh-yue.wikipedia.org/wiki/%E7%AC%AC69%E5%B1%86%E8%A5%BF%E7%8F%AD%E7%89%99%E5%9C%8B%E6%9C%83%E9%81%B8%E8%88%89"
+          ]
+        },
+        {
+          "id": "yue-wikipedia-168429",
+          "sourceUrl": "https://zh-yue.wikipedia.org/wiki/Optare",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:a7e5dd5aa2dc4e7d849985692bcd5363d5f32348149afe17f64041e3d9f47326",
+            "id:yue-wikipedia-168429",
+            "title:534b2dd6983139d8b2b686b22074c461ccd251c2ca706957b843898f5ec1139a",
+            "url:https://zh-yue.wikipedia.org/wiki/Optare"
+          ]
+        },
+        {
+          "id": "yue-wikipedia-175947",
+          "sourceUrl": "https://zh-yue.wikipedia.org/wiki/%E6%BE%B3%E9%96%802%E8%99%9F%E5%B7%B4%E5%A3%AB",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:c8331078a67dd3f988b468351f5e4b71e10a6c10bdcd21b863b1a1b3e11e5200",
+            "id:yue-wikipedia-175947",
+            "title:81a6496445e4c5ec029fc1bec16878ab9090374bfcd4876a70ccffc0412f4c62",
+            "url:https://zh-yue.wikipedia.org/wiki/%E6%BE%B3%E9%96%802%E8%99%9F%E5%B7%B4%E5%A3%AB"
+          ]
+        },
+        {
+          "id": "yue-wikipedia-177779",
+          "sourceUrl": "https://zh-yue.wikipedia.org/wiki/%E6%BE%B3%E9%96%806B%E5%B7%B4%E5%A3%AB",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:62c6f14f28eec10aea7110582075a36d987618e19968c4c3d873beff69c2e199",
+            "id:yue-wikipedia-177779",
+            "title:c6b7970d079df7925ae04846155b1b6428da88276b9256b30b3c5e3ce8e626ef",
+            "url:https://zh-yue.wikipedia.org/wiki/%E6%BE%B3%E9%96%806B%E5%B7%B4%E5%A3%AB"
+          ]
+        },
+        {
+          "id": "yue-wikipedia-218019",
+          "sourceUrl": "https://zh-yue.wikipedia.org/wiki/ANU_(%E7%B5%84%E5%90%88)",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:fe9b3fac26a73e47cd60b7146d35f638638da15b252113714fc19ad850616871",
+            "id:yue-wikipedia-218019",
+            "title:a27b1468f4b1ae420d74044b1b95d4a88371a1ecfa109e1ca62e9db7bd06a8cd",
+            "url:https://zh-yue.wikipedia.org/wiki/ANU_(%E7%B5%84%E5%90%88)"
+          ]
+        },
+        {
+          "id": "yue-wikipedia-252459",
+          "sourceUrl": "https://zh-yue.wikipedia.org/wiki/%E6%93%94%E6%B3%A5",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:2405f4387d3d669ccbda83ed9625e67d3a5d1d029abe240336e3c7c965b73c42",
+            "id:yue-wikipedia-252459",
+            "title:868e0df8bfb5387ad54cb646b8e090165f7004c98ef31ef2904d8572bd5dfe28",
+            "url:https://zh-yue.wikipedia.org/wiki/%E6%93%94%E6%B3%A5"
+          ]
+        },
+        {
+          "id": "yue-wikipedia-367564",
+          "sourceUrl": "https://zh-yue.wikipedia.org/wiki/SBS_8%E9%BB%9E%E6%96%B0%E8%81%9E",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:feb920491e1def35869f13a172575d7bb77e5800e3d55eab3148de98a5ec71b5",
+            "id:yue-wikipedia-367564",
+            "title:7144a70b822959345efc9a7bbafcd89902372c27f407a328624c8f2316a110a9",
+            "url:https://zh-yue.wikipedia.org/wiki/SBS_8%E9%BB%9E%E6%96%B0%E8%81%9E"
+          ]
+        },
+        {
+          "id": "yue-wikipedia-37871",
+          "sourceUrl": "https://zh-yue.wikipedia.org/wiki/%E9%A6%99%E6%B8%AF%E5%9F%BA%E6%9C%AC%E6%B3%95%E7%AC%AC23%E6%A2%9D",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:9be34bb79549c92ac7ba85cd72bf175a163a8afba56912bc5b45b584b71c8ee8",
+            "id:yue-wikipedia-37871",
+            "title:151597b2191efe2c3456ff76fd656db2e87c4e1172530f9788d2344b7bbf4f79",
+            "url:https://zh-yue.wikipedia.org/wiki/%E9%A6%99%E6%B8%AF%E5%9F%BA%E6%9C%AC%E6%B3%95%E7%AC%AC23%E6%A2%9D"
+          ]
+        },
+        {
+          "id": "yue-wikipedia-88155",
+          "sourceUrl": "https://zh-yue.wikipedia.org/wiki/%E8%A1%A8%E6%BC%94%E8%97%9D%E8%A1%93",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:1113ef31522176ee5437122974458034f0e5ab6ddb82348459534a6f790fdcd2",
+            "id:yue-wikipedia-88155",
+            "title:9028cb3d26b6c91412da21ab68f6f98d5015acf1a25157fa1fe8ada860735639",
+            "url:https://zh-yue.wikipedia.org/wiki/%E8%A1%A8%E6%BC%94%E8%97%9D%E8%A1%93"
+          ]
+        },
+        {
+          "id": "yue-wikipedia-102230",
+          "sourceUrl": "https://zh-yue.wikipedia.org/wiki/%E7%86%B1%E8%A1%80%E5%85%AC%E6%B0%91",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:7d5138d458d35d19c9e5030666b589084020dcf3b0065665994d0d6e59371e49",
+            "id:yue-wikipedia-102230",
+            "title:b9eab20f32b0ad5fe96433a8fab5867b35a9b5d8bc6e1efa2c6063767037a5eb",
+            "url:https://zh-yue.wikipedia.org/wiki/%E7%86%B1%E8%A1%80%E5%85%AC%E6%B0%91"
+          ]
+        },
+        {
+          "id": "yue-wikipedia-215920",
+          "sourceUrl": "https://zh-yue.wikipedia.org/wiki/%E8%85%A6%E6%A9%9F%E4%BB%8B%E9%9D%A2",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:4511401b196a51a51f1985b05b89da22e64177e23e50286e813f50e7c0c6d5e2",
+            "id:yue-wikipedia-215920",
+            "title:a17124411e8dbc79d7e69051298b747e146f2a9a055c02ee26a516514d0078f2",
+            "url:https://zh-yue.wikipedia.org/wiki/%E8%85%A6%E6%A9%9F%E4%BB%8B%E9%9D%A2"
+          ]
+        },
+        {
+          "id": "yue-wikipedia-264730",
+          "sourceUrl": "https://zh-yue.wikipedia.org/wiki/%E9%B5%9D%E8%9B%8B",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:f4a918da48a8f3dbbf412f7b3217585ba6d50b932454d57cf8be88e5e5f2b933",
+            "id:yue-wikipedia-264730",
+            "title:847cb30825f73266d902b6e4fec0b7a5f11931b4db398e14e1a2d6454c772a98",
+            "url:https://zh-yue.wikipedia.org/wiki/%E9%B5%9D%E8%9B%8B"
+          ]
+        },
+        {
+          "id": "yue-wikipedia-332804",
+          "sourceUrl": "https://zh-yue.wikipedia.org/wiki/%E9%9B%85%E6%81%AF%E7%89%B9%E7%A2%BC%E9%A0%AD",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:59e248dcfff1923b74ae21d046ffac60194372d7a1902c64e0e282b0ba6337a8",
+            "id:yue-wikipedia-332804",
+            "title:5199033e84f694d36a875b379108770576fdecc1452740b37283791ae6984609",
+            "url:https://zh-yue.wikipedia.org/wiki/%E9%9B%85%E6%81%AF%E7%89%B9%E7%A2%BC%E9%A0%AD"
+          ]
+        },
+        {
+          "id": "yue-wikipedia-344619",
+          "sourceUrl": "https://zh-yue.wikipedia.org/wiki/%E9%AD%9A%E8%8F%9C%E5%85%B1%E7%94%9F",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:a5a5272e22633fb82dd3180405e69a726adbd7cb8323c918a75aa62cbae047c9",
+            "id:yue-wikipedia-344619",
+            "title:0a859ab98fafe63bb3fafa70060d082a5e09c964117e61e97dfbeae671b83b02",
+            "url:https://zh-yue.wikipedia.org/wiki/%E9%AD%9A%E8%8F%9C%E5%85%B1%E7%94%9F"
+          ]
+        },
+        {
+          "id": "yue-wikipedia-363664",
+          "sourceUrl": "https://zh-yue.wikipedia.org/wiki/%E6%8D%95%E6%97%A5%E9%A3%BE",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:9179ed00b772a9895f230a88d76c245895f841b820470a1ae3c5ea860ec1ed5c",
+            "id:yue-wikipedia-363664",
+            "title:88bbb585a07f0e68ab2869f0de2596b31e51567eb5307e37cbbef930e83998ed",
+            "url:https://zh-yue.wikipedia.org/wiki/%E6%8D%95%E6%97%A5%E9%A3%BE"
+          ]
+        },
+        {
+          "id": "yue-wikipedia-4009",
+          "sourceUrl": "https://zh-yue.wikipedia.org/wiki/%E5%80%89%E9%A0%A1%E8%BC%B8%E5%85%A5%E6%B3%95",
+          "firstSeenWeek": "2026-11-02",
+          "keys": [
+            "body:bb15a3e75a4673a48b44b916c1ac9833f0b2e4af7eeaad6484baa8127ecd070f",
+            "id:yue-wikipedia-4009",
+            "title:b182eb8e2915228d99f221f8bbeba8acb13873862f3fc7576cbbd288fdde9534",
+            "url:https://zh-yue.wikipedia.org/wiki/%E5%80%89%E9%A0%A1%E8%BC%B8%E5%85%A5%E6%B3%95"
+          ]
         }
       ],
       "weeks": {
@@ -6806,6 +7188,32 @@
             "yue-wikipedia-300560"
           ],
           "checkedAt": "2026-10-26T05:56:21.078Z",
+          "sourceErrors": []
+        },
+        "2026-11-02": {
+          "articleIds": [
+            "yue-wikipedia-103483",
+            "yue-wikipedia-121924",
+            "yue-wikipedia-325719",
+            "yue-wikipedia-41204",
+            "yue-wikipedia-142968",
+            "yue-wikipedia-168429",
+            "yue-wikipedia-175947",
+            "yue-wikipedia-177779",
+            "yue-wikipedia-218019",
+            "yue-wikipedia-252459",
+            "yue-wikipedia-367564",
+            "yue-wikipedia-37871",
+            "yue-wikipedia-88155",
+            "yue-wikipedia-102230",
+            "yue-wikipedia-215920",
+            "yue-wikipedia-264730",
+            "yue-wikipedia-332804",
+            "yue-wikipedia-344619",
+            "yue-wikipedia-363664",
+            "yue-wikipedia-4009"
+          ],
+          "checkedAt": "2026-11-02T07:32:14.827Z",
           "sourceErrors": []
         }
       }
